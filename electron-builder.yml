@@ -1,0 +1,36 @@
+appId: com.ftrubiolo.mirage
+productName: Mirage
+directories:
+  output: dist
+  buildResources: resources
+files:
+  - out/**/*
+  - package.json
+extraResources:
+  - from: resources/environments
+    to: resources/environments
+  - from: resources/draco
+    to: resources/draco
+  - from: resources/scripts
+    to: resources/scripts
+asarUnpack:
+  - "node_modules/sharp/**/*"
+  - "node_modules/@img/**/*"
+  - "resources/scripts/**/*"
+linux:
+  target:
+    - AppImage
+    - tar.gz
+  category: Graphics
+  maintainer: "ftrubiolo <contact@mirage3d.app>"
+mac:
+  target:
+    - dmg
+  category: public.app-category.graphics-design
+win:
+  signAndEditExecutable: false
+  target:
+    - zip
+    - dir
+
+

@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-primary: "Montserrat", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --color-canvas: var(--canvas);
+  --color-canvas-subtle: var(--canvas-subtle);
+  --color-canvas-stone: var(--canvas-stone);
+
+  --color-surface-lowest: var(--surface-lowest);
+  --color-surface-low: var(--surface-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-high: var(--surface-high);
+  --color-surface-highest: var(--surface-highest);
+
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-tertiary: var(--ink-tertiary);
+
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+
+  --color-action: var(--action);
+  --color-action-hover: var(--action-hover);
+  --color-action-active: var(--action-active);
+  --color-action-subtle: var(--action-subtle);
+
+  --color-terracotta: #9a2716;
+  --color-terracotta-hover: #801f10;
+  --color-terracotta-active: #6b190d;
+
+  --radius-xs: 2px;
+}
+
+:root {
+  --canvas: #fdfdfd;
+  --canvas-subtle: #f7f5f2;
+  --canvas-stone: #efece6;
+
+  --surface-lowest: #ffffff;
+  --surface-low: #f7f5f2;
+  --surface-container: #efece6;
+  --surface-high: #ded9d1;
+  --surface-highest: #d5cfc5;
+
+  --ink-primary: #161514;
+  --ink-secondary: #5c5854;
+  --ink-tertiary: #8e8a84;
+
+  --hairline: rgba(22, 21, 20, 0.10);
+  --hairline-strong: rgba(22, 21, 20, 0.20);
+
+  --action: #9a2716;
+  --action-hover: #801f10;
+  --action-active: #6b190d;
+  --action-subtle: rgba(154, 39, 22, 0.08);
+
+  --scrollbar-track: #efece6;
+  --scrollbar-thumb: #ded9d1;
+  --scrollbar-thumb-hover: #d5cfc5;
+}
+
+.dark {
+  --canvas: #111110;
+  --canvas-subtle: #141412;
+  --canvas-stone: #1a1917;
+
+  --surface-lowest: #181816;
+  --surface-low: #1f1e1c;
+  --surface-container: #272523;
+  --surface-high: #32302c;
+  --surface-highest: #3e3b37;
+
+  --ink-primary: #f4f2ee;
+  --ink-secondary: #a8a39d;
+  --ink-tertiary: #6e6a64;
+
+  --hairline: rgba(244, 242, 238, 0.08);
+  --hairline-strong: rgba(244, 242, 238, 0.16);
+
+  --action: #b53420;
+  --action-hover: #c83e28;
+  --action-active: #9a2716;
+  --action-subtle: rgba(181, 52, 32, 0.18);
+
+  --scrollbar-track: #141412;
+  --scrollbar-thumb: #272523;
+  --scrollbar-thumb-hover: #3e3b37;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-body);
+  }
+
+  /* Strict Metrology: tabular numerals for all mono fonts */
+  .font-mono,
+  [data-tabular-nums] {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Architectural headers */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-primary);
+  }
+
+  /* Ensure input text and placeholders are centered vertically */
+  input[type="text"],
+  input[type="number"] {
+    vertical-align: middle;
+  }
+
+  /* Custom architectural scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 0px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+}

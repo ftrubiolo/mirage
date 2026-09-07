@@ -53,6 +53,29 @@ export interface ElectronAPI {
   deleteLibraryEntry: (entrySlug: string) => Promise<boolean>;
   renameLibraryFile: (options: { oldFilePath: string; newFileName: string }) => Promise<{ filePath: string; fileName: string; fileSize: number }>;
   openPathInExplorer: (targetPath: string) => Promise<boolean>;
+  // Vault methods (Encrypted Keychain storage)
+  setSecret: (key: string, val: string) => Promise<boolean>;
+  getSecret: (key: string) => Promise<string | null>;
+  hasSecret: (key: string) => Promise<boolean>;
+  deleteSecret: (key: string) => Promise<boolean>;
+  // MCP methods
+  listMcpServers: () => Promise<any[]>;
+  connectMcpServer: (config: any) => Promise<boolean>;
+  disconnectMcpServer: (serverId: string) => Promise<boolean>;
+  listMcpTools: () => Promise<any[]>;
+  callMcpTool: (compositeId: string, args?: Record<string, unknown>) => Promise<any>;
+  onMcpServersChanged: (callback: (servers: any[]) => void) => () => void;
+  onMcpToolsChanged: (callback: (tools: any[]) => void) => () => void;
+  // Agent Connection & Model Fetch
+  testAgentConnection: (params: { baseUrl: string; apiKey?: string; providerId: string }) => Promise<{ success: boolean; error?: string; models?: string[] }>;
+  fetchAgentModels: (params: { baseUrl: string; apiKey?: string }) => Promise<{ success: boolean; error?: string; models?: string[] }>;
+  // Keybinds & Settings methods (.local/share/mirage/)
+  loadKeybinds: () => Promise<Record<string, string>>;
+  saveKeybinds: (keybinds: Record<string, string>) => Promise<boolean>;
+  getKeybindsPath: () => Promise<string>;
+  loadSettings: () => Promise<any>;
+  saveSettings: (settings: any) => Promise<boolean>;
+  getSettingsPath: () => Promise<string>;
 }
 
 const api: ElectronAPI = {
@@ -75,6 +98,33 @@ const api: ElectronAPI = {
   deleteLibraryEntry: (entrySlug) => ipcRenderer.invoke('library:deleteEntry', entrySlug),
   renameLibraryFile: (options) => ipcRenderer.invoke('library:renameFile', options),
   openPathInExplorer: (targetPath) => ipcRenderer.invoke('shell:openPath', targetPath),
+  setSecret: (key, val) => ipcRenderer.invoke('vault:setSecret', key, val),
+  getSecret: (key) => ipcRenderer.invoke('vault:getSecret', key),
+  hasSecret: (key) => ipcRenderer.invoke('vault:hasSecret', key),
+  deleteSecret: (key) => ipcRenderer.invoke('vault:deleteSecret', key),
+  listMcpServers: () => ipcRenderer.invoke('mcp:listServers'),
+  connectMcpServer: (config) => ipcRenderer.invoke('mcp:connectServer', config),
+  disconnectMcpServer: (serverId) => ipcRenderer.invoke('mcp:disconnectServer', serverId),
+  listMcpTools: () => ipcRenderer.invoke('mcp:listTools'),
+  callMcpTool: (compositeId, args) => ipcRenderer.invoke('mcp:callTool', { compositeId, args }),
+  onMcpServersChanged: (callback) => {
+    const handler = (_e: any, servers: any[]) => callback(servers);
+    ipcRenderer.on('mcp:serversChanged', handler);
+    return () => ipcRenderer.removeListener('mcp:serversChanged', handler);
+  },
+  onMcpToolsChanged: (callback) => {
+    const handler = (_e: any, tools: any[]) => callback(tools);
+    ipcRenderer.on('mcp:toolsChanged', handler);
+    return () => ipcRenderer.removeListener('mcp:toolsChanged', handler);
+  },
+  testAgentConnection: (params) => ipcRenderer.invoke('agent:testConnection', params),
+  fetchAgentModels: (params) => ipcRenderer.invoke('agent:fetchModels', params),
+  loadKeybinds: () => ipcRenderer.invoke('keybinds:load'),
+  saveKeybinds: (keybinds) => ipcRenderer.invoke('keybinds:save', keybinds),
+  getKeybindsPath: () => ipcRenderer.invoke('keybinds:getPath'),
+  loadSettings: () => ipcRenderer.invoke('settings:load'),
+  saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
+  getSettingsPath: () => ipcRenderer.invoke('settings:getPath'),
   toAssetUrl: (filePath: string) => {
     if (!filePath) return '';
     if (

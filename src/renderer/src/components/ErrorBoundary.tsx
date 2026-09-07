@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="p-6 bg-red-950/40 border border-red-800 rounded-xl text-red-200 m-4 space-y-3 font-mono text-xs">
           <div className="flex items-center gap-2 text-red-400 font-bold text-sm">
-            <span>⚠ Error en la interfaz: {this.props.fallbackTitle || 'Componente'}</span>
+            <span>[Error] Fallo en la interfaz: {this.props.fallbackTitle || 'Componente'}</span>
           </div>
           <p className="text-red-300">{this.state.error?.message}</p>
           <pre className="p-3 bg-black/60 rounded text-[10px] text-zinc-400 overflow-auto max-h-48">

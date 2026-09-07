@@ -3,7 +3,18 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { packOrmTexture, processTextureTask, PackOrmOptions } from './texturePacker';
 import { watchFile, stopWatching } from './fileWatcher';
-import { getLibraryBasePath } from './platform';
+import {
+  getLibraryBasePath,
+  getMirageDataDir,
+  getLegacyMirageDataDir,
+  getKeybindsPath,
+  getSettingsPath
+} from './platform';
+import { storeSecret, retrieveSecret, hasSecret, deleteSecret } from './vault';
+import { MCPClientManager, McpServerConfig } from './mcp/MCPClientManager';
+
+const mcpManager = new MCPClientManager();
+mcpManager.initialize().catch((err) => console.warn('[Main] MCPClientManager init error:', err));
 
 export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   // Open file dialog
@@ -113,15 +124,88 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     return path.join(process.resourcesPath, 'resources', relativePath);
   });
 
-  // --- Sera Atelier Library IPC Handlers ---
+async function ensureMirageDir(): Promise<void> {
+  const mirageDir = getMirageDataDir();
+  try {
+    await fs.access(mirageDir);
+  } catch {
+    // Check if legacy directory exists (mirage-sera)
+    const legacyDir = getLegacyMirageDataDir();
+    try {
+      await fs.access(legacyDir);
+      try {
+        await fs.rename(legacyDir, mirageDir);
+        console.log(`[Mirage] Migrated legacy directory from ${legacyDir} to ${mirageDir}`);
+        return;
+      } catch {
+        await fs.cp(legacyDir, mirageDir, { recursive: true });
+        console.log(`[Mirage] Copied legacy directory from ${legacyDir} to ${mirageDir}`);
+        return;
+      }
+    } catch {
+      // Legacy directory does not exist either
+    }
+    await fs.mkdir(mirageDir, { recursive: true });
+  }
+}
+
+const DEFAULT_KEYBINDS: Record<string, string> = {
+  'camera.iso': '0',
+  'camera.front': '1',
+  'camera.right': '3',
+  'camera.top': '7',
+  'camera.back': 'Ctrl+1',
+  'camera.left': 'Ctrl+3',
+  'camera.bottom': 'Ctrl+7',
+  'camera.reset': 'F',
+  'camera.toggleOrthographic': '5',
+  'view.toggleGrid': 'G',
+  'view.toggleDimensions': 'D',
+  'view.toggleAutoRotate': 'Space',
+  'view.toggleWireframe': 'Z',
+  'view.toggleContactShadows': 'C',
+  'view.toggleBackground': 'B',
+  'lighting.presetStudio': 'Alt+1',
+  'lighting.presetNatural': 'Alt+2',
+  'lighting.presetDramatic': 'Alt+3',
+  'lighting.presetTechnical': 'Alt+4'
+};
+
+const DEFAULT_SETTINGS = {
+  themeMode: 'dark',
+  fontDensity: 'standard',
+  defaultContactShadows: true,
+  defaultGroundGrid: true,
+  defaultAutoRotate: false,
+  defaultExportFormat: 'webp',
+  viewport: {
+    viewportTheme: 'dark',
+    environmentPreset: 'city',
+    lightingPreset: 'studio',
+    sunAzimuth: 45,
+    sunElevation: 45,
+    keyLightIntensity: 1.2,
+    ambientLightIntensity: 0.6,
+    fillLightIntensity: 0.4,
+    environmentIntensity: 1.0,
+    directionalShadows: true,
+    contactShadowOpacity: 0.4,
+    cameraFov: 50,
+    isOrthographic: false
+  }
+};
+
+  // --- Mirage Atelier Library IPC Handlers ---
 
   ipcMain.handle('library:getBaseDir', async () => {
+    await ensureMirageDir();
     const libDir = getLibraryBasePath();
     await fs.mkdir(libDir, { recursive: true });
     return libDir;
   });
 
   ipcMain.handle('library:list', async () => {
+    await ensureMirageDir();
     const libDir = getLibraryBasePath();
     await fs.mkdir(libDir, { recursive: true });
     const dirEntries = await fs.readdir(libDir, { withFileTypes: true });
@@ -261,4 +345,203 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     await shell.openPath(targetPath);
     return true;
   });
+
+  // --- Hardware-Encrypted Vault IPC Handlers ---
+  ipcMain.handle('vault:setSecret', async (_event, key: string, val: string) => {
+    return storeSecret(key, val);
+  });
+
+  ipcMain.handle('vault:getSecret', async (_event, key: string) => {
+    return retrieveSecret(key);
+  });
+
+  ipcMain.handle('vault:hasSecret', async (_event, key: string) => {
+    return hasSecret(key);
+  });
+
+  ipcMain.handle('vault:deleteSecret', async (_event, key: string) => {
+    return deleteSecret(key);
+  });
+
+  // --- Model Context Protocol (MCP) IPC Handlers ---
+  mcpManager.onChange(() => {
+    if (!mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('mcp:serversChanged', mcpManager.getServerStatuses());
+      mainWindow.webContents.send('mcp:toolsChanged', mcpManager.getAllTools());
+    }
+  });
+
+  ipcMain.handle('mcp:listServers', async () => {
+    return mcpManager.getServerStatuses();
+  });
+
+  ipcMain.handle('mcp:connectServer', async (_event, config: McpServerConfig) => {
+    return mcpManager.connectServer(config);
+  });
+
+  ipcMain.handle('mcp:disconnectServer', async (_event, serverId: string) => {
+    return mcpManager.disconnectServer(serverId);
+  });
+
+  ipcMain.handle('mcp:listTools', async () => {
+    return mcpManager.getAllTools();
+  });
+
+  ipcMain.handle('mcp:callTool', async (_event, payload: { compositeId: string; args: Record<string, unknown> }) => {
+    return mcpManager.callTool(payload.compositeId, payload.args || {});
+  });
+
+  // --- Agent Connection Test & Model Fetch Handlers ---
+  ipcMain.handle('agent:fetchModels', async (_event, payload: { baseUrl: string; apiKey?: string }) => {
+    const { baseUrl, apiKey } = payload;
+    const cleanUrl = baseUrl.replace(/\/+$/, '');
+
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
+      const response = await fetch(`${cleanUrl}/models`, {
+        method: 'GET',
+        headers,
+        signal: AbortSignal.timeout(10000)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const modelList: string[] = [];
+        if (Array.isArray(data.data)) {
+          for (const m of data.data) {
+            if (m && typeof m.id === 'string') modelList.push(m.id);
+          }
+        } else if (Array.isArray(data.models)) {
+          for (const m of data.models) {
+            if (m && typeof m.name === 'string') modelList.push(m.name);
+            else if (m && typeof m.model === 'string') modelList.push(m.model);
+          }
+        }
+        modelList.sort((a, b) => a.localeCompare(b));
+        return { success: true, models: modelList };
+      } else {
+        const errorText = await response.text().catch(() => '');
+        return {
+          success: false,
+          error: `HTTP ${response.status}: ${errorText.slice(0, 150) || response.statusText}`
+        };
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message || 'Error de conexión'
+      };
+    }
+  });
+
+  ipcMain.handle('agent:testConnection', async (_event, payload: { baseUrl: string; apiKey?: string; providerId: string }) => {
+    const { baseUrl, apiKey } = payload;
+    const cleanUrl = baseUrl.replace(/\/+$/, '');
+
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`;
+      }
+
+      // First try /models endpoint
+      const response = await fetch(`${cleanUrl}/models`, {
+        method: 'GET',
+        headers,
+        signal: AbortSignal.timeout(8000)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const modelList: string[] = [];
+        if (Array.isArray(data.data)) {
+          for (const m of data.data) {
+            if (m && typeof m.id === 'string') modelList.push(m.id);
+          }
+        } else if (Array.isArray(data.models)) {
+          for (const m of data.models) {
+            if (m && typeof m.name === 'string') modelList.push(m.name);
+          }
+        }
+        return { success: true, models: modelList };
+      } else {
+        const errorText = await response.text().catch(() => '');
+        return {
+          success: false,
+          error: `HTTP ${response.status}: ${errorText.slice(0, 150) || response.statusText}`
+        };
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message || 'Error de conexión o tiempo de espera agotado'
+      };
+    }
+  });
+
+  // --- Keybinds and Settings IPC Handlers (.local/share/mirage/) ---
+
+  ipcMain.handle('keybinds:load', async () => {
+    await ensureMirageDir();
+    const filePath = getKeybindsPath();
+    try {
+      const raw = await fs.readFile(filePath, 'utf-8');
+      const loaded = JSON.parse(raw);
+      return { ...DEFAULT_KEYBINDS, ...loaded };
+    } catch {
+      await fs.writeFile(filePath, JSON.stringify(DEFAULT_KEYBINDS, null, 2), 'utf-8');
+      return DEFAULT_KEYBINDS;
+    }
+  });
+
+  ipcMain.handle('keybinds:save', async (_event, keybinds: Record<string, string>) => {
+    await ensureMirageDir();
+    const filePath = getKeybindsPath();
+    await fs.writeFile(filePath, JSON.stringify(keybinds, null, 2), 'utf-8');
+    return true;
+  });
+
+  ipcMain.handle('keybinds:getPath', () => {
+    return getKeybindsPath();
+  });
+
+  ipcMain.handle('settings:load', async () => {
+    await ensureMirageDir();
+    const filePath = getSettingsPath();
+    try {
+      const raw = await fs.readFile(filePath, 'utf-8');
+      const loaded = JSON.parse(raw);
+      return {
+        ...DEFAULT_SETTINGS,
+        ...loaded,
+        viewport: {
+          ...DEFAULT_SETTINGS.viewport,
+          ...(loaded.viewport || {})
+        }
+      };
+    } catch {
+      await fs.writeFile(filePath, JSON.stringify(DEFAULT_SETTINGS, null, 2), 'utf-8');
+      return DEFAULT_SETTINGS;
+    }
+  });
+
+  ipcMain.handle('settings:save', async (_event, settings: any) => {
+    await ensureMirageDir();
+    const filePath = getSettingsPath();
+    await fs.writeFile(filePath, JSON.stringify(settings, null, 2), 'utf-8');
+    return true;
+  });
+
+  ipcMain.handle('settings:getPath', () => {
+    return getSettingsPath();
+  });
 }
+

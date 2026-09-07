@@ -20,6 +20,8 @@ import { LibraryEntry, EntryVariant } from '../../types/library';
 import { useAppStore } from '../../store/appStore';
 import { loadEntryIntoWorkbench } from '../../utils/libraryBridge';
 import { Switch } from '../UI/Switch';
+import { useResizableSidebar } from '../../hooks/useResizableSidebar';
+import { ResizeHandle, ResizeDragOverlay } from '../UI/ResizeHandle';
 
 interface EntryDetailViewProps {
   entry: LibraryEntry | null;
@@ -30,6 +32,19 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
   const { libraryPath, activeEntrySlug } = useAppStore();
   const [currentEntry, setCurrentEntry] = useState<LibraryEntry | null>(entry);
   const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    width: sidebarWidth,
+    isDragging,
+    handleMouseDown,
+    handleReset
+  } = useResizableSidebar({
+    storageKey: 'mirage_entry_detail_sidebar_width',
+    defaultWidth: 380,
+    minWidth: 280,
+    maxWidth: () => Math.min(520, Math.floor(window.innerWidth * 0.45)),
+    side: 'left'
+  });
 
   // Modals / Dialogs state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -223,10 +238,22 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
         </div>
       </div>
 
-      {/* Main Split Layout: 1/3 (Left) - 2/3 (Right) */}
-      <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-0 divide-y lg:divide-y-0 lg:divide-x divide-hairline">
-        {/* Left 1/3: Technical Sheet & Model Info */}
-        <div className="lg:col-span-4 p-6 overflow-y-auto space-y-5 bg-surface-lowest/40">
+      {/* Main Split Layout: Resizable Technical Sheet (Left) + Catalog (Right) */}
+      <div className="flex-1 overflow-hidden flex min-h-0 relative">
+        {/* Left: Technical Sheet & Model Info (Constrained Resizable) */}
+        <aside
+          style={{ width: `${sidebarWidth}px` }}
+          className={`h-full p-6 overflow-y-auto space-y-5 bg-surface-lowest/40 border-r border-hairline shrink-0 min-h-0 relative ${
+            isDragging ? 'select-none' : ''
+          }`}
+        >
+          <ResizeHandle
+            position="right"
+            isDragging={isDragging}
+            onMouseDown={handleMouseDown}
+            onDoubleClick={handleReset}
+            title="Arrastra para redimensionar ficha técnica (Doble clic para restablecer)"
+          />
           {/* Main Piece Render Thumbnail */}
           <div className="aspect-4/3 bg-canvas-stone/40 border border-hairline rounded-xs flex items-center justify-center overflow-hidden relative group">
             {currentEntry.posterUrl ? (
@@ -332,10 +359,10 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
               </div>
             ) : null}
           </div>
-        </div>
+        </aside>
 
-        {/* Right 2/3: Profiles & Variants Catalog */}
-        <div className="lg:col-span-8 p-6 overflow-y-auto flex flex-col space-y-4 bg-canvas">
+        {/* Right: Profiles & Variants Catalog */}
+        <main className="flex-1 p-6 overflow-y-auto flex flex-col space-y-4 bg-canvas min-w-0 min-h-0">
           {/* Section Header */}
           <div className="flex items-center justify-between gap-3 border-b border-hairline pb-3">
             <div className="flex items-center gap-2">
@@ -493,7 +520,8 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
               );
             })}
           </div>
-        </div>
+        </main>
+        {isDragging && <ResizeDragOverlay />}
       </div>
 
       {/* Modal: Crear Nuevo Perfil */}

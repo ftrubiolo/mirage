@@ -12,7 +12,14 @@ export const StoreEnvironment: React.FC = () => {
     showEnvironmentBackground,
     viewportTheme,
     environmentPreset,
-    customHdrUrl
+    customHdrUrl,
+    sunAzimuth,
+    sunElevation,
+    keyLightIntensity,
+    ambientLightIntensity,
+    fillLightIntensity,
+    directionalShadows,
+    contactShadowOpacity
   } = useViewportStore();
 
   const [offlineHdrUrl, setOfflineHdrUrl] = useState<string | null>(cachedHdrUrl);
@@ -37,23 +44,44 @@ export const StoreEnvironment: React.FC = () => {
   const gridPrimary = viewportTheme === 'dark' ? '#272523' : '#d5cfc5';
   const gridSecondary = viewportTheme === 'dark' ? '#181816' : '#efece6';
 
+  // Convert azimuth & elevation to Cartesian coordinates for Key Light
+  const radAzimuth = (sunAzimuth * Math.PI) / 180;
+  const radElevation = (sunElevation * Math.PI) / 180;
+  const lightDistance = 14;
+
+  const keyLightPos: [number, number, number] = [
+    lightDistance * Math.cos(radElevation) * Math.sin(radAzimuth),
+    lightDistance * Math.sin(radElevation),
+    lightDistance * Math.cos(radElevation) * Math.cos(radAzimuth)
+  ];
+
+  // Fill light positioned opposite to key light
+  const fillLightPos: [number, number, number] = [
+    -keyLightPos[0] * 0.6,
+    Math.max(2, keyLightPos[1] * 0.5),
+    -keyLightPos[2] * 0.6
+  ];
+
   return (
     <>
-      {/* Parity Ambient Light */}
-      <ambientLight intensity={0.6 * environmentIntensity} />
+      {/* Ambient Light */}
+      <ambientLight intensity={ambientLightIntensity * environmentIntensity} />
 
-      {/* Parity Key Spot Light with Shadows */}
-      <spotLight
-        position={[10, 10, 10]}
-        angle={0.15}
-        penumbra={1}
-        intensity={1.2 * environmentIntensity}
-        castShadow
+      {/* Key Directional Sunlight with Shadows */}
+      <directionalLight
+        position={keyLightPos}
+        intensity={keyLightIntensity * environmentIntensity}
+        castShadow={directionalShadows}
         shadow-bias={-0.0001}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
       />
 
-      {/* Parity Fill Lights */}
-      <directionalLight position={[-5, 5, -5]} intensity={0.4 * environmentIntensity} />
+      {/* Fill Light */}
+      <directionalLight
+        position={fillLightPos}
+        intensity={fillLightIntensity * environmentIntensity}
+      />
 
       {/* Environment Map Reflections & Background */}
       <Suspense fallback={null}>
@@ -82,7 +110,7 @@ export const StoreEnvironment: React.FC = () => {
       {showContactShadows && (
         <ContactShadows
           position={[0, 0, 0]}
-          opacity={0.4}
+          opacity={contactShadowOpacity}
           scale={10}
           blur={2}
           far={4}

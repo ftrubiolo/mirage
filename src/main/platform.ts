@@ -40,28 +40,78 @@ export function initLinuxPlatformFlags(): void {
 }
 
 /**
- * Resolves the standard library storage path adhering to OS conventions:
- * - Linux: $XDG_DATA_HOME/mirage-sera/library (default: ~/.local/share/mirage-sera/library)
- * - Windows: %LOCALAPPDATA%/mirage-sera/library (or %APPDATA%/mirage-sera/library)
- * - macOS: ~/Library/Application Support/mirage-sera/library
+ * Resolves the root application data directory:
+ * - Linux: $XDG_DATA_HOME/mirage (default: ~/.local/share/mirage)
+ * - Windows: %LOCALAPPDATA%/mirage (or %APPDATA%/mirage)
+ * - macOS: ~/Library/Application Support/mirage
  */
-export function getLibraryBasePath(): string {
+export function getMirageDataDir(): string {
   if (isLinux) {
     const xdgDataHome = process.env.XDG_DATA_HOME;
     if (xdgDataHome) {
-      return path.join(xdgDataHome, 'mirage-sera', 'library');
+      return path.join(xdgDataHome, 'mirage');
     }
     const home = process.env.HOME || '';
-    return path.join(home, '.local', 'share', 'mirage-sera', 'library');
+    return path.join(home, '.local', 'share', 'mirage');
   }
 
   if (isWindows) {
     const localAppData = process.env.LOCALAPPDATA || process.env.APPDATA;
     if (localAppData) {
-      return path.join(localAppData, 'mirage-sera', 'library');
+      return path.join(localAppData, 'mirage');
     }
-    return path.join(app.getPath('userData'), 'library');
+    return path.join(app.getPath('userData'), 'mirage');
   }
 
-  return path.join(app.getPath('userData'), 'library');
+  const home = process.env.HOME || '';
+  return path.join(home, 'Library', 'Application Support', 'mirage');
+}
+
+/**
+ * Resolves legacy application data directory for automatic migration from mirage-sera to mirage.
+ */
+export function getLegacyMirageDataDir(): string {
+  if (isLinux) {
+    const xdgDataHome = process.env.XDG_DATA_HOME;
+    if (xdgDataHome) {
+      return path.join(xdgDataHome, 'mirage-sera');
+    }
+    const home = process.env.HOME || '';
+    return path.join(home, '.local', 'share', 'mirage-sera');
+  }
+
+  if (isWindows) {
+    const localAppData = process.env.LOCALAPPDATA || process.env.APPDATA;
+    if (localAppData) {
+      return path.join(localAppData, 'mirage-sera');
+    }
+    return path.join(app.getPath('userData'), 'mirage-sera');
+  }
+
+  const home = process.env.HOME || '';
+  return path.join(home, 'Library', 'Application Support', 'mirage-sera');
+}
+
+/**
+ * Resolves the standard library storage path:
+ * ~/.local/share/mirage/library (or Windows/macOS equivalent)
+ */
+export function getLibraryBasePath(): string {
+  return path.join(getMirageDataDir(), 'library');
+}
+
+/**
+ * Resolves the user keybinds configuration file path:
+ * ~/.local/share/mirage/keybinds.json (or Windows/macOS equivalent)
+ */
+export function getKeybindsPath(): string {
+  return path.join(getMirageDataDir(), 'keybinds.json');
+}
+
+/**
+ * Resolves the user app settings configuration file path:
+ * ~/.local/share/mirage/settings.json (or Windows/macOS equivalent)
+ */
+export function getSettingsPath(): string {
+  return path.join(getMirageDataDir(), 'settings.json');
 }

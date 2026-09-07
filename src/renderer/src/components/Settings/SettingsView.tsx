@@ -1,18 +1,31 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
+  Palette,
+  Compass,
+  Keyboard,
+  HardDrive,
+  Cpu,
+  Info,
   Sun,
   Moon,
   Laptop,
-  FolderOpen,
-  Info
+  FolderOpen
 } from 'lucide-react';
-import { useAppStore, ThemeMode } from '../../store/appStore';
+import { useAppStore, ThemeMode, FontDensity } from '../../store/appStore';
 import { Switch } from '../UI/Switch';
+import { InfoTooltip } from '../UI/InfoTooltip';
+import { AiProvidersSection } from './AiProvidersSection';
+import { KeybindsSection } from './KeybindsSection';
+
+type SettingsTab = 'appearance' | 'viewport' | 'keybinds' | 'storage' | 'ai' | 'system';
 
 export const SettingsView: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
+
   const {
     settings,
     setThemeMode,
+    setFontDensity,
     updateSettings,
     libraryPath,
     setLibraryPath
@@ -51,215 +64,366 @@ export const SettingsView: React.FC = () => {
     }
   ];
 
+  const densityOptions: { id: FontDensity; label: string; desc: string }[] = [
+    { id: 'standard', label: 'Estándar', desc: 'Espaciado amplio para pantallas de alta resolución' },
+    { id: 'compact', label: 'Compacto', desc: 'Mayor densidad de datos y controles optimizados' },
+    { id: 'dense', label: 'Denso', desc: 'Máxima compresión de métricas e inspección técnica' }
+  ];
+
+  const navItems: { id: SettingsTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'appearance', label: 'Apariencia & Tema', icon: Palette },
+    { id: 'viewport', label: 'Visor 3D & Parámetros', icon: Compass },
+    { id: 'keybinds', label: 'Atajos de Teclado', icon: Keyboard },
+    { id: 'storage', label: 'Almacenamiento Local', icon: HardDrive },
+    { id: 'ai', label: 'Modelos IA & Agentes', icon: Cpu },
+    { id: 'system', label: 'Información del Sistema', icon: Info }
+  ];
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-canvas text-ink-primary overflow-y-auto select-none">
-      {/* Settings Header */}
-      <div className="border-b border-hairline bg-surface-low px-8 py-4 shrink-0">
-        <h1 className="font-primary font-bold text-lg tracking-tight uppercase text-ink-primary">
-          Configuración del Atelier
-        </h1>
-        <p className="text-xs text-ink-secondary font-body mt-0.5">
-          Parámetros del sistema operativo, almacenamiento local y preferencias del visor 3D.
-        </p>
-      </div>
+    <div className="flex-1 flex h-full overflow-hidden bg-canvas text-ink-primary select-none font-body">
+      {/* Navigation Sidebar */}
+      <aside className="w-64 border-r border-hairline bg-surface-low/50 flex flex-col p-4 shrink-0 overflow-y-auto space-y-1">
+        <div className="px-3 py-2 mb-2">
+          <h2 className="font-primary font-bold text-xs uppercase tracking-wider text-ink-primary">
+            Configuración
+          </h2>
+          <p className="text-[11px] text-ink-tertiary">
+            Mirage Atelier 3D Workbench
+          </p>
+        </div>
 
-      <div className="p-8 max-w-4xl space-y-8">
-        {/* Section 1: Visual Theme */}
-        <section className="space-y-3">
-          <div>
-            <h2 className="font-primary font-semibold text-xs uppercase tracking-wider text-ink-secondary">
-              Apariencia & Cromatismo
-            </h2>
-            <p className="text-xs text-ink-tertiary">
-              Selecciona el entorno de color del taller. Basalto está optimizado contra la fatiga visual.
-            </p>
-          </div>
+        <nav className="space-y-0.5 flex-1">
+          {navItems.map((item) => {
+            const isSelected = activeTab === item.id;
+            const Icon = item.icon;
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {themeOptions.map((opt) => {
-              const Icon = opt.icon;
-              const isSelected = settings.themeMode === opt.mode;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full px-3 py-2.5 rounded-xs text-xs font-medium flex items-center gap-2.5 transition-colors text-left cursor-pointer ${
+                  isSelected
+                    ? 'bg-surface-container text-action font-semibold border-l-2 border-action shadow-xs'
+                    : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-container/50 border-l-2 border-transparent'
+                }`}
+              >
+                <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-action' : 'text-ink-tertiary'}`} />
+                <span className="truncate">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-              return (
-                <button
-                  key={opt.mode}
-                  onClick={() => setThemeMode(opt.mode)}
-                  className={`p-4 rounded-xs border text-left flex flex-col justify-between transition-colors ${
-                    isSelected
-                      ? 'bg-surface-lowest border-action ring-1 ring-action/50 shadow-xs'
-                      : 'bg-surface-lowest border-hairline hover:border-hairline-strong'
-                  }`}
-                >
-                  <div className="mb-3">
-                    <div className="w-fit p-2 rounded-xs bg-surface-container border border-hairline text-action">
-                      <Icon className="w-4 h-4" />
+        <div className="pt-4 border-t border-hairline px-3 text-[11px] text-ink-tertiary font-mono">
+          Mirage v1.0.0
+        </div>
+      </aside>
+
+      {/* Main Settings Content Area */}
+      <main className="flex-1 overflow-y-auto p-8 min-w-0">
+        <div className="max-w-4xl space-y-8">
+          {/* TAB 1: Appearance */}
+          {activeTab === 'appearance' && (
+            <div className="space-y-6 animate-in fade-in duration-100">
+              <div>
+                <h1 className="font-primary font-bold text-base tracking-tight uppercase text-ink-primary">
+                  Apariencia & Cromatismo
+                </h1>
+                <p className="text-xs text-ink-secondary mt-0.5">
+                  Personaliza el entorno cromático de trabajo y la densidad de información en pantalla.
+                </p>
+              </div>
+
+              {/* Theme Palette */}
+              <section className="space-y-3">
+                <h2 className="font-primary font-semibold text-xs uppercase tracking-wider text-ink-secondary">
+                  Tema Visual
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {themeOptions.map((opt) => {
+                    const Icon = opt.icon;
+                    const isSelected = settings.themeMode === opt.mode;
+
+                    return (
+                      <button
+                        key={opt.mode}
+                        onClick={() => setThemeMode(opt.mode)}
+                        className={`p-4 rounded-xs border text-left flex flex-col justify-between transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-surface-lowest border-action ring-1 ring-action/50 shadow-xs'
+                            : 'bg-surface-lowest border-hairline hover:border-hairline-strong'
+                        }`}
+                      >
+                        <div className="mb-3">
+                          <div className="w-fit p-2 rounded-xs bg-surface-container border border-hairline text-action">
+                            <Icon className="w-4 h-4" />
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="font-primary font-bold text-xs uppercase tracking-wide text-ink-primary">
+                            {opt.label}
+                          </h3>
+                          <p className="text-[11px] text-ink-secondary mt-1 leading-relaxed">
+                            {opt.desc}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* Font Density */}
+              <section className="space-y-3 pt-4 border-t border-hairline">
+                <h2 className="font-primary font-semibold text-xs uppercase tracking-wider text-ink-secondary">
+                  Densidad de Interfaz
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {densityOptions.map((opt) => {
+                    const isSelected = settings.fontDensity === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => setFontDensity(opt.id)}
+                        className={`p-3.5 rounded-xs border text-left transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-surface-lowest border-action ring-1 ring-action/50 shadow-xs'
+                            : 'bg-surface-lowest border-hairline hover:border-hairline-strong'
+                        }`}
+                      >
+                        <h3 className="font-primary font-bold text-xs uppercase text-ink-primary">
+                          {opt.label}
+                        </h3>
+                        <p className="text-[11px] text-ink-secondary mt-1">
+                          {opt.desc}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* TAB 2: Viewport Defaults */}
+          {activeTab === 'viewport' && (
+            <div className="space-y-6 animate-in fade-in duration-100">
+              <div>
+                <h1 className="font-primary font-bold text-base tracking-tight uppercase text-ink-primary">
+                  Parámetros por Defecto del Visor 3D
+                </h1>
+                <p className="text-xs text-ink-secondary mt-0.5">
+                  Define el comportamiento inicial y las ayudas visuales activadas al abrir nuevas piezas.
+                </p>
+              </div>
+
+              <div className="bg-surface-lowest border border-hairline rounded-xs p-4 shadow-xs divide-y divide-hairline space-y-3">
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-primary font-bold text-xs uppercase text-ink-primary">
+                      Sombras de Contacto en el Suelo
+                    </span>
+                    <InfoTooltip content="Genera sombra volumétrica suave bajo la base del mobiliario." />
+                  </div>
+                  <Switch
+                    checked={settings.defaultContactShadows}
+                    onChange={(val) => updateSettings({ defaultContactShadows: val })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-primary font-bold text-xs uppercase text-ink-primary">
+                      Grilla Milimétrica de Referencia
+                    </span>
+                    <InfoTooltip content="Proyecta la cuadrícula métrica en el plano cero para verificar escala de fabricación." />
+                  </div>
+                  <Switch
+                    checked={settings.defaultGroundGrid}
+                    onChange={(val) => updateSettings({ defaultGroundGrid: val })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-primary font-bold text-xs uppercase text-ink-primary">
+                      Rotación Automática Suave
+                    </span>
+                    <InfoTooltip content="Inicia la cámara en giro continuo suave al cargar una pieza." />
+                  </div>
+                  <Switch
+                    checked={settings.defaultAutoRotate}
+                    onChange={(val) => updateSettings({ defaultAutoRotate: val })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-primary font-bold text-xs uppercase text-ink-primary">
+                      Formato de Instantáneas por Defecto
+                    </span>
+                    <InfoTooltip content="Formato predeterminado para pósters y capturas descargadas." />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => updateSettings({ defaultExportFormat: 'webp' })}
+                      className={`px-3 py-1 text-xs font-mono font-bold rounded-xs border transition-colors cursor-pointer ${
+                        settings.defaultExportFormat === 'webp'
+                          ? 'bg-action text-white border-action'
+                          : 'bg-surface-low text-ink-secondary border-hairline'
+                      }`}
+                    >
+                      WebP
+                    </button>
+                    <button
+                      onClick={() => updateSettings({ defaultExportFormat: 'png' })}
+                      className={`px-3 py-1 text-xs font-mono font-bold rounded-xs border transition-colors cursor-pointer ${
+                        settings.defaultExportFormat === 'png'
+                          ? 'bg-action text-white border-action'
+                          : 'bg-surface-low text-ink-secondary border-hairline'
+                      }`}
+                    >
+                      PNG
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: Keybinds Section */}
+          {activeTab === 'keybinds' && (
+            <div className="animate-in fade-in duration-100">
+              <KeybindsSection />
+            </div>
+          )}
+
+          {/* TAB 4: Storage */}
+          {activeTab === 'storage' && (
+            <div className="space-y-6 animate-in fade-in duration-100">
+              <div>
+                <h1 className="font-primary font-bold text-base tracking-tight uppercase text-ink-primary">
+                  Almacenamiento Local de la Biblioteca
+                </h1>
+                <p className="text-xs text-ink-secondary mt-0.5">
+                  Ubicación física en el disco duro donde se guardan modelos GLB, texturas y metadatos.
+                </p>
+              </div>
+
+              <div className="bg-surface-lowest border border-hairline rounded-xs p-4 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-primary font-semibold uppercase tracking-wider text-ink-secondary mb-1 flex items-center gap-1.5">
+                      <span>Directorio Base de la Biblioteca</span>
+                      <InfoTooltip
+                        content={
+                          <div className="space-y-1">
+                            <div className="font-semibold text-ink-primary">Estructura de Archivos Estandarizada:</div>
+                            <div className="font-mono text-[10px] space-y-0.5 text-ink-secondary">
+                              <div>• [slug]_model.glb: Geometría optimizada</div>
+                              <div>• [slug]_[slot].[ext]: Mapas PBR (baseColor, orm, normal)</div>
+                              <div>• [slug]_poster.webp: Instantánea 3D</div>
+                              <div>• entry.json: Configuración y metrología</div>
+                            </div>
+                          </div>
+                        }
+                        position="top"
+                        align="start"
+                        size="md"
+                      />
+                    </div>
+                    <div className="px-3 py-2 bg-surface-low border border-hairline rounded-xs font-mono text-xs text-ink-primary truncate select-all">
+                      {libraryPath || 'Cargando ruta del sistema...'}
                     </div>
                   </div>
-                  <div>
-                    <h3 className="font-primary font-bold text-xs uppercase tracking-wide text-ink-primary">
-                      {opt.label}
-                    </h3>
-                    <p className="text-[11px] text-ink-secondary font-body mt-1 leading-relaxed">
-                      {opt.desc}
-                    </p>
+
+                  <button
+                    onClick={handleOpenFolder}
+                    className="px-4 py-2 bg-surface-container hover:bg-surface-high text-ink-primary border border-hairline rounded-xs text-xs font-medium uppercase tracking-wider transition-colors flex items-center gap-2 shrink-0 self-start sm:self-end cursor-pointer"
+                  >
+                    <FolderOpen className="w-4 h-4 text-action" />
+                    <span>Revelar en Explorador</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: AI Providers */}
+          {activeTab === 'ai' && (
+            <div className="animate-in fade-in duration-100">
+              <AiProvidersSection />
+            </div>
+          )}
+
+          {/* TAB 6: System Info */}
+          {activeTab === 'system' && (
+            <div className="space-y-6 animate-in fade-in duration-100">
+              <div>
+                <h1 className="font-primary font-bold text-base tracking-tight uppercase text-ink-primary">
+                  Información del Sistema
+                </h1>
+                <p className="text-xs text-ink-secondary mt-0.5">
+                  Detalles del motor de renderizado, entorno de ejecución y metrología.
+                </p>
+              </div>
+
+              <div className="bg-surface-lowest border border-hairline rounded-xs p-5 shadow-xs space-y-4">
+                <div className="space-y-1 border-b border-hairline pb-4">
+                  <div className="font-primary font-bold uppercase tracking-wider text-ink-primary text-sm">
+                    Mirage Atelier 3D Workbench
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Section 2: Local Storage */}
-        <section className="space-y-3">
-          <div>
-            <h2 className="font-primary font-semibold text-xs uppercase tracking-wider text-ink-secondary">
-              Almacenamiento Local de la Biblioteca
-            </h2>
-            <p className="text-xs text-ink-tertiary">
-              Ubicación física en el disco duro donde se almacenan los modelos GLB, mapas PBR y metadata.
-            </p>
-          </div>
-
-          <div className="bg-surface-lowest border border-hairline rounded-xs p-4 shadow-xs space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-primary font-semibold uppercase tracking-wider text-ink-secondary mb-1">
-                  Ruta Absoluta del Directorio
+                  <div className="text-xs text-ink-secondary font-mono">
+                    Versión 1.0.0 • Build de Producción
+                  </div>
                 </div>
-                <div className="px-3 py-2 bg-surface-low border border-hairline rounded-xs font-mono text-xs text-ink-primary truncate select-all">
-                  {libraryPath || 'Cargando ruta del sistema...'}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="font-primary font-semibold text-ink-secondary uppercase text-[10px] block">
+                      Pipeline Gráfico 3D
+                    </span>
+                    <span className="font-mono text-ink-primary">
+                      Three.js r184 • WebGL2 • React Three Fiber
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="font-primary font-semibold text-ink-secondary uppercase text-[10px] block">
+                      Procesamiento de Texturas
+                    </span>
+                    <span className="font-mono text-ink-primary">
+                      Sharp ORM Packer 0.33 • Canvas 2D Fallback
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="font-primary font-semibold text-ink-secondary uppercase text-[10px] block">
+                      Entorno de Ejecución
+                    </span>
+                    <span className="font-mono text-ink-primary">
+                      Electron 34 • Node 22 • Chromium 132
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="font-primary font-semibold text-ink-secondary uppercase text-[10px] block">
+                      Directorio de Datos
+                    </span>
+                    <span className="font-mono text-ink-primary truncate block" title={libraryPath}>
+                      ~/.local/share/mirage/
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-hairline text-xs text-ink-tertiary">
+                  Diseñado para manufactura de mobiliario de alta gama, verificación dimensional y calibración de acabados PBR.
                 </div>
               </div>
-
-              <button
-                onClick={handleOpenFolder}
-                className="px-4 py-2 bg-surface-container hover:bg-surface-high text-ink-primary border border-hairline rounded-xs text-xs font-medium uppercase tracking-wider transition-colors flex items-center gap-2 shrink-0 self-start sm:self-end"
-              >
-                <FolderOpen className="w-4 h-4 text-action" />
-                <span>Revelar en Explorador</span>
-              </button>
             </div>
-
-            <div className="p-3 bg-surface-container/30 border border-hairline rounded-xs text-xs text-ink-secondary font-body space-y-1">
-              <div className="font-semibold text-ink-primary flex items-center gap-1.5">
-                <Info className="w-3.5 h-3.5 text-action" />
-                <span>Estructura de Archivos Estandarizada:</span>
-              </div>
-              <ul className="list-disc list-inside font-mono text-[11px] text-ink-tertiary space-y-0.5">
-                <li><span className="text-ink-secondary">[slug]_model.glb</span>: Geometría optimizada</li>
-                <li><span className="text-ink-secondary">[slug]_[slot].[ext]</span>: Mapas PBR (baseColor, orm, normal, etc.)</li>
-                <li><span className="text-ink-secondary">[slug]_poster.webp</span>: Instantánea 3D en alta resolución</li>
-                <li><span className="text-ink-secondary">entry.json</span>: Configuración, metrología y valores numéricos</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 3: 3D Viewport Defaults */}
-        <section className="space-y-3">
-          <div>
-            <h2 className="font-primary font-semibold text-xs uppercase tracking-wider text-ink-secondary">
-              Parámetros por Defecto del Visor 3D
-            </h2>
-            <p className="text-xs text-ink-tertiary">
-              Configura los valores iniciales de visualización y exportación técnica para nuevas sesiones.
-            </p>
-          </div>
-
-          <div className="bg-surface-lowest border border-hairline rounded-xs p-4 shadow-xs divide-y divide-hairline space-y-3">
-            <div className="flex items-center justify-between pt-1">
-              <div>
-                <span className="font-primary font-bold text-xs uppercase text-ink-primary">
-                  Sombras de Contacto en el Suelo
-                </span>
-                <p className="text-[11px] text-ink-secondary">
-                  Genera una sombra volumétrica suave bajo la base de la pieza de mobiliario.
-                </p>
-              </div>
-              <Switch
-                checked={settings.defaultContactShadows}
-                onChange={(val) => updateSettings({ defaultContactShadows: val })}
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-3">
-              <div>
-                <span className="font-primary font-bold text-xs uppercase text-ink-primary">
-                  Grilla Milimétrica de Referencia
-                </span>
-                <p className="text-[11px] text-ink-secondary">
-                  Proyecta la cuadrícula métrica en el plano cero para verificar escala de fabricación.
-                </p>
-              </div>
-              <Switch
-                checked={settings.defaultGroundGrid}
-                onChange={(val) => updateSettings({ defaultGroundGrid: val })}
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-3">
-              <div>
-                <span className="font-primary font-bold text-xs uppercase text-ink-primary">
-                  Rotación Automática Suave
-                </span>
-                <p className="text-[11px] text-ink-secondary">
-                  Inicia la cámara en giro continuo suave al cargar una pieza.
-                </p>
-              </div>
-              <Switch
-                checked={settings.defaultAutoRotate}
-                onChange={(val) => updateSettings({ defaultAutoRotate: val })}
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-3">
-              <div>
-                <span className="font-primary font-bold text-xs uppercase text-ink-primary">
-                  Formato de Instantáneas por Defecto
-                </span>
-                <p className="text-[11px] text-ink-secondary">
-                  Formato para pósters y capturas técnicas descargadas.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => updateSettings({ defaultExportFormat: 'webp' })}
-                  className={`px-2.5 py-1 text-xs font-mono font-bold rounded-xs border transition-colors ${
-                    settings.defaultExportFormat === 'webp'
-                      ? 'bg-action text-white border-action'
-                      : 'bg-surface-low text-ink-secondary border-hairline'
-                  }`}
-                >
-                  WebP
-                </button>
-                <button
-                  onClick={() => updateSettings({ defaultExportFormat: 'png' })}
-                  className={`px-2.5 py-1 text-xs font-mono font-bold rounded-xs border transition-colors ${
-                    settings.defaultExportFormat === 'png'
-                      ? 'bg-action text-white border-action'
-                      : 'bg-surface-low text-ink-secondary border-hairline'
-                  }`}
-                >
-                  PNG
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 4: Atelier System Info */}
-        <section className="pt-4 border-t border-hairline text-ink-tertiary text-xs font-body space-y-1">
-          <div className="font-primary font-bold uppercase tracking-wider text-ink-secondary text-[11px]">
-            Sera Atelier 3D Workbench • Versión 2.0 (Arquitectura Mirage)
-          </div>
-          <div>
-            Motor de Render: Three.js WebGL2 PBR Pipeline • Sharp ORM Packer 0.33
-          </div>
-          <div>
-            Diseñado para manufactura de precisión, carpintería técnica y tapicería de alto estándar.
-          </div>
-        </section>
-      </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 };

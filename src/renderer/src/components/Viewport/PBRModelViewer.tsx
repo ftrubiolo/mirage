@@ -39,9 +39,14 @@ export async function getSharedGltfLoader(): Promise<GLTFLoader> {
 interface PBRModelViewerProps {
   modelUrl: string;
   orbitControlsRef: React.MutableRefObject<any>;
+  isEmbeddedPreview?: boolean;
 }
 
-export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({ modelUrl, orbitControlsRef }) => {
+export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
+  modelUrl,
+  orbitControlsRef,
+  isEmbeddedPreview = false
+}) => {
   const { camera } = useThree();
   const [modelGroup, setModelGroup] = useState<THREE.Group | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,10 +67,19 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({ modelUrl, orbitC
     const tModelStart = performance.now();
     console.log(`[PERF: 3D VIEWER] Starting GLB load for: ${modelUrl}`);
 
-    setModelGroup(null);
     setLoading(true);
-    setIsModelLoading(true);
+    if (!isEmbeddedPreview) {
+      setIsModelLoading(true);
+    }
     setError(null);
+
+    // Safety watchdog timeout (6000ms): guarantees isModelLoading is never permanently stuck
+    const watchdog = setTimeout(() => {
+      if (!isEmbeddedPreview && !isCancelled) {
+        console.warn(`[PBRModelViewer] Watchdog triggered after 6000ms for ${modelUrl}. Clearing stuck loading overlay.`);
+        useWorkbenchStore.getState().setIsModelLoading(false);
+      }
+    }, 6000);
 
     async function loadModel() {
       try {
@@ -77,6 +91,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({ modelUrl, orbitC
         loader.load(
           modelUrl,
           (gltf) => {
+            clearTimeout(watchdog);
             if (isCancelled) return;
             const tGltfParsed = performance.now();
             console.log(`[PERF: 3D VIEWER] GLB binary fetched & parsed in ${(tGltfParsed - tLoaderReady).toFixed(1)}ms`);
@@ -129,36 +144,48 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({ modelUrl, orbitC
             }
 
             setModelGroup(scene);
-            viewportBridge.registerModel(scene);
+            if (!isEmbeddedPreview) {
+              viewportBridge.registerModel(scene);
+              setIsModelLoading(false);
+            }
             setLoading(false);
-            setIsModelLoading(false);
             console.log(`[PERF: 3D VIEWER] Model placed in scene in ${(performance.now() - tModelStart).toFixed(1)}ms`);
           },
           undefined,
           (err) => {
+            clearTimeout(watchdog);
             if (isCancelled) return;
             console.error(`[PERF: 3D VIEWER] Error loading model after ${(performance.now() - tModelStart).toFixed(1)}ms:`, err);
             setError('No se pudo cargar el modelo 3D. Verifica el archivo.');
             setLoading(false);
-            setIsModelLoading(false);
+            if (!isEmbeddedPreview) {
+              setIsModelLoading(false);
+            }
           }
         );
       } catch (err) {
+        clearTimeout(watchdog);
         if (isCancelled) return;
         console.error(`[PERF: 3D VIEWER] Loader init error after ${(performance.now() - tModelStart).toFixed(1)}ms:`, err);
         setError('Error al inicializar el visor 3D.');
         setLoading(false);
-        setIsModelLoading(false);
+        if (!isEmbeddedPreview) {
+          setIsModelLoading(false);
+        }
       }
     }
 
     loadModel();
 
     return () => {
+      clearTimeout(watchdog);
       isCancelled = true;
-      viewportBridge.registerModel(null);
+      if (!isEmbeddedPreview) {
+        viewportBridge.registerModel(null);
+        useWorkbenchStore.getState().setIsModelLoading(false);
+      }
     };
-  }, [modelUrl]);
+  }, [modelUrl, isEmbeddedPreview]);
 
   // Handle dynamic unit scale change (e.g. mm -> m or cm -> m)
   useEffect(() => {

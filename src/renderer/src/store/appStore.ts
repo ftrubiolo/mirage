@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { LibraryEntry } from '../types/library';
+import { useViewportStore } from './viewportStore';
 
-export type AppView = 'hub' | 'workbench' | 'library' | 'entryDetail' | 'settings';
+export type AppView = 'hub' | 'workbench' | 'library' | 'entryDetail' | 'settings' | 'agent';
 export type ThemeMode = 'dark' | 'light' | 'system';
 export type FontDensity = 'standard' | 'compact' | 'dense';
 
@@ -24,6 +25,12 @@ interface AppState {
   selectedEntryForDetail: LibraryEntry | null;
   isAutoSaving: boolean;
   lastAutoSavedAt: string | null;
+
+  workbenchSidebarWidth: number;
+  isWorkbenchSidebarCollapsed: boolean;
+  setWorkbenchSidebarWidth: (width: number) => void;
+  setWorkbenchSidebarCollapsed: (collapsed: boolean) => void;
+  toggleWorkbenchSidebar: () => void;
 
   setView: (view: AppView) => void;
   setSelectedEntryForDetail: (entry: LibraryEntry | null) => void;
@@ -61,6 +68,30 @@ const getStoredSettings = (): AppSettings => {
   return defaults;
 };
 
+const getStoredSidebarWidth = (): number => {
+  if (typeof window === 'undefined') return 460;
+  try {
+    const raw = localStorage.getItem('mirage-workbench-sidebar-width');
+    if (raw) {
+      const parsed = parseInt(raw, 10);
+      if (!isNaN(parsed) && parsed >= 340 && parsed <= 900) return parsed;
+    }
+  } catch (e) {
+    console.warn('Failed to parse mirage-workbench-sidebar-width:', e);
+  }
+  return 460;
+};
+
+const getStoredSidebarCollapsed = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  try {
+    return localStorage.getItem('mirage-workbench-sidebar-collapsed') === 'true';
+  } catch (e) {
+    console.warn('Failed to parse mirage-workbench-sidebar-collapsed:', e);
+  }
+  return false;
+};
+
 const resolveThemeClass = (mode: ThemeMode): 'dark' | 'light' => {
   if (typeof window === 'undefined') return 'dark';
   let resolved: 'dark' | 'light' = 'dark';
@@ -85,6 +116,47 @@ const applyDensityClass = (density: FontDensity) => {
   }
 };
 
+let appSettingsTimeout: any = null;
+const persistSettingsToFile = () => {
+  if (typeof window === 'undefined' || !window.electronAPI?.saveSettings) return;
+  clearTimeout(appSettingsTimeout);
+  appSettingsTimeout = setTimeout(async () => {
+    try {
+      const current = await window.electronAPI.loadSettings().catch(() => ({}));
+      const appSettings = useAppStore.getState().settings;
+      await window.electronAPI.saveSettings({
+        ...current,
+        ...appSettings
+      });
+    } catch (err) {
+      console.warn('[appStore] Error saving settings to disk:', err);
+    }
+  }, 400);
+};
+
+export const initSettingsFromFile = async () => {
+  if (typeof window !== 'undefined' && window.electronAPI?.loadSettings) {
+    try {
+      const data = await window.electronAPI.loadSettings();
+      if (data) {
+        useAppStore.getState().updateSettings({
+          themeMode: data.themeMode,
+          fontDensity: data.fontDensity,
+          defaultContactShadows: data.defaultContactShadows,
+          defaultGroundGrid: data.defaultGroundGrid,
+          defaultAutoRotate: data.defaultAutoRotate,
+          defaultExportFormat: data.defaultExportFormat
+        });
+        if (data.viewport) {
+          useViewportStore.getState().applyPersistedSettings(data.viewport);
+        }
+      }
+    } catch (err) {
+      console.warn('[appStore] Error loading settings from disk:', err);
+    }
+  }
+};
+
 const initialSettings = getStoredSettings();
 const initialResolvedTheme = resolveThemeClass(initialSettings.themeMode);
 applyDensityClass(initialSettings.fontDensity);
@@ -99,6 +171,33 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedEntryForDetail: null,
   isAutoSaving: false,
   lastAutoSavedAt: null,
+  workbenchSidebarWidth: getStoredSidebarWidth(),
+  isWorkbenchSidebarCollapsed: getStoredSidebarCollapsed(),
+
+  setWorkbenchSidebarWidth: (width: number) => {
+    const minWidth = 340;
+    const maxWidth = Math.max(minWidth, Math.min(840, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 380));
+    const clamped = Math.max(minWidth, Math.min(maxWidth, width));
+    try {
+      localStorage.setItem('mirage-workbench-sidebar-width', String(clamped));
+    } catch {}
+    set({ workbenchSidebarWidth: clamped });
+  },
+
+  setWorkbenchSidebarCollapsed: (collapsed: boolean) => {
+    try {
+      localStorage.setItem('mirage-workbench-sidebar-collapsed', String(collapsed));
+    } catch {}
+    set({ isWorkbenchSidebarCollapsed: collapsed });
+  },
+
+  toggleWorkbenchSidebar: () => {
+    const next = !get().isWorkbenchSidebarCollapsed;
+    try {
+      localStorage.setItem('mirage-workbench-sidebar-collapsed', String(next));
+    } catch {}
+    set({ isWorkbenchSidebarCollapsed: next });
+  },
 
   setView: (view: AppView) => set({ currentView: view }),
   setSelectedEntryForDetail: (entry: LibraryEntry | null) => set({ selectedEntryForDetail: entry }),
@@ -110,6 +209,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     localStorage.setItem('sera-app-settings', JSON.stringify(newSettings));
     const resolved = resolveThemeClass(mode);
     set({ settings: newSettings, resolvedTheme: resolved });
+    persistSettingsToFile();
   },
 
   setFontDensity: (density: FontDensity) => {
@@ -117,6 +217,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     localStorage.setItem('sera-app-settings', JSON.stringify(newSettings));
     applyDensityClass(density);
     set({ settings: newSettings });
+    persistSettingsToFile();
   },
 
   updateSettings: (partial: Partial<AppSettings>) => {
@@ -129,6 +230,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       applyDensityClass(partial.fontDensity);
     }
     set({ settings: newSettings });
+    persistSettingsToFile();
   },
 
   setLibraryPath: (path: string) => set({ libraryPath: path }),

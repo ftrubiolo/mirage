@@ -20,42 +20,41 @@ import { MapSlotPicker, getNextBaseColorTargetType, getNextSlotTargetType } from
 
 export { getNextBaseColorTargetType, getNextSlotTargetType };
 
-export const PbrMapsStudio: React.FC = () => {
-  const {
-    useOrmPack,
-    setUseOrmPack,
-    normalScale,
-    normalInvertY,
-    roughnessFactor,
-    metalnessFactor,
-    aoIntensity,
-    emissiveIntensity,
-    emissiveColor,
-    clearcoatFactor,
-    clearcoatRoughness,
-    sheenColor,
-    sheenRoughness,
-    transmissionFactor,
-    ior,
-    displacementScale,
-    setNormalScale,
-    setNormalInvertY,
-    setRoughnessFactor,
-    setMetalnessFactor,
-    setAoIntensity,
-    setEmissiveIntensity,
-    setEmissiveColor,
-    setClearcoatFactor,
-    setClearcoatRoughness,
-    setSheenColor,
-    setSheenRoughness,
-    setTransmissionFactor,
-    setIor,
-    setDisplacementScale,
-    openOrmPacker,
-    loadFromCache,
-    setLoadFromCache
-  } = useWorkbenchStore();
+export const PbrMapsStudio: React.FC = React.memo(() => {
+  const useOrmPack = useWorkbenchStore((s) => s.useOrmPack);
+  const setUseOrmPack = useWorkbenchStore((s) => s.setUseOrmPack);
+  const normalScale = useWorkbenchStore((s) => s.normalScale);
+  const normalInvertY = useWorkbenchStore((s) => s.normalInvertY);
+  const roughnessFactor = useWorkbenchStore((s) => s.roughnessFactor);
+  const metalnessFactor = useWorkbenchStore((s) => s.metalnessFactor);
+  const aoIntensity = useWorkbenchStore((s) => s.aoIntensity);
+  const emissiveIntensity = useWorkbenchStore((s) => s.emissiveIntensity);
+  const emissiveColor = useWorkbenchStore((s) => s.emissiveColor);
+  const clearcoatFactor = useWorkbenchStore((s) => s.clearcoatFactor);
+  const clearcoatRoughness = useWorkbenchStore((s) => s.clearcoatRoughness);
+  const sheenColor = useWorkbenchStore((s) => s.sheenColor);
+  const sheenRoughness = useWorkbenchStore((s) => s.sheenRoughness);
+  const transmissionFactor = useWorkbenchStore((s) => s.transmissionFactor);
+  const ior = useWorkbenchStore((s) => s.ior);
+  const displacementScale = useWorkbenchStore((s) => s.displacementScale);
+
+  const setNormalScale = useWorkbenchStore((s) => s.setNormalScale);
+  const setNormalInvertY = useWorkbenchStore((s) => s.setNormalInvertY);
+  const setRoughnessFactor = useWorkbenchStore((s) => s.setRoughnessFactor);
+  const setMetalnessFactor = useWorkbenchStore((s) => s.setMetalnessFactor);
+  const setAoIntensity = useWorkbenchStore((s) => s.setAoIntensity);
+  const setEmissiveIntensity = useWorkbenchStore((s) => s.setEmissiveIntensity);
+  const setEmissiveColor = useWorkbenchStore((s) => s.setEmissiveColor);
+  const setClearcoatFactor = useWorkbenchStore((s) => s.setClearcoatFactor);
+  const setClearcoatRoughness = useWorkbenchStore((s) => s.setClearcoatRoughness);
+  const setSheenColor = useWorkbenchStore((s) => s.setSheenColor);
+  const setSheenRoughness = useWorkbenchStore((s) => s.setSheenRoughness);
+  const setTransmissionFactor = useWorkbenchStore((s) => s.setTransmissionFactor);
+  const setIor = useWorkbenchStore((s) => s.setIor);
+  const setDisplacementScale = useWorkbenchStore((s) => s.setDisplacementScale);
+  const openOrmPacker = useWorkbenchStore((s) => s.openOrmPacker);
+  const loadFromCache = useWorkbenchStore((s) => s.loadFromCache);
+  const setLoadFromCache = useWorkbenchStore((s) => s.setLoadFromCache);
 
   return (
     <div className="space-y-4 text-ink-primary font-body select-none">
@@ -422,4 +421,4 @@ export const PbrMapsStudio: React.FC = () => {
       </MapSlotPicker>
     </div>
   );
-};
+});

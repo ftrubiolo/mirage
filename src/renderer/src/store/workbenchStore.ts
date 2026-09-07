@@ -323,7 +323,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     for (const slot of ALL_SLOT_NAMES) {
       const activeVarId = state.activeVariantIds[slot];
       const activeMapItem = state.mapVariants[slot]?.find((v) => v.id === activeVarId);
-      const m = activeMapItem || state[`${slot}Map` as SlotName];
+      const m = activeMapItem || (state as any)[`${slot}Map`];
       if (m?.filePath || m?.url) {
         currentMaps[slot] = {
           id: activeVarId || undefined,
@@ -685,7 +685,13 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
 
       // 4. Gather from data.maps fallback
       if (data.maps[slot]?.filePath || data.maps[slot]?.url) {
-        addUniqueMap(data.maps[slot]!);
+        const m = data.maps[slot]!;
+        addUniqueMap({
+          url: m.url || undefined,
+          filePath: m.filePath || undefined,
+          fileName: m.fileName || undefined,
+          fileSize: m.fileSize
+        });
       }
 
       initialVariants[slot] = collected;
@@ -768,7 +774,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       ...mapsObj,
       mapVariants: initialVariants,
       activeVariantIds: initialActiveIds,
-      slotEnabled: targetVarSlotEnabled,
+      slotEnabled: { ...createDefaultSlotEnabled(), ...targetVarSlotEnabled },
       colorways: initialVariants.baseColor.map((v) => ({
         id: v.id,
         name: v.name,

@@ -136,7 +136,7 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
     const store = useWorkbenchStore.getState();
 
     // If this entry is already open and loaded in the workbench, check if target variant needs switching
-    if (activeSlug === entry.slug && store.modelUrl && store.modelStats) {
+    if (activeSlug === entry.slug && store.modelUrl) {
       if (targetVariantId && targetVariantId !== store.activeVariantId) {
         store.selectVariant(targetVariantId);
       }
@@ -150,6 +150,11 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
     const modelFileSize = entry.modelFileSize || 0;
     if (entry.modelFilePath) {
       modelUrl = window.electronAPI.toAssetUrl(entry.modelFilePath);
+    }
+
+    // If model is already loaded and identical, ensure loading flag is off
+    if (!modelUrl || modelUrl === store.modelUrl) {
+      store.setIsModelLoading(false);
     }
 
     // Restore maps
@@ -206,7 +211,7 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
       }
       return {
         ...v,
-        posterUrl: v.posterFilePath ? window.electronAPI.toAssetUrl(v.posterFilePath) : v.posterUrl,
+        posterUrl: (v as any).posterFilePath ? window.electronAPI.toAssetUrl((v as any).posterFilePath) : v.posterUrl,
         maps: resolvedMaps
       };
     });
@@ -325,7 +330,7 @@ export const saveWorkbenchToLibrary = async (params: {
   ];
 
   for (const slot of slotNames) {
-    const defaultSlotMap = defaultVar?.maps?.[slot] || (store.activeVariantId === defaultVar?.id ? store[`${slot}Map` as SlotName] : null);
+    const defaultSlotMap = defaultVar?.maps?.[slot] || (store.activeVariantId === defaultVar?.id ? (store as any)[`${slot}Map`] : null);
     if (defaultSlotMap && defaultSlotMap.filePath) {
       mapsRecord[slot] = {
         fileName: defaultSlotMap.fileName || `${slot}.webp`,

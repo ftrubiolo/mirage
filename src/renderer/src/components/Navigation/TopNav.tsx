@@ -4,7 +4,8 @@ import {
   Library,
   Settings,
   BookmarkPlus,
-  Save
+  Save,
+  Sparkles
 } from 'lucide-react';
 import { useAppStore, AppView } from '../../store/appStore';
 import { useWorkbenchStore } from '../../store/workbenchStore';
@@ -14,7 +15,7 @@ interface TopNavProps {
   onOpenSaveModal?: () => void;
 }
 
-export const TopNav: React.FC<TopNavProps> = ({ onOpenSaveModal }) => {
+export const TopNav: React.FC<TopNavProps> = React.memo(({ onOpenSaveModal }) => {
   const {
     currentView,
     setView,
@@ -56,6 +57,7 @@ export const TopNav: React.FC<TopNavProps> = ({ onOpenSaveModal }) => {
   const navButtons: { id: AppView; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'workbench', label: 'Mesa de Trabajo 3D', icon: Box },
     { id: 'library', label: 'Biblioteca Técnica', icon: Library },
+    { id: 'agent', label: 'Estudio IA', icon: Sparkles },
     { id: 'settings', label: 'Configuración del Atelier', icon: Settings }
   ];
 
@@ -167,4 +169,4 @@ export const TopNav: React.FC<TopNavProps> = ({ onOpenSaveModal }) => {
       </div>
     </header>
   );
-};
+});

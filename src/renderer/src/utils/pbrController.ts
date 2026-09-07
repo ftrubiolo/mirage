@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { invalidateThumbnail } from '../components/UI/ThumbnailImage';
 
 const texturePromiseCache = new Map<string, Promise<THREE.Texture>>();
 const loadedTextureCache = new Map<string, THREE.Texture>();
@@ -49,6 +50,8 @@ export async function loadTextureAsync(url: string, isSRGB = false): Promise<THR
 export function invalidateTexture(url: string | null | undefined): void {
   if (!url) return;
   const cleanUrl = url.split('?')[0];
+
+  invalidateThumbnail(url);
 
   for (const [key, tex] of Array.from(loadedTextureCache.entries())) {
     if (key.startsWith(url) || key.startsWith(cleanUrl) || key.includes(cleanUrl)) {

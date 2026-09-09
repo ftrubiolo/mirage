@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Palette,
@@ -13,10 +13,10 @@ import { ExportStudio } from '../Export/ExportStudio';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { ResizeHandle, ResizeDragOverlay } from '../UI/ResizeHandle';
 import { useAppStore } from '../../store/appStore';
+import { useResizableSidebar } from '../../hooks/useResizableSidebar';
 
 export const WorkbenchView: React.FC = () => {
   const [workbenchTab, setWorkbenchTab] = useState<'maps' | 'model' | 'export'>('maps');
-  const [isDragging, setIsDragging] = useState(false);
 
   const {
     workbenchSidebarWidth,
@@ -26,54 +26,23 @@ export const WorkbenchView: React.FC = () => {
     toggleWorkbenchSidebar
   } = useAppStore();
 
-  const preDragWidthRef = useRef(workbenchSidebarWidth);
-
-  const handleResizeMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-
-    const startX = e.clientX;
-    const startWidth = useAppStore.getState().workbenchSidebarWidth;
-    preDragWidthRef.current = startWidth;
-
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      // Since sidebar is on the right, dragging mouse to the left increases width
-      const deltaX = startX - moveEvent.clientX;
-      const minWidth = 340;
-      const maxWidth = Math.max(minWidth, Math.min(840, window.innerWidth - 380));
-
-      if (startWidth + deltaX < minWidth - 60) {
-        if (!useAppStore.getState().isWorkbenchSidebarCollapsed) {
-          useAppStore.getState().setWorkbenchSidebarCollapsed(true);
-          useAppStore.getState().setWorkbenchSidebarWidth(preDragWidthRef.current);
-        }
-        return;
-      }
-
-      if (useAppStore.getState().isWorkbenchSidebarCollapsed && deltaX > 30) {
-        useAppStore.getState().setWorkbenchSidebarCollapsed(false);
-      }
-
-      const nextWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + deltaX));
-      useAppStore.getState().setWorkbenchSidebarWidth(nextWidth);
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      if (useAppStore.getState().isWorkbenchSidebarCollapsed) {
-        useAppStore.getState().setWorkbenchSidebarWidth(preDragWidthRef.current);
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const handleResetWidth = () => {
-    setWorkbenchSidebarWidth(460);
-  };
+  const {
+    width: sidebarWidth,
+    isDragging,
+    handleMouseDown: handleResizeMouseDown,
+    handleReset: handleResetWidth
+  } = useResizableSidebar({
+    defaultWidth: 460,
+    minWidth: 340,
+    maxWidth: () => Math.max(340, Math.min(840, window.innerWidth - 380)),
+    side: 'right',
+    width: workbenchSidebarWidth,
+    onWidthChange: setWorkbenchSidebarWidth,
+    collapsible: true,
+    isCollapsed: isWorkbenchSidebarCollapsed,
+    onCollapseChange: setWorkbenchSidebarCollapsed,
+    collapseThreshold: 60
+  });
 
   return (
     <div className="flex w-full h-full overflow-hidden relative">
@@ -97,7 +66,7 @@ export const WorkbenchView: React.FC = () => {
       {/* Right: Dedicated PBR Maps Studio Sidebar (Resizable & Collapsible) */}
       <aside
         style={{
-          width: isWorkbenchSidebarCollapsed ? 0 : `${workbenchSidebarWidth}px`
+          width: isWorkbenchSidebarCollapsed ? 0 : `${sidebarWidth}px`
         }}
         className={`border-l border-hairline bg-surface-lowest flex flex-col shrink-0 min-h-0 relative ${
           isDragging ? 'select-none' : ''

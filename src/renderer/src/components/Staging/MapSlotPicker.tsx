@@ -1,305 +1,22 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { FolderOpen, Plus, MoreVertical, Maximize2, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
 import { useWorkbenchStore, SlotName, MapVariantItem } from '../../store/workbenchStore';
 import { useAppStore } from '../../store/appStore';
-import { Switch } from '../UI/Switch';
 import { WebpConvertModal } from './WebpConvertModal';
-import { MapVariantContextMenu } from './MapVariantContextMenu';
 import { ImageLightboxModal } from '../UI/ImageLightboxModal';
 import { autoSaveActiveEntry } from '../../utils/libraryBridge';
 import { invalidateTexture } from '../../utils/pbrController';
-import { ThumbnailImage } from '../UI/ThumbnailImage';
+import { getNextSlotTargetType, getNextBaseColorTargetType } from './mapSlotNaming';
+import { MapVariantRowItem, MapVariantRowItemProps } from './MapVariantRowItem';
+import { MapSlotDropZone } from './MapSlotDropZone';
+import { MapSlotDeleteModal, MapSlotDeleteCandidate } from './MapSlotDeleteModal';
+import { MapSlotHeader } from './MapSlotHeader';
+
+// Re-export naming utilities and row item for full backward compatibility
+export { getNextSlotTargetType, getNextBaseColorTargetType };
+export { MapVariantRowItem };
+export type { MapVariantRowItemProps };
 
 const EMPTY_VARIANTS: MapVariantItem[] = [];
-
-export const getNextSlotTargetType = (
-  slot: SlotName,
-  existingVariants: MapVariantItem[],
-  slug: string
-): string => {
-  const hasBase = existingVariants.some((v) => {
-    const fn = v.fileName || '';
-    const name = v.name || '';
-    return (
-      fn.startsWith(`${slug}_${slot}.`) ||
-      fn === `${slug}_${slot}` ||
-      name === `${slug}_${slot}` ||
-      name === slot
-    );
-  });
-
-  if (!hasBase && existingVariants.length === 0) {
-    return slot;
-  }
-
-  let index = 2;
-  while (
-    existingVariants.some((v) => {
-      const fn = v.fileName || '';
-      const name = v.name || '';
-      return (
-        fn.startsWith(`${slug}_${slot}-${index}.`) ||
-        fn === `${slug}_${slot}-${index}` ||
-        name === `${slug}_${slot}-${index}` ||
-        name === `${slot}-${index}`
-      );
-    })
-  ) {
-    index++;
-  }
-  return `${slot}-${index}`;
-};
-
-export const getNextBaseColorTargetType = (existingVariants: MapVariantItem[], slug: string): string => {
-  return getNextSlotTargetType('baseColor', existingVariants, slug);
-};
-
-interface MapVariantRowItemProps {
-  slot: SlotName;
-  variant: MapVariantItem;
-  isActive: boolean;
-  allVariants: MapVariantItem[];
-  onSelect: () => void;
-  onOpenLightbox: (variant: MapVariantItem) => void;
-  onPickReplace: () => void;
-  onDropReplace: (filePath: string) => void;
-  onDelete: () => void;
-  onRename: (newName: string) => void;
-  onConvertToWebp?: () => void;
-  isConverting?: boolean;
-  dragOverKey: string | null;
-  setDragOverKey: (key: string | null) => void;
-}
-
-export const MapVariantRowItem: React.FC<MapVariantRowItemProps> = React.memo(({
-  slot,
-  variant,
-  isActive,
-  allVariants,
-  onSelect,
-  onOpenLightbox,
-  onPickReplace,
-  onDropReplace,
-  onDelete,
-  onRename,
-  onConvertToWebp,
-  isConverting = false,
-  dragOverKey,
-  setDragOverKey
-}) => {
-  const [nameVal, setNameVal] = useState(variant.name || variant.fileName);
-  const [hasError, setHasError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [contextMenu, setContextMenu] = useState<{ isOpen: boolean; x: number; y: number } | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const rowDropKey = `${slot}_var_${variant.id}`;
-  const isDragOver = dragOverKey === rowDropKey;
-
-  const isWebp = (variant.fileName || variant.filePath || '').toLowerCase().endsWith('.webp');
-
-  useEffect(() => {
-    setNameVal(variant.name || variant.fileName);
-    setHasError(false);
-    setErrorMessage('');
-  }, [variant.name, variant.fileName]);
-
-  const validateName = (val: string): { valid: boolean; error: string } => {
-    const trimmed = val.trim();
-    if (!trimmed) {
-      return { valid: false, error: 'El nombre no puede estar vacío' };
-    }
-    const isDuplicate = allVariants.some(
-      (other) => other.id !== variant.id && other.name.trim().toLowerCase() === trimmed.toLowerCase()
-    );
-    if (isDuplicate) {
-      return { valid: false, error: 'Ya existe una variante con este nombre' };
-    }
-    return { valid: true, error: '' };
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVal = e.target.value;
-    setNameVal(newVal);
-    const { valid, error } = validateName(newVal);
-    if (!valid) {
-      setHasError(true);
-      setErrorMessage(error);
-    } else {
-      setHasError(false);
-      setErrorMessage('');
-    }
-  };
-
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const { valid, error } = validateName(nameVal);
-    if (!valid) {
-      e.preventDefault();
-      inputRef.current?.focus();
-      setHasError(true);
-      setErrorMessage(error);
-      return;
-    }
-
-    const trimmed = nameVal.trim();
-    if (trimmed !== variant.name) {
-      onRename(trimmed);
-    }
-    setHasError(false);
-    setErrorMessage('');
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      const { valid } = validateName(nameVal);
-      if (valid) {
-        inputRef.current?.blur();
-      }
-    } else if (e.key === 'Escape') {
-      setNameVal(variant.name || variant.fileName);
-      setHasError(false);
-      setErrorMessage('');
-      inputRef.current?.blur();
-    }
-  };
-
-  const handleThumbnailClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isActive) {
-      onOpenLightbox(variant);
-    } else {
-      onSelect();
-    }
-  };
-
-  const handleStartRename = () => {
-    setTimeout(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    }, 50);
-  };
-
-  return (
-    <>
-      <div
-        onClick={onSelect}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setContextMenu({ isOpen: true, x: e.clientX, y: e.clientY });
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOverKey(rowDropKey);
-        }}
-        onDragLeave={() => setDragOverKey(null)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOverKey(null);
-          if (e.dataTransfer.files.length > 0) {
-            const filePath = window.electronAPI.getPathForFile(e.dataTransfer.files[0]);
-            if (filePath) onDropReplace(filePath);
-          }
-        }}
-        className={`p-2.5 rounded-xs border transition-all flex items-center justify-between gap-3 cursor-pointer group ${
-          isDragOver
-            ? 'border-action bg-action-subtle'
-            : isActive
-            ? 'border-action bg-action/10 ring-1 ring-action/50 shadow-xs'
-            : 'border-hairline bg-surface-low/50 hover:border-hairline-strong hover:bg-surface-low'
-        }`}
-      >
-        <div className="flex items-center gap-3 truncate min-w-0 flex-1">
-          <div
-            onClick={handleThumbnailClick}
-            title={isActive ? 'Clic para inspeccionar textura (Zoom & Pan)' : 'Clic para seleccionar variante'}
-            className={`relative group/thumb shrink-0 rounded-xs overflow-hidden ${
-              isActive ? 'cursor-zoom-in' : 'cursor-pointer'
-            }`}
-          >
-            <ThumbnailImage
-              src={variant.url}
-              alt={variant.name}
-              className={`w-10 h-10 rounded-xs border shrink-0 transition-all ${
-                isActive ? 'border-action ring-1 ring-action/40' : 'border-hairline bg-surface-container'
-              }`}
-            />
-            {isActive && (
-              <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/35 rounded-xs transition-colors flex items-center justify-center pointer-events-none opacity-0 group-hover/thumb:opacity-100">
-                <Maximize2 className="w-3.5 h-3.5 text-white drop-shadow" />
-              </div>
-            )}
-          </div>
-          <div className="truncate min-w-0 flex-1 space-y-0.5">
-            <div className="relative">
-              <input
-                ref={inputRef}
-                type="text"
-                value={nameVal}
-                onClick={(e) => e.stopPropagation()}
-                onChange={handleInputChange}
-                onBlur={handleBlur}
-                onKeyDown={handleKeyDown}
-                title={hasError ? errorMessage : 'Haz clic para renombrar'}
-                className={`text-xs font-mono tabular-nums font-medium block truncate w-full px-1.5 py-0.5 rounded-xs outline-none transition-colors ${
-                  hasError
-                    ? 'border border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                    : isActive
-                    ? 'border border-transparent hover:border-action/40 focus:border-action focus:bg-surface-lowest text-ink-primary font-semibold'
-                    : 'border border-transparent hover:border-hairline focus:border-action focus:bg-surface-lowest text-ink-secondary hover:text-ink-primary'
-                }`}
-              />
-              {hasError && (
-                <span className="text-[10px] text-rose-500 font-sans block px-1.5 mt-0.5">
-                  {errorMessage}
-                </span>
-              )}
-            </div>
-            <span className="text-[10px] text-ink-tertiary block px-1.5 truncate">
-              {variant.fileName || 'WebP / PNG / JPG'}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              setContextMenu({
-                isOpen: true,
-                x: rect.right,
-                y: rect.bottom + 4
-              });
-            }}
-            className={`p-1.5 rounded-xs transition-all cursor-pointer ${
-              contextMenu?.isOpen
-                ? 'bg-surface-high text-ink-primary opacity-100'
-                : 'text-ink-tertiary hover:text-ink-primary hover:bg-surface-high opacity-0 group-hover:opacity-100'
-            }`}
-            title="Opciones de variante (o clic derecho)"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {contextMenu?.isOpen && (
-        <MapVariantContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          isOpen={contextMenu.isOpen}
-          onClose={() => setContextMenu(null)}
-          variant={variant}
-          isActive={isActive}
-          onOpenLightbox={() => onOpenLightbox(variant)}
-          onPickReplace={onPickReplace}
-          onConvertToWebp={onConvertToWebp}
-          onStartRename={handleStartRename}
-          onDelete={onDelete}
-        />
-      )}
-    </>
-  );
-});
 
 export interface MapSlotPickerProps {
   slot: SlotName;
@@ -346,10 +63,7 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [webpConvertVariant, setWebpConvertVariant] = useState<MapVariantItem | null>(null);
   const [lightboxVariant, setLightboxVariant] = useState<MapVariantItem | null>(null);
-  const [deleteCandidate, setDeleteCandidate] = useState<{
-    variant: MapVariantItem;
-    affectedVariants: any[];
-  } | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<MapSlotDeleteCandidate | null>(null);
 
   const handleDeleteRequest = (v: MapVariantItem) => {
     const affected = (entryVariants || []).filter((entryVar) => {
@@ -430,12 +144,10 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
     const fileInfo = await window.electronAPI.getFileInfo(filePath);
     const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
 
-    // Invalidate the old texture from Three.js memory cache immediately
     if (variant.url) {
       invalidateTexture(variant.url);
     }
 
-    // Derive targetType from existing fileName or name
     let targetType: string = slot;
     const match = variant.fileName?.match(new RegExp(`^${activeSlug}_(${slot}(?:-\\d+)?)\\.`));
     if (match && match[1]) {
@@ -557,50 +269,21 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
   const content = (
     <div className="space-y-3">
       {variants.length === 0 ? (
-        /* Empty Slot Zone (0 Variants) */
-        <div
+        <MapSlotDropZone
+          isAddZone={false}
+          icon={icon}
+          label={loadFromCache ? 'Textura embebida en .glb (Arrastra para sobrescribir)' : placeholderText}
+          sublabel={loadFromCache ? 'Caché del binario activo' : subText}
+          isDragOver={isEmptyDragOver}
           onDragOver={(e) => {
             e.preventDefault();
             setDragOverKey(slotDropKey);
           }}
           onDragLeave={() => setDragOverKey(null)}
           onDrop={handleDropAdd}
-          onClick={handlePickAdd}
-          className={`p-2.5 rounded-xs border border-dashed transition-colors flex items-center justify-between gap-3 cursor-pointer group ${
-            isEmptyDragOver
-              ? 'border-action bg-action-subtle'
-              : 'border-hairline hover:border-action/60 bg-surface-low/50 hover:bg-action-subtle/30'
-          }`}
-        >
-          <div className="flex items-center gap-3 truncate min-w-0">
-            <div className="w-10 h-10 rounded-xs border border-dashed border-hairline group-hover:border-action/60 flex items-center justify-center text-ink-tertiary group-hover:text-action transition-colors shrink-0">
-              {icon}
-            </div>
-            <div className="truncate min-w-0">
-              <span className="text-xs font-mono tabular-nums font-medium text-ink-primary group-hover:text-action block truncate transition-colors">
-                {loadFromCache ? 'Textura embebida en .glb (Arrastra para sobrescribir)' : placeholderText}
-              </span>
-              <span className="text-[10px] text-ink-tertiary block truncate">
-                {loadFromCache ? 'Caché del binario activo' : subText}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePickAdd();
-              }}
-              className="p-1.5 rounded-xs bg-surface-container hover:bg-surface-high text-ink-secondary hover:text-ink-primary text-xs transition-colors border border-hairline cursor-pointer"
-              title="Explorar archivo"
-            >
-              <FolderOpen className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+          onPick={handlePickAdd}
+        />
       ) : (
-        /* Multiple Variants List */
         <div className="space-y-2">
           {variants.map((v) => (
             <MapVariantRowItem
@@ -625,48 +308,19 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
             />
           ))}
 
-          {/* Dotted "Añadir Variante" Drop Zone */}
-          <div
+          <MapSlotDropZone
+            isAddZone={true}
+            label={addVariantLabel || (slot === 'baseColor' ? 'Añadir Colorway (Arrastra imagen aquí)' : 'Añadir Variante (Arrastra imagen aquí)')}
+            sublabel={addVariantSubtext || (slot === 'baseColor' ? 'Variante de Textura BaseColor • WebP / PNG / JPG' : subText)}
+            isDragOver={isAddDragOver}
             onDragOver={(e) => {
               e.preventDefault();
               setDragOverKey(addDropKey);
             }}
             onDragLeave={() => setDragOverKey(null)}
             onDrop={handleDropAdd}
-            onClick={handlePickAdd}
-            className={`p-2.5 rounded-xs border border-dashed transition-colors flex items-center justify-between gap-3 cursor-pointer group ${
-              isAddDragOver
-                ? 'border-action bg-action-subtle'
-                : 'border-hairline hover:border-action/60 bg-surface-low/50 hover:bg-action-subtle/30'
-            }`}
-          >
-            <div className="flex items-center gap-3 truncate min-w-0">
-              <div className="w-10 h-10 rounded-xs border border-dashed border-hairline group-hover:border-action/60 flex items-center justify-center text-ink-tertiary group-hover:text-action transition-colors shrink-0">
-                <Plus className="w-5 h-5" />
-              </div>
-              <div className="truncate min-w-0">
-                <span className="text-xs font-mono tabular-nums font-medium text-ink-primary group-hover:text-action block truncate transition-colors">
-                  {addVariantLabel || (slot === 'baseColor' ? 'Añadir Colorway (Arrastra imagen aquí)' : 'Añadir Variante (Arrastra imagen aquí)')}
-                </span>
-                <span className="text-[10px] text-ink-tertiary block truncate">
-                  {addVariantSubtext || (slot === 'baseColor' ? 'Variante de Textura BaseColor • WebP / PNG / JPG' : subText)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePickAdd();
-                }}
-                className="p-1.5 rounded-xs bg-surface-container hover:bg-surface-high text-ink-secondary hover:text-ink-primary text-xs transition-colors border border-hairline cursor-pointer"
-                title="Explorar archivo"
-              >
-                <FolderOpen className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+            onPick={handlePickAdd}
+          />
         </div>
       )}
 
@@ -689,115 +343,27 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
       />
 
       {/* Cross-Variant Deletion Safeguard Modal */}
-      {deleteCandidate && (
-        <div
-          onClick={() => setDeleteCandidate(null)}
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 cursor-pointer"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-surface-lowest border border-hairline-strong rounded-xs shadow-2xl w-full max-w-md p-5 space-y-4 cursor-default animate-in fade-in zoom-in-95 duration-100"
-          >
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-amber-500/10 border border-amber-500/30 text-amber-600 rounded-xs shrink-0 mt-0.5">
-                <AlertCircle className="w-5 h-5" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-primary font-bold text-sm uppercase text-ink-primary">
-                  ¿Eliminar mapa en uso por otros perfiles?
-                </h3>
-                <p className="text-xs text-ink-secondary font-body leading-relaxed">
-                  El mapa <span className="font-mono text-ink-primary font-semibold">{deleteCandidate.variant.name || deleteCandidate.variant.fileName}</span> está siendo utilizado en los siguientes perfiles de esta pieza:
-                </p>
-                <div className="flex flex-wrap gap-1.5 pt-1.5">
-                  {deleteCandidate.affectedVariants.map((aff) => (
-                    <span
-                      key={aff.id}
-                      className="px-2 py-0.5 bg-surface-low border border-hairline rounded-xs text-[11px] font-medium text-ink-primary"
-                    >
-                      {aff.name}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-[11px] text-ink-tertiary pt-1">
-                  Si confirmas la eliminación, este mapa se desvinculará de la pieza.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-2 flex items-center justify-end gap-2 border-t border-hairline">
-              <button
-                onClick={() => setDeleteCandidate(null)}
-                className="px-3 py-1.5 border border-hairline rounded-xs text-xs uppercase tracking-wider text-ink-secondary hover:text-ink-primary hover:bg-surface-container transition-colors cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmDeleteCandidate}
-                className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xs text-xs font-primary font-semibold uppercase tracking-wider shadow-xs transition-colors cursor-pointer"
-              >
-                Eliminar de Todos Modos
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <MapSlotDeleteModal
+        deleteCandidate={deleteCandidate}
+        onClose={() => setDeleteCandidate(null)}
+        onConfirm={handleConfirmDeleteCandidate}
+      />
 
       {children}
     </div>
   );
 
-  if (!embeddedInSection) {
-    return (
-      <div className="space-y-2 p-2.5 rounded-xs bg-surface-low/30 border border-hairline">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="shrink-0 flex items-center justify-center text-action">
-              {icon}
-            </div>
-            <span className="text-xs font-semibold text-ink-primary uppercase tracking-wider font-primary truncate">
-              {title}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {headerExtra}
-            <Switch
-              checked={isEnabled}
-              onChange={(checked) => setSlotEnabled(slot, checked)}
-              title={isEnabled ? 'Desactivar mapa (forzar null)' : 'Activar mapa'}
-            />
-          </div>
-        </div>
-        <div className={`transition-opacity duration-200 ${!isEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
-          {content}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-3.5 rounded-xs bg-surface-lowest border border-hairline space-y-3 shadow-xs">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="shrink-0 flex items-center justify-center text-action">
-            {icon}
-          </div>
-          <h3 className="text-xs font-semibold text-ink-primary uppercase tracking-wider font-primary truncate">
-            {title}
-          </h3>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {headerExtra}
-          <Switch
-            checked={isEnabled}
-            onChange={(checked) => setSlotEnabled(slot, checked)}
-            title={isEnabled ? 'Desactivar mapa (forzar null)' : 'Activar mapa'}
-          />
-        </div>
-      </div>
-      <div className={`transition-opacity duration-200 ${!isEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
-        {content}
-      </div>
-    </div>
+    <MapSlotHeader
+      slot={slot}
+      title={title}
+      icon={icon}
+      isEnabled={isEnabled}
+      onToggleEnabled={(checked) => setSlotEnabled(slot, checked)}
+      headerExtra={headerExtra}
+      embeddedInSection={embeddedInSection}
+    >
+      {content}
+    </MapSlotHeader>
   );
 });

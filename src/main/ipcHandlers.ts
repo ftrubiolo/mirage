@@ -12,6 +12,7 @@ import {
 } from './platform';
 import { storeSecret, retrieveSecret, hasSecret, deleteSecret } from './vault';
 import { MCPClientManager, McpServerConfig } from './mcp/MCPClientManager';
+import { SettingsService } from './settingsService';
 
 const mcpManager = new MCPClientManager();
 mcpManager.initialize().catch((err) => console.warn('[Main] MCPClientManager init error:', err));
@@ -171,29 +172,6 @@ const DEFAULT_KEYBINDS: Record<string, string> = {
   'lighting.presetTechnical': 'Alt+4'
 };
 
-const DEFAULT_SETTINGS = {
-  themeMode: 'dark',
-  fontDensity: 'standard',
-  defaultContactShadows: true,
-  defaultGroundGrid: true,
-  defaultAutoRotate: false,
-  defaultExportFormat: 'webp',
-  viewport: {
-    viewportTheme: 'dark',
-    environmentPreset: 'city',
-    lightingPreset: 'studio',
-    sunAzimuth: 45,
-    sunElevation: 45,
-    keyLightIntensity: 1.2,
-    ambientLightIntensity: 0.6,
-    fillLightIntensity: 0.4,
-    environmentIntensity: 1.0,
-    directionalShadows: true,
-    contactShadowOpacity: 0.4,
-    cameraFov: 50,
-    isOrthographic: false
-  }
-};
 
   // --- Mirage Atelier Library IPC Handlers ---
 
@@ -513,35 +491,38 @@ const DEFAULT_SETTINGS = {
     return getKeybindsPath();
   });
 
-  ipcMain.handle('settings:load', async () => {
-    await ensureMirageDir();
-    const filePath = getSettingsPath();
-    try {
-      const raw = await fs.readFile(filePath, 'utf-8');
-      const loaded = JSON.parse(raw);
-      return {
-        ...DEFAULT_SETTINGS,
-        ...loaded,
-        viewport: {
-          ...DEFAULT_SETTINGS.viewport,
-          ...(loaded.viewport || {})
-        }
-      };
-    } catch {
-      await fs.writeFile(filePath, JSON.stringify(DEFAULT_SETTINGS, null, 2), 'utf-8');
-      return DEFAULT_SETTINGS;
-    }
-  });
+  // --- Settings Persistence via SettingsService (Atomic, debounced, mutex-serialized) ---
+  const settingsService = SettingsService.getInstance();
 
-  ipcMain.handle('settings:save', async (_event, settings: any) => {
+  const handleSettingsLoad = async () => {
     await ensureMirageDir();
-    const filePath = getSettingsPath();
-    await fs.writeFile(filePath, JSON.stringify(settings, null, 2), 'utf-8');
-    return true;
-  });
+    return settingsService.loadSettings();
+  };
 
-  ipcMain.handle('settings:getPath', () => {
-    return getSettingsPath();
-  });
+  const handleSettingsSave = async (_event: any, settings: any) => {
+    await ensureMirageDir();
+    return settingsService.saveSettings(settings);
+  };
+
+  const handleSettingsUpdate = async (_event: any, partial: any) => {
+    await ensureMirageDir();
+    return settingsService.updateSettings(partial);
+  };
+
+  const handleSettingsGetPath = () => {
+    return settingsService.getSettingsPath();
+  };
+
+  ipcMain.handle('settings:load', handleSettingsLoad);
+  ipcMain.handle('mirage:settings:load', handleSettingsLoad);
+
+  ipcMain.handle('settings:save', handleSettingsSave);
+  ipcMain.handle('mirage:settings:save', handleSettingsSave);
+
+  ipcMain.handle('settings:update', handleSettingsUpdate);
+  ipcMain.handle('mirage:settings:update', handleSettingsUpdate);
+
+  ipcMain.handle('settings:getPath', handleSettingsGetPath);
+  ipcMain.handle('mirage:settings:getPath', handleSettingsGetPath);
 }
 

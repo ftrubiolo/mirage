@@ -6,9 +6,17 @@ interface ViewportBridge {
   scene: THREE.Scene | null;
   camera: THREE.Camera | null;
   modelGroup: THREE.Object3D | null;
+  listeners: Set<() => void>;
   register: (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) => void;
   registerModel: (model: THREE.Object3D | null) => void;
   unregister: () => void;
+  subscribe: (listener: () => void) => () => void;
+  notify: () => void;
+  isInitialized: () => boolean;
+  renderPreview: (targetCanvas: HTMLCanvasElement) => boolean;
+  orbit: (deltaX: number, deltaY: number) => void;
+  resetCamera: () => void;
+  zoom: (delta: number) => void;
 }
 
 export const viewportBridge: ViewportBridge = {
@@ -16,19 +24,127 @@ export const viewportBridge: ViewportBridge = {
   scene: null,
   camera: null,
   modelGroup: null,
+  listeners: new Set(),
   register(gl, scene, camera) {
     this.gl = gl;
     this.scene = scene;
     this.camera = camera;
+    this.notify();
   },
   registerModel(model) {
     this.modelGroup = model;
+    this.notify();
   },
   unregister() {
     this.gl = null;
     this.scene = null;
     this.camera = null;
     this.modelGroup = null;
+    this.notify();
+  },
+  subscribe(listener: () => void) {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  },
+  notify() {
+    this.listeners.forEach((fn) => {
+      try {
+        fn();
+      } catch (err) {
+        console.warn('[viewportBridge] listener error:', err);
+      }
+    });
+  },
+  isInitialized() {
+    return Boolean(this.gl && this.scene && this.camera);
+  },
+  renderPreview(targetCanvas: HTMLCanvasElement): boolean {
+    if (!this.gl || !this.scene || !this.camera) {
+      return false;
+    }
+    try {
+      this.gl.render(this.scene, this.camera);
+      const srcCanvas = this.gl.domElement;
+      const ctx = targetCanvas.getContext('2d');
+      if (!ctx) return false;
+
+      const dpr = window.devicePixelRatio || 1;
+      const width = targetCanvas.clientWidth || targetCanvas.width || 260;
+      const height = targetCanvas.clientHeight || targetCanvas.height || 260;
+
+      if (targetCanvas.width !== width * dpr || targetCanvas.height !== height * dpr) {
+        targetCanvas.width = width * dpr;
+        targetCanvas.height = height * dpr;
+      }
+
+      ctx.save();
+      ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+      ctx.drawImage(srcCanvas, 0, 0, targetCanvas.width, targetCanvas.height);
+      ctx.restore();
+      return true;
+    } catch (err) {
+      console.warn('[viewportBridge] renderPreview error:', err);
+      return false;
+    }
+  },
+  orbit(deltaX: number, deltaY: number) {
+    if (!this.camera) return;
+    const target = new THREE.Vector3(0, 0.5, 0);
+    if (this.modelGroup) {
+      const box = new THREE.Box3().setFromObject(this.modelGroup);
+      box.getCenter(target);
+    }
+    const offset = new THREE.Vector3().subVectors(this.camera.position, target);
+    const radius = Math.max(offset.length(), 0.5);
+    let theta = Math.atan2(offset.x, offset.z);
+    let phi = Math.acos(Math.min(Math.max(offset.y / radius, -1), 1));
+
+    theta += deltaX;
+    phi = Math.max(0.05, Math.min(Math.PI / 2 + 0.05, phi + deltaY));
+
+    offset.x = radius * Math.sin(phi) * Math.sin(theta);
+    offset.y = radius * Math.cos(phi);
+    offset.z = radius * Math.sin(phi) * Math.cos(theta);
+
+    this.camera.position.copy(target).add(offset);
+    this.camera.lookAt(target);
+    this.camera.updateMatrixWorld();
+    this.notify();
+  },
+  resetCamera() {
+    if (!this.camera) return;
+    const target = new THREE.Vector3(0, 0.5, 0);
+    let fitDist = 2.5;
+    if (this.modelGroup) {
+      const box = new THREE.Box3().setFromObject(this.modelGroup);
+      box.getCenter(target);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      const maxDim = Math.max(size.x, size.y, size.z, 0.2);
+      fitDist = maxDim * 1.8;
+    }
+    this.camera.position.set(target.x, target.y + fitDist * 0.4, target.z + fitDist);
+    this.camera.lookAt(target);
+    this.camera.updateMatrixWorld();
+    this.notify();
+  },
+  zoom(delta: number) {
+    if (!this.camera) return;
+    const target = new THREE.Vector3(0, 0.5, 0);
+    if (this.modelGroup) {
+      const box = new THREE.Box3().setFromObject(this.modelGroup);
+      box.getCenter(target);
+    }
+    const offset = new THREE.Vector3().subVectors(this.camera.position, target);
+    const currentDist = offset.length();
+    const newDist = Math.max(0.5, Math.min(30, currentDist * (1 + delta)));
+    offset.setLength(newDist);
+    this.camera.position.copy(target).add(offset);
+    this.camera.lookAt(target);
+    this.camera.updateMatrixWorld();
+    this.notify();
   }
 };
 

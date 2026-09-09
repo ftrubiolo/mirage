@@ -5,7 +5,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { useThree } from '@react-three/fiber';
 import { useWorkbenchStore } from '../../store/workbenchStore';
 import { useViewportStore } from '../../store/viewportStore';
-import { applyPbrState } from '../../utils/pbrController';
+import { applyPbrState, applyPbrTextures, applyPbrUniforms } from '../../utils/pbrController';
 import { analyzeGlbHierarchy } from '../../utils/glbValidator';
 import { viewportBridge } from '../../utils/viewportBridge';
 
@@ -258,7 +258,45 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     debugChannel
   } = useWorkbenchStore();
 
-  // Apply PBR texture maps and material parameters in real-time
+  // Dynamic PBR uniform updates: synchronous, zero recompilation, 60 FPS slider response
+  useEffect(() => {
+    if (!modelGroup) return;
+
+    applyPbrUniforms(modelGroup, {
+      roughness: roughnessFactor,
+      metalness: metalnessFactor,
+      normalScale,
+      normalInvertY,
+      aoMapIntensity: aoIntensity,
+      emissiveIntensity,
+      emissive: emissiveColor,
+      clearcoat: clearcoatFactor,
+      clearcoatRoughness,
+      sheenColor,
+      sheenRoughness,
+      transmission: transmissionFactor,
+      ior,
+      displacementScale
+    });
+  }, [
+    modelGroup,
+    roughnessFactor,
+    metalnessFactor,
+    normalScale,
+    normalInvertY,
+    aoIntensity,
+    emissiveIntensity,
+    emissiveColor,
+    clearcoatFactor,
+    clearcoatRoughness,
+    sheenColor,
+    sheenRoughness,
+    transmissionFactor,
+    ior,
+    displacementScale
+  ]);
+
+  // Texture maps and structural PBR updates: asynchronous, recompiles shaders ONLY on structural changes
   useEffect(() => {
     if (!modelGroup) return;
 
@@ -266,7 +304,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
       .filter(([_, enabled]) => !enabled)
       .map(([slot]) => slot);
 
-    applyPbrState({
+    applyPbrTextures({
       model: modelGroup,
       baseColorUrl: baseColorMap.url,
       normalUrl: normalMap.url,
@@ -315,20 +353,6 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     alphaMap.url,
     displacementMap.url,
     useOrmPack,
-    normalScale,
-    normalInvertY,
-    roughnessFactor,
-    metalnessFactor,
-    aoIntensity,
-    emissiveIntensity,
-    emissiveColor,
-    clearcoatFactor,
-    clearcoatRoughness,
-    sheenColor,
-    sheenRoughness,
-    transmissionFactor,
-    ior,
-    displacementScale,
     loadFromCache,
     slotEnabled,
     debugChannel,

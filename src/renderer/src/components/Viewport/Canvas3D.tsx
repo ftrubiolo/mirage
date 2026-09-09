@@ -332,13 +332,14 @@ export const Canvas3D: React.FC = React.memo(() => {
 
         <OrbitControls
           ref={orbitControlsRef}
-          autoRotate={autoRotate}
+          autoRotate={autoRotate && currentView === 'workbench'}
           autoRotateSpeed={0.7}
           enableDamping
           dampingFactor={0.05}
           maxPolarAngle={Math.PI / 2 + 0.05}
           minDistance={0.5}
           maxDistance={15}
+          onChange={() => viewportBridge.notify()}
         />
       </Canvas>
 

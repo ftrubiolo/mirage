@@ -90,7 +90,7 @@ export const SessionStatsFooter: React.FC = () => {
       {/* 4. Execution Mode */}
       <span className="flex items-center gap-1">
         <span
-          className={`w-1.5 h-1.5 rounded-full ${
+          className={`w-1.5 h-1.5 rounded-xs ${
             permissionMode === 'auto-apply' ? 'bg-emerald-400' : 'bg-amber-400'
           }`}
         />

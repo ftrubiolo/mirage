@@ -53,7 +53,7 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
         </span>
         <button
           onClick={() => createSession()}
-          className="p-1 hover:bg-surface-high rounded text-ink-secondary hover:text-ink-primary transition-colors cursor-pointer"
+          className="p-1 hover:bg-surface-high rounded-xs text-ink-secondary hover:text-ink-primary transition-colors cursor-pointer"
           title="Crear nueva sesión de chat"
         >
           <Plus className="w-4 h-4" />
@@ -68,7 +68,7 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
             <div
               key={s.id}
               onClick={() => switchSession(s.id)}
-              className={`group flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
+              className={`group flex items-center justify-between p-2 rounded-xs cursor-pointer transition-colors ${
                 isActive
                   ? 'bg-surface-low border border-hairline text-action font-semibold'
                   : 'text-ink-secondary hover:bg-surface-low/50 hover:text-ink-primary'
@@ -110,7 +110,7 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
       <div className="p-2.5 border-b border-hairline shrink-0">
         <button
           onClick={clearCurrentSession}
-          className="w-full py-1.5 px-3 bg-surface-low hover:bg-surface-high text-ink-secondary hover:text-ink-primary rounded text-[11px] font-medium border border-hairline transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+          className="w-full py-1.5 px-3 bg-surface-low hover:bg-surface-high text-ink-secondary hover:text-ink-primary rounded-xs text-[11px] font-medium border border-hairline transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
         >
           <RefreshCw className="w-3 h-3" />
           <span>Limpiar Chat Actual</span>
@@ -139,7 +139,7 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
             <button
               key={t.name}
               onClick={() => onInsertPrompt?.(`Ejecutar ${t.name}: `)}
-              className="w-full p-2 bg-surface-low hover:bg-surface-high border border-hairline rounded-md text-left transition-colors group cursor-pointer"
+              className="w-full p-2 bg-surface-low hover:bg-surface-high border border-hairline rounded-xs text-left transition-colors group cursor-pointer"
             >
               <div className="font-mono text-[11px] font-semibold text-ink-primary group-hover:text-action truncate">
                 {t.name}
@@ -160,7 +160,7 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
             {mcpTools.map((m) => (
               <div
                 key={m.compositeId}
-                className="p-2 bg-surface-low border border-hairline rounded-md text-left"
+                className="p-2 bg-surface-low border border-hairline rounded-xs text-left"
               >
                 <div className="font-mono text-[11px] font-semibold text-action truncate">
                   {m.name}

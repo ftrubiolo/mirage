@@ -65,7 +65,7 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
         </div>
 
         {/* Geometry Metrology Box */}
-        <div className="p-3 bg-surface-low border border-hairline rounded-lg space-y-2 font-mono text-[11px]">
+        <div className="p-3 bg-surface-low border border-hairline rounded-xs space-y-2 font-mono text-[11px]">
           <div className="flex items-center justify-between text-ink-secondary">
             <span className="flex items-center gap-1.5 font-sans text-xs">
               <Box className="w-3.5 h-3.5 text-action" />
@@ -100,19 +100,19 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
             Parámetros Físicos PBR
           </span>
           <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
-            <div className="p-2 bg-surface-low rounded border border-hairline flex flex-col">
+            <div className="p-2 bg-surface-low rounded-xs border border-hairline flex flex-col">
               <span className="text-ink-tertiary text-[10px]">Rugosidad</span>
               <span className="text-ink-primary font-semibold">{roughnessFactor.toFixed(2)}</span>
             </div>
-            <div className="p-2 bg-surface-low rounded border border-hairline flex flex-col">
+            <div className="p-2 bg-surface-low rounded-xs border border-hairline flex flex-col">
               <span className="text-ink-tertiary text-[10px]">Metalicidad</span>
               <span className="text-ink-primary font-semibold">{metalnessFactor.toFixed(2)}</span>
             </div>
-            <div className="p-2 bg-surface-low rounded border border-hairline flex flex-col">
+            <div className="p-2 bg-surface-low rounded-xs border border-hairline flex flex-col">
               <span className="text-ink-tertiary text-[10px]">Normal Scale</span>
               <span className="text-ink-primary font-semibold">{normalScale.toFixed(2)}</span>
             </div>
-            <div className="p-2 bg-surface-low rounded border border-hairline flex flex-col">
+            <div className="p-2 bg-surface-low rounded-xs border border-hairline flex flex-col">
               <span className="text-ink-tertiary text-[10px]">Oclusión (AO)</span>
               <span className="text-ink-primary font-semibold">{aoIntensity.toFixed(2)}</span>
             </div>
@@ -133,11 +133,11 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
               return (
                 <div
                   key={slot}
-                  className="flex items-center justify-between px-2 py-1 bg-surface-low/60 rounded border border-hairline text-[11px]"
+                  className="flex items-center justify-between px-2 py-1 bg-surface-low/60 rounded-xs border border-hairline text-[11px]"
                 >
                   <span className="capitalize text-ink-secondary">{slot}</span>
                   <span
-                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded ${
+                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-xs ${
                       hasMap
                         ? isEnabled
                           ? 'bg-emerald-500/10 text-emerald-400'

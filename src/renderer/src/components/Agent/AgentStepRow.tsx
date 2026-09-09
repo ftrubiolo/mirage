@@ -84,7 +84,7 @@ export const AgentStepRow: React.FC<AgentStepRowProps> = ({ step }) => {
 
       {/* Expandable detail box */}
       {isExpanded && step.detail && (
-        <div className="mt-1 ml-5 p-2 rounded bg-surface-low border border-hairline text-ink-tertiary text-[10px] whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+        <div className="mt-1 ml-5 p-2 rounded-xs bg-surface-low border border-hairline text-ink-tertiary text-[10px] whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
           {step.detail}
         </div>
       )}

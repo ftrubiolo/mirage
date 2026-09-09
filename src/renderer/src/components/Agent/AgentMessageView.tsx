@@ -110,13 +110,13 @@ export const AgentMessageView: React.FC<AgentMessageViewProps> = ({ message }) =
               <ChevronRight className="w-3.5 h-3.5 text-ink-tertiary" />
             )}
             {isThinkingStreaming && (
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping ml-1" />
+              <span className="w-1.5 h-1.5 rounded-xs bg-indigo-400 animate-pulse ml-1" />
             )}
           </button>
 
           {(isThoughtOpen || isThinkingStreaming) && (
             <div className="pl-4 pt-1 space-y-1">
-              <div className="text-[11px] font-mono text-ink-secondary whitespace-pre-wrap leading-relaxed bg-surface-low/50 p-2.5 rounded border border-hairline/60">
+              <div className="text-[11px] font-mono text-ink-secondary whitespace-pre-wrap leading-relaxed bg-surface-low/50 p-2.5 rounded-xs border border-hairline/60">
                 {thoughtContent}
                 {isThinkingStreaming && (
                   <span className="inline-block w-1.5 h-3 bg-indigo-400 ml-1 animate-pulse" />
@@ -165,7 +165,7 @@ export const AgentMessageView: React.FC<AgentMessageViewProps> = ({ message }) =
         <div className="flex items-center gap-2.5 pt-1.5 text-[11px] font-mono text-ink-tertiary select-none">
           <button
             onClick={handleCopyMessage}
-            className="hover:text-ink-primary p-1 rounded hover:bg-surface-low transition-colors cursor-pointer"
+            className="hover:text-ink-primary p-1 rounded-xs hover:bg-surface-low transition-colors cursor-pointer"
             title="Copiar respuesta"
           >
             {copiedMsg ? (
@@ -175,13 +175,13 @@ export const AgentMessageView: React.FC<AgentMessageViewProps> = ({ message }) =
             )}
           </button>
           <button
-            className="hover:text-ink-primary p-1 rounded hover:bg-surface-low transition-colors cursor-pointer"
+            className="hover:text-ink-primary p-1 rounded-xs hover:bg-surface-low transition-colors cursor-pointer"
             title="Útil"
           >
             <ThumbsUp className="w-3.5 h-3.5" />
           </button>
           <button
-            className="hover:text-ink-primary p-1 rounded hover:bg-surface-low transition-colors cursor-pointer"
+            className="hover:text-ink-primary p-1 rounded-xs hover:bg-surface-low transition-colors cursor-pointer"
             title="No útil"
           >
             <ThumbsDown className="w-3.5 h-3.5" />
@@ -318,7 +318,7 @@ const InlineFormatted: React.FC<{ text: string }> = ({ text }) => {
           return (
             <code
               key={i}
-              className="px-1.5 py-0.5 mx-0.5 rounded bg-surface-low border border-hairline font-mono text-[11px] text-ink-primary"
+              className="px-1.5 py-0.5 mx-0.5 rounded-xs bg-surface-low border border-hairline font-mono text-[11px] text-ink-primary"
             >
               {part.slice(1, -1)}
             </code>
@@ -351,7 +351,7 @@ const CodeBlock: React.FC<{ code: string; language?: string }> = ({ code, langua
   };
 
   return (
-    <div className="my-2 rounded-lg bg-surface-lowest border border-hairline overflow-hidden font-mono text-[11px]">
+    <div className="my-2 rounded-xs bg-surface-lowest border border-hairline overflow-hidden font-mono text-[11px]">
       <div className="flex items-center justify-between px-3 py-1.5 bg-surface-low/80 border-b border-hairline text-ink-tertiary">
         <span className="text-[10px] uppercase tracking-wider font-semibold">
           {language || 'code'}

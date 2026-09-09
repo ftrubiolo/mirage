@@ -49,14 +49,14 @@ export const StudioHeader: React.FC = () => {
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           <span
-            className={`w-2 h-2 rounded-full ${
-              activeProvider?.hasKey ? 'bg-emerald-500 shadow-xs shadow-emerald-500/50' : 'bg-amber-500'
+            className={`w-2 h-2 rounded-xs ${
+              activeProvider?.hasKey ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-amber-600 dark:bg-amber-500'
             }`}
           />
           <select
             value={activeProviderId || ''}
             onChange={(e) => setActiveProvider(e.target.value || null)}
-            className="bg-surface-container border border-hairline text-xs rounded px-2.5 py-1 text-ink-primary focus:outline-none focus:border-action cursor-pointer"
+            className="bg-surface-container border border-hairline text-xs rounded-xs px-2.5 py-1 text-ink-primary focus:outline-none focus:border-action cursor-pointer"
           >
             {providers.map((p) => (
               <option key={p.id} value={p.id} disabled={!p.hasKey}>
@@ -69,7 +69,7 @@ export const StudioHeader: React.FC = () => {
         {activeProvider && (
           <div className="flex items-center gap-1.5">
             {isCustomModelInput ? (
-              <div className="flex items-center gap-1 bg-surface-container border border-action/60 rounded px-2 py-0.5 shadow-xs">
+              <div className="flex items-center gap-1 bg-surface-container border border-action/60 rounded-xs px-2 py-0.5 shadow-xs">
                 <input
                   type="text"
                   value={customModelText}
@@ -121,7 +121,7 @@ export const StudioHeader: React.FC = () => {
                       setActiveModel(e.target.value);
                     }
                   }}
-                  className="bg-surface-container border border-hairline text-xs rounded px-2.5 py-1 text-ink-secondary focus:outline-none focus:border-action font-mono max-w-[220px] cursor-pointer"
+                  className="bg-surface-container border border-hairline text-xs rounded-xs px-2.5 py-1 text-ink-secondary focus:outline-none focus:border-action font-mono max-w-[220px] cursor-pointer"
                 >
                   {activeProvider.availableModels.map((m) => (
                     <option key={m} value={m}>
@@ -134,7 +134,7 @@ export const StudioHeader: React.FC = () => {
                 <button
                   onClick={handleRefreshModels}
                   disabled={isRefreshingModels}
-                  className="p-1 hover:bg-surface-container rounded text-ink-tertiary hover:text-action transition-colors cursor-pointer"
+                  className="p-1 hover:bg-surface-container rounded-xs text-ink-tertiary hover:text-action transition-colors cursor-pointer"
                   title="Auto-cargar modelos actualizados del endpoint"
                 >
                   <RefreshCw
@@ -150,10 +150,10 @@ export const StudioHeader: React.FC = () => {
       {/* Permission Mode Switcher: Auto-Apply vs Ask to Confirm */}
       <div className="flex items-center gap-2">
         <span className="text-[11px] text-ink-tertiary hidden md:inline">Modo de Ejecución:</span>
-        <div className="flex items-center bg-surface-container rounded p-0.5 border border-hairline text-xs">
+        <div className="flex items-center bg-surface-container rounded-xs p-0.5 border border-hairline text-xs">
           <button
             onClick={() => setPermissionMode('auto-apply')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xs text-[11px] font-medium transition-colors cursor-pointer ${
               permissionMode === 'auto-apply'
                 ? 'bg-action text-white shadow-xs'
                 : 'text-ink-secondary hover:text-ink-primary'
@@ -166,7 +166,7 @@ export const StudioHeader: React.FC = () => {
 
           <button
             onClick={() => setPermissionMode('ask-to-confirm')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xs text-[11px] font-medium transition-colors cursor-pointer ${
               permissionMode === 'ask-to-confirm'
                 ? 'bg-action text-white shadow-xs'
                 : 'text-ink-secondary hover:text-ink-primary'

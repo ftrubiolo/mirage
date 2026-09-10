@@ -154,7 +154,9 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
     }
 
     // If model is already loaded and identical, ensure loading flag is off
-    if (!modelUrl || modelUrl === store.modelUrl) {
+    const cleanModelUrl = modelUrl ? modelUrl.split('?')[0] : null;
+    const cleanStoreUrl = store.modelUrl ? store.modelUrl.split('?')[0] : null;
+    if (!cleanModelUrl || cleanModelUrl === cleanStoreUrl) {
       store.setIsModelLoading(false);
     }
 

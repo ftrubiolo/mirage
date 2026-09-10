@@ -63,6 +63,14 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
 
   // Load Model
   useEffect(() => {
+    if (!modelUrl) {
+      setLoading(false);
+      if (!isEmbeddedPreview) {
+        setIsModelLoading(false);
+      }
+      return;
+    }
+
     let isCancelled = false;
     const tModelStart = performance.now();
     console.log(`[PERF: 3D VIEWER] Starting GLB load for: ${modelUrl}`);
@@ -95,6 +103,25 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
             if (isCancelled) return;
             const tGltfParsed = performance.now();
             console.log(`[PERF: 3D VIEWER] GLB binary fetched & parsed in ${(tGltfParsed - tLoaderReady).toFixed(1)}ms`);
+
+            // Dispose previous rawScene resources to prevent WebGL memory leak
+            if (rawSceneRef.current && rawSceneRef.current !== gltf.scene) {
+              rawSceneRef.current.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) {
+                  const mesh = child as THREE.Mesh;
+                  if (mesh.geometry) {
+                    mesh.geometry.dispose();
+                  }
+                  if (mesh.material) {
+                    if (Array.isArray(mesh.material)) {
+                      mesh.material.forEach((m) => m.dispose());
+                    } else {
+                      mesh.material.dispose();
+                    }
+                  }
+                }
+              });
+            }
 
             const scene = gltf.scene;
             captureOriginalMaterials(scene);

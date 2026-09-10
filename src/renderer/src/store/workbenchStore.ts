@@ -50,7 +50,7 @@ export interface LoadWorkbenchData {
   modelFileSize?: number;
   dimensions?: { width: number; height: number; depth: number } | null;
   stats?: { triangleCount: number; vertexCount: number; meshCount: number } | null;
-  maps: Partial<Record<SlotName, PbrSlotMap>>;
+  maps?: Partial<Record<SlotName, PbrSlotMap>>;
   mapVariants?: Partial<Record<SlotName, MapVariantItem[]>>;
   activeVariantIds?: Partial<Record<SlotName, string | null>>;
   slotEnabled?: Partial<Record<SlotName, boolean>>;
@@ -217,18 +217,35 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
         }
       : null;
 
+    const currentFullUrl = useModelStore.getState().modelUrl;
+    const currentCleanUrl = currentFullUrl ? currentFullUrl.split('?')[0] : null;
+    const newCleanUrl = data.modelUrl ? data.modelUrl.split('?')[0] : null;
+    const isModelChanging = Boolean(data.modelUrl) && newCleanUrl !== currentCleanUrl;
+
+    let resolvedModelUrl: string | null = null;
+    if (data.modelUrl) {
+      if (!isModelChanging && currentFullUrl) {
+        resolvedModelUrl = currentFullUrl;
+      } else if (data.modelUrl.startsWith('blob:') || data.modelUrl.startsWith('data:')) {
+        resolvedModelUrl = data.modelUrl;
+      } else {
+        const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        resolvedModelUrl = `${newCleanUrl}?t=${uniqueSuffix}`;
+      }
+    }
+
     useModelStore.setState({
       productId: data.productId,
       productSlug: data.productSlug,
       productName: data.productName,
       modelFilePath: data.modelFilePath,
-      modelUrl: data.modelUrl,
+      modelUrl: resolvedModelUrl,
       modelFileSize: data.modelFileSize || 0,
       modelStats,
       rawDimensions: data.dimensions || null,
       unitScale,
       unitType,
-      isModelLoading: Boolean(data.modelUrl) && data.modelUrl !== useModelStore.getState().modelUrl
+      isModelLoading: isModelChanging
     });
 
     // 2. Variant Store Hydration
@@ -247,7 +264,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
     } else {
       const fallbackMaps: Record<string, EntryVariantMapSlot> = {};
       for (const slot of ALL_SLOT_NAMES) {
-        const m = data.maps[slot];
+        const m = data.maps?.[slot];
         if (m?.filePath || m?.url) {
           fallbackMaps[slot] = {
             fileName: m.fileName || `${slot}.webp`,
@@ -312,7 +329,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
           addUnique({ id: c.id, name: c.name, url: c.baseColorUrl, filePath: c.baseColorFilePath, fileName: c.fileName, fileSize: c.fileSize });
         }
       }
-      if (data.maps[slot]?.filePath || data.maps[slot]?.url) {
+      if (data.maps?.[slot]?.filePath || data.maps?.[slot]?.url) {
         const m = data.maps[slot]!;
         addUnique({ url: m.url || undefined, filePath: m.filePath || undefined, fileName: m.fileName || undefined, fileSize: m.fileSize });
       }

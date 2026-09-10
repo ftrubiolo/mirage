@@ -57,12 +57,22 @@ export const useModelStore = create<ModelState>((set, get) => ({
   },
 
   setModel: (modelFilePath: string | null, modelUrl: string | null, modelFileSize = 0) => {
-    const isChanging = modelUrl !== get().modelUrl;
+    let finalUrl: string | null = null;
+    if (modelUrl) {
+      if (modelUrl.startsWith('blob:') || modelUrl.startsWith('data:')) {
+        finalUrl = modelUrl;
+      } else {
+        const cleanUrl = modelUrl.split('?')[0];
+        const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        finalUrl = `${cleanUrl}?t=${uniqueSuffix}`;
+      }
+    }
+
     set({
       modelFilePath,
-      modelUrl,
+      modelUrl: finalUrl,
       modelFileSize,
-      isModelLoading: isChanging,
+      isModelLoading: Boolean(finalUrl),
       unitScale: 1.0,
       unitType: 'm'
     });

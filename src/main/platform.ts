@@ -1,5 +1,7 @@
-import { app } from 'electron';
+import { app, shell } from 'electron';
 import * as path from 'node:path';
+import * as fs from 'node:fs/promises';
+import { spawn } from 'node:child_process';
 
 export const isWindows = process.platform === 'win32';
 export const isLinux = process.platform === 'linux';
@@ -114,4 +116,101 @@ export function getKeybindsPath(): string {
  */
 export function getSettingsPath(): string {
   return path.join(getMirageDataDir(), 'settings.json');
+}
+
+/**
+ * Safely opens a path in the system file explorer without blocking or freezing the application.
+ * Solves Electron issue #47668 on Linux where shell.openPath synchronously waits for xdg-open/file manager.
+ */
+export async function openPathInSystemExplorer(targetPath: string): Promise<boolean> {
+  if (!targetPath || typeof targetPath !== 'string') return false;
+
+  const cleanPath = targetPath.trim();
+  if (!cleanPath) return false;
+
+  const resolved = path.resolve(cleanPath);
+  let folderToOpen = resolved;
+
+  try {
+    const stats = await fs.stat(resolved);
+    if (stats.isFile()) {
+      folderToOpen = path.dirname(resolved);
+    }
+  } catch {
+    // If target path does not exist, determine if it has a file extension
+    try {
+      if (path.extname(resolved)) {
+        folderToOpen = path.dirname(resolved);
+      }
+      await fs.mkdir(folderToOpen, { recursive: true });
+    } catch {
+      folderToOpen = path.dirname(resolved);
+    }
+  }
+
+  // Linux: Electron 34 shell.openPath/showItemInFolder blocks the main event loop
+  // until the file manager window closes (Electron #47668).
+  // Spawn detached xdg-open/gio and unref to guarantee immediate non-blocking return.
+  if (isLinux) {
+    return new Promise<boolean>((resolve) => {
+      try {
+        const child = spawn('xdg-open', [folderToOpen], {
+          detached: true,
+          stdio: 'ignore'
+        });
+
+        child.on('error', (err) => {
+          console.warn('[openPathInSystemExplorer] xdg-open error, trying gio open fallback:', err);
+          try {
+            const gio = spawn('gio', ['open', folderToOpen], {
+              detached: true,
+              stdio: 'ignore'
+            });
+            gio.on('error', (gioErr) => {
+              console.error('[openPathInSystemExplorer] gio open failed:', gioErr);
+              resolve(false);
+            });
+            gio.unref();
+            resolve(true);
+          } catch {
+            resolve(false);
+          }
+        });
+
+        child.unref();
+        resolve(true);
+      } catch (err) {
+        console.error('[openPathInSystemExplorer] Failed to spawn xdg-open:', err);
+        resolve(false);
+      }
+    });
+  }
+
+  // macOS: open command detached
+  if (isMacOS) {
+    return new Promise<boolean>((resolve) => {
+      try {
+        const child = spawn('open', [folderToOpen], {
+          detached: true,
+          stdio: 'ignore'
+        });
+        child.on('error', () => {
+          shell.openPath(folderToOpen).then((err) => resolve(!err)).catch(() => resolve(false));
+        });
+        child.unref();
+        resolve(true);
+      } catch {
+        shell.openPath(folderToOpen).then((err) => resolve(!err)).catch(() => resolve(false));
+      }
+    });
+  }
+
+  // Windows: shell.openPath uses ShellExecuteEx non-blocking
+  try {
+    const errorMsg = await shell.openPath(folderToOpen);
+    return !errorMsg;
+  } catch (err) {
+    console.error('[openPathInSystemExplorer] Windows shell.openPath error:', err);
+    return false;
+  }
 }

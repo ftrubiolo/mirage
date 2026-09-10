@@ -8,7 +8,8 @@ import {
   getMirageDataDir,
   getLegacyMirageDataDir,
   getKeybindsPath,
-  getSettingsPath
+  getSettingsPath,
+  openPathInSystemExplorer
 } from './platform';
 import { storeSecret, retrieveSecret, hasSecret, deleteSecret } from './vault';
 import { MCPClientManager, McpServerConfig } from './mcp/MCPClientManager';
@@ -320,8 +321,7 @@ const DEFAULT_KEYBINDS: Record<string, string> = {
   });
 
   ipcMain.handle('shell:openPath', async (_event, targetPath: string) => {
-    await shell.openPath(targetPath);
-    return true;
+    return openPathInSystemExplorer(targetPath);
   });
 
   // --- Hardware-Encrypted Vault IPC Handlers ---

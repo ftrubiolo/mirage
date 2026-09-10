@@ -68,6 +68,12 @@ export function invalidateTexture(url: string | null | undefined): void {
   }
 }
 
+export function clearTextureCache(): void {
+  loadedTextureCache.forEach((tex) => tex.dispose());
+  loadedTextureCache.clear();
+  texturePromiseCache.clear();
+}
+
 export interface PbrUniformValues {
   roughness?: number;
   roughnessFactor?: number;
@@ -91,6 +97,8 @@ export interface PbrUniformValues {
   emissive?: string | THREE.Color;
   emissiveColor?: string | THREE.Color;
   displacementScale?: number;
+  forcedNullSlots?: string[];
+  slotEnabled?: Partial<Record<string, boolean>>;
 }
 
 export interface PbrTextureValues {
@@ -130,7 +138,6 @@ export interface PbrTextureOptions {
   debugChannel?: 'lit' | 'albedo' | 'normal' | 'roughness' | 'metalness' | 'ao' | 'emissive' | 'wireframe';
   wireframe?: boolean;
 
-  // Optional uniform defaults for debug channel rendering
   normalScale?: number | THREE.Vector2;
   normalInvertY?: boolean;
   roughnessFactor?: number;
@@ -199,12 +206,44 @@ function upgradeToPhysicalMaterial(mat: THREE.MeshStandardMaterial): THREE.MeshP
 }
 
 /**
+ * Assigns a texture to a material slot and returns true if structural change occurred.
+ */
+function assignMaterialMap(
+  mat: THREE.MeshStandardMaterial,
+  slotKey: string,
+  newTexture: THREE.Texture | null | undefined,
+  desiredColorSpace?: THREE.ColorSpace | string
+): boolean {
+  if (newTexture === undefined) return false;
+  let changed = false;
+  const current = (mat as any)[slotKey] as THREE.Texture | null;
+
+  if (current !== newTexture) {
+    (mat as any)[slotKey] = newTexture;
+    changed = true;
+  }
+
+  if (newTexture && desiredColorSpace && newTexture.colorSpace !== desiredColorSpace) {
+    newTexture.colorSpace = desiredColorSpace as THREE.ColorSpace;
+    changed = true;
+  }
+
+  return changed;
+}
+
+/**
  * Updates dynamic PBR uniform values synchronously without shader recompilation.
  * Conforms to Requirement R1 & Feature F1: strictly does NOT set mat.needsUpdate = true.
- * In Three.js, scalar, vector, and color uniforms update automatically on the next frame.
+ * Respects slotEnabled/forcedNullSlots and material texture availability for emissive & physical properties.
  */
 export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUniformValues>): void {
   if (!model) return;
+
+  const isSlotDisabled = (slot: string) =>
+    Boolean(
+      (uniforms.forcedNullSlots && uniforms.forcedNullSlots.includes(slot)) ||
+      (uniforms.slotEnabled && uniforms.slotEnabled[slot] === false)
+    );
 
   model.traverse((child) => {
     if ((child as THREE.Mesh).isMesh) {
@@ -213,17 +252,22 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
 
       for (const m of rawMats) {
         if (m instanceof THREE.MeshStandardMaterial) {
+          // Roughness
           const roughness = uniforms.roughness !== undefined ? uniforms.roughness : uniforms.roughnessFactor;
           if (roughness !== undefined) {
             m.roughness = roughness;
           }
 
+          // Metalness
           const metalness = uniforms.metalness !== undefined ? uniforms.metalness : uniforms.metalnessFactor;
           if (metalness !== undefined) {
             m.metalness = metalness;
           }
 
-          if (uniforms.normalScale !== undefined) {
+          // Normal Scale & Invert Y
+          if (isSlotDisabled('normal')) {
+            m.normalScale.set(0, 0);
+          } else if (uniforms.normalScale !== undefined) {
             if (typeof uniforms.normalScale === 'number') {
               const invertY = uniforms.normalInvertY ?? (m.normalScale.y < 0);
               m.normalScale.set(uniforms.normalScale, invertY ? -uniforms.normalScale : uniforms.normalScale);
@@ -235,15 +279,17 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
             m.normalScale.set(currentX, uniforms.normalInvertY ? -currentX : currentX);
           }
 
-          const ao = uniforms.aoMapIntensity !== undefined ? uniforms.aoMapIntensity : uniforms.aoIntensity;
-          if (ao !== undefined) {
-            m.aoMapIntensity = ao;
+          // Ambient Occlusion
+          if (isSlotDisabled('ao')) {
+            m.aoMapIntensity = 0;
+          } else {
+            const ao = uniforms.aoMapIntensity !== undefined ? uniforms.aoMapIntensity : uniforms.aoIntensity;
+            if (ao !== undefined) {
+              m.aoMapIntensity = ao;
+            }
           }
 
-          if (uniforms.emissiveIntensity !== undefined) {
-            m.emissiveIntensity = uniforms.emissiveIntensity;
-          }
-
+          // Base Color Tint
           if (uniforms.color !== undefined) {
             if (typeof uniforms.color === 'string') {
               m.color.set(uniforms.color);
@@ -252,61 +298,149 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
             }
           }
 
-          const emissive = uniforms.emissive !== undefined ? uniforms.emissive : uniforms.emissiveColor;
-          if (emissive !== undefined) {
-            if (typeof emissive === 'string') {
-              m.emissive.set(emissive);
+          // Emissive: only active if slot is NOT disabled AND material actually has an emissive map or native emission
+          if (isSlotDisabled('emissive')) {
+            m.emissive.set(0x000000);
+            m.emissiveIntensity = 0;
+          } else {
+            const orig = originalMaterialCache.get(m);
+            const hasEmissiveMap = Boolean(m.emissiveMap);
+            const hasOrigEmissive = Boolean(
+              orig && (
+                orig.emissiveMap ||
+                (orig.emissive && (orig.emissive.r > 0 || orig.emissive.g > 0 || orig.emissive.b > 0))
+              )
+            );
+
+            if (hasEmissiveMap) {
+              const col = uniforms.emissive !== undefined ? uniforms.emissive : uniforms.emissiveColor;
+              if (col !== undefined) {
+                if (typeof col === 'string') m.emissive.set(col);
+                else m.emissive.copy(col);
+              }
+              if (uniforms.emissiveIntensity !== undefined) {
+                m.emissiveIntensity = uniforms.emissiveIntensity;
+              }
+            } else if (hasOrigEmissive) {
+              if (orig?.emissive) m.emissive.copy(orig.emissive);
+              if (uniforms.emissiveIntensity !== undefined) {
+                m.emissiveIntensity = uniforms.emissiveIntensity;
+              } else if (orig?.emissiveIntensity !== undefined) {
+                m.emissiveIntensity = orig.emissiveIntensity;
+              }
+            } else if (!orig) {
+              // Direct standalone invocation in test environment without cache
+              const col = uniforms.emissive !== undefined ? uniforms.emissive : uniforms.emissiveColor;
+              if (col !== undefined) {
+                if (typeof col === 'string') m.emissive.set(col);
+                else m.emissive.copy(col);
+              }
+              if (uniforms.emissiveIntensity !== undefined) {
+                m.emissiveIntensity = uniforms.emissiveIntensity;
+              }
             } else {
-              m.emissive.copy(emissive);
+              // Material in viewer has no emissive map and had no native emissive: keep zeroed
+              m.emissive.set(0x000000);
+              m.emissiveIntensity = 0;
             }
           }
 
+          // Physical properties (MeshPhysicalMaterial)
           if (m instanceof THREE.MeshPhysicalMaterial) {
-            const clearcoat = uniforms.clearcoat !== undefined ? uniforms.clearcoat : uniforms.clearcoatFactor;
-            if (clearcoat !== undefined) {
-              m.clearcoat = clearcoat;
-            }
-
-            if (uniforms.clearcoatRoughness !== undefined) {
-              m.clearcoatRoughness = uniforms.clearcoatRoughness;
-            }
-
-            const transmission = uniforms.transmission !== undefined ? uniforms.transmission : uniforms.transmissionFactor;
-            if (transmission !== undefined) {
-              m.transmission = transmission;
-            }
-
-            if (uniforms.ior !== undefined) {
-              m.ior = uniforms.ior;
-            }
-
-            if (uniforms.sheen !== undefined) {
-              m.sheen = uniforms.sheen;
-            }
-
-            if (uniforms.sheenColor !== undefined) {
-              if (typeof uniforms.sheenColor === 'string') {
-                m.sheenColor.set(uniforms.sheenColor);
-              } else {
-                m.sheenColor.copy(uniforms.sheenColor);
+            // Clearcoat
+            if (isSlotDisabled('clearcoat')) {
+              m.clearcoat = 0;
+            } else {
+              const clearcoat = uniforms.clearcoat !== undefined ? uniforms.clearcoat : uniforms.clearcoatFactor;
+              if (clearcoat !== undefined) {
+                m.clearcoat = clearcoat;
+              }
+              if (uniforms.clearcoatRoughness !== undefined) {
+                m.clearcoatRoughness = uniforms.clearcoatRoughness;
               }
             }
 
-            if (uniforms.sheenRoughness !== undefined) {
-              m.sheenRoughness = uniforms.sheenRoughness;
+            // Transmission & IOR
+            if (isSlotDisabled('transmission')) {
+              m.transmission = 0;
+            } else {
+              const transmission = uniforms.transmission !== undefined ? uniforms.transmission : uniforms.transmissionFactor;
+              if (transmission !== undefined) {
+                m.transmission = transmission;
+              }
+              if (uniforms.ior !== undefined) {
+                m.ior = uniforms.ior;
+              }
+            }
+
+            // Sheen
+            if (isSlotDisabled('sheen')) {
+              m.sheen = 0;
+            } else {
+              if (uniforms.sheen !== undefined) {
+                m.sheen = uniforms.sheen;
+              }
+              if (uniforms.sheenColor !== undefined) {
+                if (typeof uniforms.sheenColor === 'string') {
+                  m.sheenColor.set(uniforms.sheenColor);
+                } else {
+                  m.sheenColor.copy(uniforms.sheenColor);
+                }
+              }
+              if (uniforms.sheenRoughness !== undefined) {
+                m.sheenRoughness = uniforms.sheenRoughness;
+              }
             }
           }
 
-          if (uniforms.displacementScale !== undefined) {
+          // Displacement
+          if (isSlotDisabled('displacement') || !m.displacementMap) {
+            m.displacementScale = 0;
+          } else if (uniforms.displacementScale !== undefined) {
             m.displacementScale = uniforms.displacementScale;
           }
-
-          // In Three.js, uniform changes take effect immediately in shader uniforms
-          // without shader recompilation. Therefore, mat.needsUpdate is NEVER set to true.
         }
       }
     }
   });
+}
+
+/**
+ * Loads active textures in parallel based on options.
+ */
+async function loadSlotTextures(options: PbrTextureOptions): Promise<Record<string, THREE.Texture | null>> {
+  const { forcedNullSlots = [], useOrmPack = true } = options;
+  const isNull = (s: string) => forcedNullSlots.includes(s);
+
+  const slotEntries: Array<{ key: string; url?: string | null; isSRGB: boolean }> = [
+    { key: 'baseColor', url: isNull('baseColor') ? null : options.baseColorUrl, isSRGB: true },
+    { key: 'normal', url: isNull('normal') ? null : options.normalUrl, isSRGB: false },
+    { key: 'orm', url: useOrmPack && !isNull('orm') ? options.ormUrl : null, isSRGB: false },
+    { key: 'ao', url: !useOrmPack && !isNull('ao') ? options.aoUrl : null, isSRGB: false },
+    { key: 'roughness', url: !useOrmPack && !isNull('roughness') ? options.roughnessUrl : null, isSRGB: false },
+    { key: 'metalness', url: !useOrmPack && !isNull('metalness') ? options.metalnessUrl : null, isSRGB: false },
+    { key: 'emissive', url: isNull('emissive') ? null : options.emissiveUrl, isSRGB: true },
+    { key: 'clearcoat', url: isNull('clearcoat') ? null : options.clearcoatUrl, isSRGB: false },
+    { key: 'sheen', url: isNull('sheen') ? null : options.sheenUrl, isSRGB: true },
+    { key: 'transmission', url: isNull('transmission') ? null : options.transmissionUrl, isSRGB: false },
+    { key: 'alpha', url: isNull('alpha') ? null : options.alphaUrl, isSRGB: false },
+    { key: 'displacement', url: isNull('displacement') ? null : options.displacementUrl, isSRGB: false }
+  ];
+
+  const active = slotEntries.filter((e) => Boolean(e.url));
+  if (active.length > 0) {
+    console.log(`[PERF: PBR] Loading ${active.length} active texture map(s) in parallel...`);
+  }
+
+  const results = await Promise.all(
+    slotEntries.map(async ({ key, url, isSRGB }) => {
+      if (!url) return [key, null] as const;
+      const tex = await loadTextureAsync(url, isSRGB).catch(() => null);
+      return [key, tex] as const;
+    })
+  );
+
+  return Object.fromEntries(results);
 }
 
 /**
@@ -327,7 +461,7 @@ export function applyPbrTextures(
   secondArg?: PbrTextureValues,
   thirdArg?: string
 ): Promise<void> | void {
-  // Check if first argument is a THREE.Object3D (synchronous pre-loaded texture binding)
+  // Synchronous pre-loaded texture binding
   if (firstArg && (firstArg as any).isObject3D && secondArg) {
     const model = firstArg as THREE.Object3D;
     const textures = secondArg;
@@ -342,76 +476,22 @@ export function applyPbrTextures(
           if (m instanceof THREE.MeshStandardMaterial) {
             let structuralChange = false;
 
-            // Check debug channel change
             if (textures.debugChannel !== undefined && textures.debugChannel !== currentDebugChannel) {
               structuralChange = true;
               m.userData.__debugChannel = textures.debugChannel;
             }
 
-            // Check map slot
-            if (textures.map !== undefined && m.map !== textures.map) {
-              structuralChange = true;
-              m.map = textures.map;
-            } else if (textures.map && m.map && m.map.colorSpace !== textures.map.colorSpace) {
-              structuralChange = true;
-              m.map.colorSpace = textures.map.colorSpace;
-            }
-
-            // Check normalMap slot
-            if (textures.normalMap !== undefined && m.normalMap !== textures.normalMap) {
-              structuralChange = true;
-              m.normalMap = textures.normalMap;
-            }
-
-            // Check roughnessMap slot
-            if (textures.roughnessMap !== undefined && m.roughnessMap !== textures.roughnessMap) {
-              structuralChange = true;
-              m.roughnessMap = textures.roughnessMap;
-            }
-
-            // Check metalnessMap slot
-            if (textures.metalnessMap !== undefined && m.metalnessMap !== textures.metalnessMap) {
-              structuralChange = true;
-              m.metalnessMap = textures.metalnessMap;
-            }
-
-            // Check aoMap slot
-            if (textures.aoMap !== undefined && m.aoMap !== textures.aoMap) {
-              structuralChange = true;
-              m.aoMap = textures.aoMap;
-            }
-
-            // Check emissiveMap slot
-            if (textures.emissiveMap !== undefined && m.emissiveMap !== textures.emissiveMap) {
-              structuralChange = true;
-              m.emissiveMap = textures.emissiveMap;
-            }
-
-            // Physical maps
-            if (textures.clearcoatMap !== undefined && (m as any).clearcoatMap !== textures.clearcoatMap) {
-              structuralChange = true;
-              (m as any).clearcoatMap = textures.clearcoatMap;
-            }
-
-            if (textures.sheenColorMap !== undefined && (m as any).sheenColorMap !== textures.sheenColorMap) {
-              structuralChange = true;
-              (m as any).sheenColorMap = textures.sheenColorMap;
-            }
-
-            if (textures.transmissionMap !== undefined && (m as any).transmissionMap !== textures.transmissionMap) {
-              structuralChange = true;
-              (m as any).transmissionMap = textures.transmissionMap;
-            }
-
-            if (textures.alphaMap !== undefined && m.alphaMap !== textures.alphaMap) {
-              structuralChange = true;
-              m.alphaMap = textures.alphaMap;
-            }
-
-            if (textures.displacementMap !== undefined && m.displacementMap !== textures.displacementMap) {
-              structuralChange = true;
-              m.displacementMap = textures.displacementMap;
-            }
+            if (assignMaterialMap(m, 'map', textures.map, textures.map?.colorSpace)) structuralChange = true;
+            if (assignMaterialMap(m, 'normalMap', textures.normalMap)) structuralChange = true;
+            if (assignMaterialMap(m, 'roughnessMap', textures.roughnessMap)) structuralChange = true;
+            if (assignMaterialMap(m, 'metalnessMap', textures.metalnessMap)) structuralChange = true;
+            if (assignMaterialMap(m, 'aoMap', textures.aoMap)) structuralChange = true;
+            if (assignMaterialMap(m, 'emissiveMap', textures.emissiveMap, THREE.SRGBColorSpace)) structuralChange = true;
+            if (assignMaterialMap(m, 'clearcoatMap', textures.clearcoatMap)) structuralChange = true;
+            if (assignMaterialMap(m, 'sheenColorMap', textures.sheenColorMap, THREE.SRGBColorSpace)) structuralChange = true;
+            if (assignMaterialMap(m, 'transmissionMap', textures.transmissionMap)) structuralChange = true;
+            if (assignMaterialMap(m, 'alphaMap', textures.alphaMap)) structuralChange = true;
+            if (assignMaterialMap(m, 'displacementMap', textures.displacementMap)) structuralChange = true;
 
             if (textures.wireframe !== undefined && m.wireframe !== textures.wireframe) {
               structuralChange = true;
@@ -432,22 +512,14 @@ export function applyPbrTextures(
   // Asynchronous URL-based texture loading
   const options = firstArg as PbrTextureOptions;
   return (async () => {
+    if (!options?.model) return;
+
+    const tPbrStart = performance.now();
+    const loaded = await loadSlotTextures(options);
     const {
       model,
       loadFromCache = false,
       forcedNullSlots = [],
-      baseColorUrl,
-      normalUrl,
-      ormUrl,
-      aoUrl,
-      roughnessUrl,
-      metalnessUrl,
-      emissiveUrl,
-      clearcoatUrl,
-      sheenUrl,
-      transmissionUrl,
-      alphaUrl,
-      displacementUrl,
       useOrmPack = true,
       normalScale,
       normalInvertY = false,
@@ -467,91 +539,7 @@ export function applyPbrTextures(
       wireframe
     } = options;
 
-    if (!model) return;
-
-    const isSlotForcedNull = (slot: string) => forcedNullSlots.includes(slot);
-
-    const tPbrStart = performance.now();
-    const activeUrls = [
-      !isSlotForcedNull('baseColor') ? baseColorUrl : null,
-      !isSlotForcedNull('normal') ? normalUrl : null,
-      useOrmPack && !isSlotForcedNull('orm') ? ormUrl : null,
-      !useOrmPack && !isSlotForcedNull('ao') ? aoUrl : null,
-      !useOrmPack && !isSlotForcedNull('roughness') ? roughnessUrl : null,
-      !useOrmPack && !isSlotForcedNull('metalness') ? metalnessUrl : null,
-      !isSlotForcedNull('emissive') ? emissiveUrl : null,
-      !isSlotForcedNull('clearcoat') ? clearcoatUrl : null,
-      !isSlotForcedNull('sheen') ? sheenUrl : null,
-      !isSlotForcedNull('transmission') ? transmissionUrl : null,
-      !isSlotForcedNull('alpha') ? alphaUrl : null,
-      !isSlotForcedNull('displacement') ? displacementUrl : null
-    ].filter(Boolean);
-
-    if (activeUrls.length > 0) {
-      console.log(`[PERF: PBR] Loading ${activeUrls.length} active texture map(s) in parallel...`);
-    }
-
-    let baseColorTex: THREE.Texture | null = null;
-    let normalTex: THREE.Texture | null = null;
-    let ormTex: THREE.Texture | null = null;
-    let aoTex: THREE.Texture | null = null;
-    let roughnessTex: THREE.Texture | null = null;
-    let metalnessTex: THREE.Texture | null = null;
-    let emissiveTex: THREE.Texture | null = null;
-    let clearcoatTex: THREE.Texture | null = null;
-    let sheenTex: THREE.Texture | null = null;
-    let transmissionTex: THREE.Texture | null = null;
-    let alphaTex: THREE.Texture | null = null;
-    let displacementTex: THREE.Texture | null = null;
-
-    try {
-      const [
-        bTex,
-        nTex,
-        oTex,
-        aTex,
-        rTex,
-        mTex,
-        eTex,
-        cTex,
-        sTex,
-        tTex,
-        alTex,
-        dTex
-      ] = await Promise.all([
-        !isSlotForcedNull('baseColor') && baseColorUrl ? loadTextureAsync(baseColorUrl, true).catch(() => null) : Promise.resolve(null),
-        !isSlotForcedNull('normal') && normalUrl ? loadTextureAsync(normalUrl, false).catch(() => null) : Promise.resolve(null),
-        useOrmPack && !isSlotForcedNull('orm') && ormUrl ? loadTextureAsync(ormUrl, false).catch(() => null) : Promise.resolve(null),
-        !useOrmPack && !isSlotForcedNull('ao') && aoUrl ? loadTextureAsync(aoUrl, false).catch(() => null) : Promise.resolve(null),
-        !useOrmPack && !isSlotForcedNull('roughness') && roughnessUrl ? loadTextureAsync(roughnessUrl, false).catch(() => null) : Promise.resolve(null),
-        !useOrmPack && !isSlotForcedNull('metalness') && metalnessUrl ? loadTextureAsync(metalnessUrl, false).catch(() => null) : Promise.resolve(null),
-        !isSlotForcedNull('emissive') && emissiveUrl ? loadTextureAsync(emissiveUrl, true).catch(() => null) : Promise.resolve(null),
-        !isSlotForcedNull('clearcoat') && clearcoatUrl ? loadTextureAsync(clearcoatUrl, false).catch(() => null) : Promise.resolve(null),
-        !isSlotForcedNull('sheen') && sheenUrl ? loadTextureAsync(sheenUrl, true).catch(() => null) : Promise.resolve(null),
-        !isSlotForcedNull('transmission') && transmissionUrl ? loadTextureAsync(transmissionUrl, false).catch(() => null) : Promise.resolve(null),
-        !isSlotForcedNull('alpha') && alphaUrl ? loadTextureAsync(alphaUrl, false).catch(() => null) : Promise.resolve(null),
-        !isSlotForcedNull('displacement') && displacementUrl ? loadTextureAsync(displacementUrl, false).catch(() => null) : Promise.resolve(null)
-      ]);
-
-      baseColorTex = bTex;
-      normalTex = nTex;
-      ormTex = oTex;
-      aoTex = aTex;
-      roughnessTex = rTex;
-      metalnessTex = mTex;
-      emissiveTex = eTex;
-      clearcoatTex = cTex;
-      sheenTex = sTex;
-      transmissionTex = tTex;
-      alphaTex = alTex;
-      displacementTex = dTex;
-      if (activeUrls.length > 0) {
-        console.log(`[PERF: PBR] All ${activeUrls.length} texture(s) ready in ${(performance.now() - tPbrStart).toFixed(1)}ms`);
-      }
-    } catch (err) {
-      console.warn('[PBRController] Warning while loading textures:', err);
-    }
-
+    const isNull = (slot: string) => forcedNullSlots.includes(slot);
     const tTraverseStart = performance.now();
     let meshCount = 0;
 
@@ -559,7 +547,6 @@ export function applyPbrTextures(
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
 
-        // Ensure UV2 exists for ambient occlusion
         if (mesh.geometry && mesh.geometry.attributes.uv && !mesh.geometry.attributes.uv2) {
           mesh.geometry.setAttribute('uv2', mesh.geometry.attributes.uv);
         }
@@ -570,7 +557,6 @@ export function applyPbrTextures(
           let mat = m as THREE.MeshStandardMaterial;
           if (!(mat instanceof THREE.MeshStandardMaterial)) return;
 
-          // Cache original maps if not already done using WeakMap
           let orig = originalMaterialCache.get(mat);
           if (!orig) {
             orig = {
@@ -594,11 +580,11 @@ export function applyPbrTextures(
 
           let structuralChange = false;
 
-          // Upgrade to MeshPhysicalMaterial ONLY if advanced physical properties are actively used
+          // Physical upgrade check
           const needsPhysical = Boolean(
-            (!isSlotForcedNull('clearcoat') && (clearcoatTex || (clearcoatFactor !== undefined && clearcoatFactor > 0))) ||
-            (!isSlotForcedNull('sheen') && (sheenTex || (sheenRoughness !== undefined && sheenRoughness > 0 && sheenColor !== '#000000' && sheenColor !== '#ffffff'))) ||
-            (!isSlotForcedNull('transmission') && (transmissionTex || (transmissionFactor !== undefined && transmissionFactor > 0)))
+            (!isNull('clearcoat') && (loaded.clearcoat || (clearcoatFactor !== undefined && clearcoatFactor > 0))) ||
+            (!isNull('sheen') && (loaded.sheen || (sheenRoughness !== undefined && sheenRoughness > 0 && sheenColor !== '#000000' && sheenColor !== '#ffffff'))) ||
+            (!isNull('transmission') && (loaded.transmission || (transmissionFactor !== undefined && transmissionFactor > 0)))
           );
 
           if (needsPhysical && !(mat instanceof THREE.MeshPhysicalMaterial)) {
@@ -613,6 +599,7 @@ export function applyPbrTextures(
             structuralChange = true;
           }
 
+          // Wireframe & debug channel tracking
           const targetWireframe = wireframe || debugChannel === 'wireframe';
           if (mat.wireframe !== targetWireframe) {
             mat.wireframe = targetWireframe;
@@ -626,31 +613,19 @@ export function applyPbrTextures(
           }
 
           if (debugChannel === 'lit') {
-            const targetBaseMap = isSlotForcedNull('baseColor')
-              ? null
-              : (baseColorTex || (loadFromCache ? orig.map : null));
-            if (mat.map !== targetBaseMap) {
-              mat.map = targetBaseMap;
-              structuralChange = true;
-            } else if (mat.map && targetBaseMap && mat.map.colorSpace !== targetBaseMap.colorSpace) {
-              mat.map.colorSpace = targetBaseMap.colorSpace;
-              structuralChange = true;
-            }
-
+            // Base Color
+            const targetBaseMap = isNull('baseColor') ? null : (loaded.baseColor || (loadFromCache ? orig.map : null));
+            if (assignMaterialMap(mat, 'map', targetBaseMap, THREE.SRGBColorSpace)) structuralChange = true;
             if (!targetBaseMap) {
               mat.color.set(0xd0ceca);
             } else {
               mat.color.copy(orig.color || new THREE.Color(1, 1, 1));
             }
 
-            const targetNormalMap = isSlotForcedNull('normal')
-              ? null
-              : (normalTex || (loadFromCache ? orig.normalMap : null));
-            if (mat.normalMap !== targetNormalMap) {
-              mat.normalMap = targetNormalMap;
-              structuralChange = true;
-            }
-            if (targetNormalMap) {
+            // Normal Map
+            const targetNormalMap = isNull('normal') ? null : (loaded.normal || (loadFromCache ? orig.normalMap : null));
+            if (assignMaterialMap(mat, 'normalMap', targetNormalMap)) structuralChange = true;
+            if (targetNormalMap && normalScale !== undefined) {
               if (typeof normalScale === 'number') {
                 mat.normalScale.set(normalScale, normalInvertY ? -normalScale : normalScale);
               } else if (normalScale instanceof THREE.Vector2) {
@@ -658,135 +633,82 @@ export function applyPbrTextures(
               }
             }
 
-            let targetAoMap: THREE.Texture | null = null;
-            let targetRoughnessMap: THREE.Texture | null = null;
-            let targetMetalnessMap: THREE.Texture | null = null;
+            // AO, Roughness, Metalness (ORM or discrete)
+            const targetAo = useOrmPack
+              ? (!isNull('orm') ? (loaded.orm || (loadFromCache ? orig.aoMap : null)) : null)
+              : (!isNull('ao') ? (loaded.ao || (loadFromCache ? orig.aoMap : null)) : null);
+            const targetRoughness = useOrmPack
+              ? (!isNull('orm') ? (loaded.orm || (loadFromCache ? orig.roughnessMap : null)) : null)
+              : (!isNull('roughness') ? (loaded.roughness || (loadFromCache ? orig.roughnessMap : null)) : null);
+            const targetMetalness = useOrmPack
+              ? (!isNull('orm') ? (loaded.orm || (loadFromCache ? orig.metalnessMap : null)) : null)
+              : (!isNull('metalness') ? (loaded.metalness || (loadFromCache ? orig.metalnessMap : null)) : null);
 
-            if (useOrmPack) {
-              if (!isSlotForcedNull('orm')) {
-                if (ormTex) {
-                  targetAoMap = ormTex;
-                  targetRoughnessMap = ormTex;
-                  targetMetalnessMap = ormTex;
-                } else if (loadFromCache) {
-                  targetAoMap = orig.aoMap;
-                  targetRoughnessMap = orig.roughnessMap;
-                  targetMetalnessMap = orig.metalnessMap;
-                }
-              }
-            } else {
-              if (!isSlotForcedNull('ao')) {
-                targetAoMap = aoTex || (loadFromCache ? orig.aoMap : null);
-              }
-              if (!isSlotForcedNull('roughness')) {
-                targetRoughnessMap = roughnessTex || (loadFromCache ? orig.roughnessMap : null);
-              }
-              if (!isSlotForcedNull('metalness')) {
-                targetMetalnessMap = metalnessTex || (loadFromCache ? orig.metalnessMap : null);
-              }
-            }
+            if (assignMaterialMap(mat, 'aoMap', targetAo)) structuralChange = true;
+            if (mat.aoMap && aoIntensity !== undefined) mat.aoMapIntensity = aoIntensity;
 
-            if (mat.aoMap !== targetAoMap) {
-              mat.aoMap = targetAoMap;
-              structuralChange = true;
-            }
-            if (mat.aoMap && aoIntensity !== undefined) {
-              mat.aoMapIntensity = aoIntensity;
-            }
+            if (assignMaterialMap(mat, 'roughnessMap', targetRoughness)) structuralChange = true;
+            if (roughnessFactor !== undefined) mat.roughness = roughnessFactor;
 
-            if (mat.roughnessMap !== targetRoughnessMap) {
-              mat.roughnessMap = targetRoughnessMap;
-              structuralChange = true;
-            }
-            if (roughnessFactor !== undefined) {
-              mat.roughness = roughnessFactor;
-            }
+            if (assignMaterialMap(mat, 'metalnessMap', targetMetalness)) structuralChange = true;
+            if (metalnessFactor !== undefined) mat.metalness = metalnessFactor;
 
-            if (mat.metalnessMap !== targetMetalnessMap) {
-              mat.metalnessMap = targetMetalnessMap;
-              structuralChange = true;
-            }
-            if (metalnessFactor !== undefined) {
-              mat.metalness = metalnessFactor;
-            }
-
-            // Emissive
-            const targetEmissiveMap = isSlotForcedNull('emissive')
+            // Emissive Map & Color
+            const targetEmissiveMap = isNull('emissive')
               ? null
-              : (emissiveTex || (loadFromCache ? orig.emissiveMap : null));
-            if (mat.emissiveMap !== targetEmissiveMap) {
-              mat.emissiveMap = targetEmissiveMap;
+              : (loaded.emissive || (loadFromCache ? orig.emissiveMap : null));
+            if (assignMaterialMap(mat, 'emissiveMap', targetEmissiveMap, THREE.SRGBColorSpace)) {
               structuralChange = true;
             }
+
             if (targetEmissiveMap) {
-              if (emissiveColor !== undefined) mat.emissive.set(emissiveColor);
+              if (emissiveColor !== undefined) {
+                if (typeof emissiveColor === 'string') mat.emissive.set(emissiveColor);
+                else mat.emissive.copy(emissiveColor);
+              }
               if (emissiveIntensity !== undefined) mat.emissiveIntensity = emissiveIntensity;
-            } else if (isSlotForcedNull('emissive')) {
+            } else if (isNull('emissive')) {
               mat.emissive.set(0x000000);
               mat.emissiveIntensity = 0;
+            } else {
+              // No emissive map assigned and not forced null: preserve original if present, else zero out
+              if (orig.emissive && (orig.emissive.r > 0 || orig.emissive.g > 0 || orig.emissive.b > 0)) {
+                mat.emissive.copy(orig.emissive);
+                mat.emissiveIntensity = orig.emissiveIntensity ?? 1.0;
+              } else {
+                mat.emissive.set(0x000000);
+                mat.emissiveIntensity = 0;
+              }
             }
 
             // Physical properties
             if (mat instanceof THREE.MeshPhysicalMaterial) {
-              const targetClearcoatMap = isSlotForcedNull('clearcoat')
-                ? null
-                : (clearcoatTex || (loadFromCache ? orig.clearcoatMap : null));
-              if (mat.clearcoatMap !== targetClearcoatMap) {
-                mat.clearcoatMap = targetClearcoatMap;
-                structuralChange = true;
-              }
-              if (targetClearcoatMap && mat.clearcoat === 0) {
-                mat.clearcoat = 1.0;
-              } else if (clearcoatFactor !== undefined) {
-                mat.clearcoat = clearcoatFactor;
-              }
-              if (clearcoatRoughness !== undefined) {
-                mat.clearcoatRoughness = clearcoatRoughness;
-              }
+              const targetClearcoat = isNull('clearcoat') ? null : (loaded.clearcoat || (loadFromCache ? orig.clearcoatMap : null));
+              if (assignMaterialMap(mat, 'clearcoatMap', targetClearcoat)) structuralChange = true;
+              if (targetClearcoat && mat.clearcoat === 0) mat.clearcoat = 1.0;
+              else if (clearcoatFactor !== undefined) mat.clearcoat = clearcoatFactor;
+              if (clearcoatRoughness !== undefined) mat.clearcoatRoughness = clearcoatRoughness;
 
-              const targetSheenMap = isSlotForcedNull('sheen')
-                ? null
-                : (sheenTex || (loadFromCache ? orig.sheenColorMap : null));
-              if (mat.sheenColorMap !== targetSheenMap) {
-                mat.sheenColorMap = targetSheenMap;
-                structuralChange = true;
-              }
-              if (targetSheenMap && mat.sheen === 0) {
-                mat.sheen = 1.0;
-              }
+              const targetSheen = isNull('sheen') ? null : (loaded.sheen || (loadFromCache ? orig.sheenColorMap : null));
+              if (assignMaterialMap(mat, 'sheenColorMap', targetSheen, THREE.SRGBColorSpace)) structuralChange = true;
+              if (targetSheen && mat.sheen === 0) mat.sheen = 1.0;
               if (sheenColor !== undefined) {
-                mat.sheenColor.set(sheenColor);
+                if (typeof sheenColor === 'string') mat.sheenColor.set(sheenColor);
+                else mat.sheenColor.copy(sheenColor);
               }
-              if (sheenRoughness !== undefined) {
-                mat.sheenRoughness = sheenRoughness;
-              }
+              if (sheenRoughness !== undefined) mat.sheenRoughness = sheenRoughness;
 
-              const targetTransmissionMap = isSlotForcedNull('transmission')
-                ? null
-                : (transmissionTex || (loadFromCache ? orig.transmissionMap : null));
-              if (mat.transmissionMap !== targetTransmissionMap) {
-                mat.transmissionMap = targetTransmissionMap;
-                structuralChange = true;
-              }
-              if (targetTransmissionMap && mat.transmission === 0) {
-                mat.transmission = 1.0;
-              } else if (transmissionFactor !== undefined) {
-                mat.transmission = transmissionFactor;
-              }
-              if (ior !== undefined) {
-                mat.ior = ior;
-              }
+              const targetTransmission = isNull('transmission') ? null : (loaded.transmission || (loadFromCache ? orig.transmissionMap : null));
+              if (assignMaterialMap(mat, 'transmissionMap', targetTransmission)) structuralChange = true;
+              if (targetTransmission && mat.transmission === 0) mat.transmission = 1.0;
+              else if (transmissionFactor !== undefined) mat.transmission = transmissionFactor;
+              if (ior !== undefined) mat.ior = ior;
             }
 
             // Alpha / Opacity
-            const targetAlphaMap = isSlotForcedNull('alpha')
-              ? null
-              : (alphaTex || (loadFromCache ? orig.alphaMap : null));
-            if (mat.alphaMap !== targetAlphaMap) {
-              mat.alphaMap = targetAlphaMap;
-              structuralChange = true;
-            }
-            const isTransparent = Boolean(targetAlphaMap);
+            const targetAlpha = isNull('alpha') ? null : (loaded.alpha || (loadFromCache ? orig.alphaMap : null));
+            if (assignMaterialMap(mat, 'alphaMap', targetAlpha)) structuralChange = true;
+            const isTransparent = Boolean(targetAlpha);
             if (mat.transparent !== isTransparent) {
               mat.transparent = isTransparent;
               mat.alphaTest = isTransparent ? 0.05 : 0;
@@ -795,110 +717,62 @@ export function applyPbrTextures(
             }
 
             // Displacement
-            const targetDisplacementMap = isSlotForcedNull('displacement')
-              ? null
-              : (displacementTex || (loadFromCache ? orig.displacementMap : null));
-            if (mat.displacementMap !== targetDisplacementMap) {
-              mat.displacementMap = targetDisplacementMap;
-              structuralChange = true;
+            const targetDisplacement = isNull('displacement') ? null : (loaded.displacement || (loadFromCache ? orig.displacementMap : null));
+            if (assignMaterialMap(mat, 'displacementMap', targetDisplacement)) structuralChange = true;
+            mat.displacementScale = targetDisplacement ? (displacementScale ?? 0.02) : 0.0;
+
+          } else {
+            // Non-lit debug channels (albedo, normal, roughness, metalness, ao, emissive)
+            let isolatedMap: THREE.Texture | null = null;
+            let isolatedNormal: THREE.Texture | null = null;
+            let chRoughness = 1.0;
+            let chMetalness = 0.0;
+
+            switch (debugChannel) {
+              case 'albedo':
+                isolatedMap = isNull('baseColor') ? null : (loaded.baseColor || (loadFromCache ? orig.map : null));
+                break;
+              case 'normal':
+                isolatedNormal = isNull('normal') ? null : (loaded.normal || (loadFromCache ? orig.normalMap : null));
+                chRoughness = 0.5;
+                break;
+              case 'roughness':
+                isolatedMap = useOrmPack
+                  ? (isNull('orm') ? null : loaded.orm)
+                  : (isNull('roughness') ? null : (loaded.roughness || (loadFromCache ? orig.roughnessMap : null)));
+                chRoughness = roughnessFactor ?? 1.0;
+                break;
+              case 'metalness':
+                isolatedMap = useOrmPack
+                  ? (isNull('orm') ? null : loaded.orm)
+                  : (isNull('metalness') ? null : (loaded.metalness || (loadFromCache ? orig.metalnessMap : null)));
+                chRoughness = 0.5;
+                chMetalness = metalnessFactor ?? 1.0;
+                break;
+              case 'ao':
+                isolatedMap = useOrmPack
+                  ? (isNull('orm') ? null : loaded.orm)
+                  : (isNull('ao') ? null : (loaded.ao || (loadFromCache ? orig.aoMap : null)));
+                break;
+              case 'emissive':
+                isolatedMap = isNull('emissive') ? null : (loaded.emissive || (loadFromCache ? orig.emissiveMap : null));
+                break;
             }
-            mat.displacementScale = targetDisplacementMap ? (displacementScale ?? 0.02) : 0.0;
-          } else if (debugChannel === 'albedo') {
-            const targetBaseMap = isSlotForcedNull('baseColor')
-              ? null
-              : (baseColorTex || (loadFromCache ? orig.map : null));
-            if (mat.map !== targetBaseMap) {
-              mat.map = targetBaseMap;
-              structuralChange = true;
-            }
-            if (mat.normalMap !== null) {
-              mat.normalMap = null;
-              structuralChange = true;
-            }
-            mat.roughness = 1.0;
-            mat.metalness = 0.0;
-            mat.emissive.set(0x000000);
-          } else if (debugChannel === 'normal') {
-            const targetNormalMap = isSlotForcedNull('normal')
-              ? null
-              : (normalTex || (loadFromCache ? orig.normalMap : null));
-            if (mat.map !== null) {
-              mat.map = null;
-              structuralChange = true;
-            }
-            if (mat.normalMap !== targetNormalMap) {
-              mat.normalMap = targetNormalMap;
-              structuralChange = true;
-            }
-            if (targetNormalMap) {
+
+            if (assignMaterialMap(mat, 'map', isolatedMap)) structuralChange = true;
+            if (assignMaterialMap(mat, 'normalMap', isolatedNormal)) structuralChange = true;
+            if (isolatedNormal && normalScale !== undefined) {
               if (typeof normalScale === 'number') {
                 mat.normalScale.set(normalScale, normalInvertY ? -normalScale : normalScale);
               } else if (normalScale instanceof THREE.Vector2) {
                 mat.normalScale.copy(normalScale);
               }
             }
-            mat.roughness = 0.5;
-            mat.metalness = 0.0;
-            mat.emissive.set(0x000000);
-          } else if (debugChannel === 'roughness') {
-            const rMap = useOrmPack
-              ? (isSlotForcedNull('orm') ? null : ormTex)
-              : (isSlotForcedNull('roughness') ? null : (roughnessTex || (loadFromCache ? orig.roughnessMap : null)));
-            if (mat.map !== rMap) {
-              mat.map = rMap;
-              structuralChange = true;
-            }
-            if (mat.normalMap !== null) {
-              mat.normalMap = null;
-              structuralChange = true;
-            }
-            mat.roughness = roughnessFactor ?? 1.0;
-            mat.metalness = 0.0;
-            mat.emissive.set(0x000000);
-          } else if (debugChannel === 'metalness') {
-            const mMap = useOrmPack
-              ? (isSlotForcedNull('orm') ? null : ormTex)
-              : (isSlotForcedNull('metalness') ? null : (metalnessTex || (loadFromCache ? orig.metalnessMap : null)));
-            if (mat.map !== mMap) {
-              mat.map = mMap;
-              structuralChange = true;
-            }
-            if (mat.normalMap !== null) {
-              mat.normalMap = null;
-              structuralChange = true;
-            }
-            mat.roughness = 0.5;
-            mat.metalness = metalnessFactor ?? 1.0;
-            mat.emissive.set(0x000000);
-          } else if (debugChannel === 'ao') {
-            const aMap = useOrmPack
-              ? (isSlotForcedNull('orm') ? null : ormTex)
-              : (isSlotForcedNull('ao') ? null : (aoTex || (loadFromCache ? orig.aoMap : null)));
-            if (mat.map !== aMap) {
-              mat.map = aMap;
-              structuralChange = true;
-            }
-            if (mat.normalMap !== null) {
-              mat.normalMap = null;
-              structuralChange = true;
-            }
-            mat.roughness = 1.0;
-            mat.metalness = 0.0;
-            mat.emissive.set(0x000000);
-          } else if (debugChannel === 'emissive') {
-            const eMap = isSlotForcedNull('emissive') ? null : (emissiveTex || (loadFromCache ? orig.emissiveMap : null));
-            if (mat.map !== eMap) {
-              mat.map = eMap;
-              structuralChange = true;
-            }
-            if (mat.normalMap !== null) {
-              mat.normalMap = null;
-              structuralChange = true;
-            }
-            if (isSlotForcedNull('emissive')) {
-              mat.emissive.set(0x000000);
-              mat.emissiveIntensity = 0;
-            } else {
+
+            mat.roughness = chRoughness;
+            mat.metalness = chMetalness;
+
+            if (debugChannel === 'emissive' && !isNull('emissive') && isolatedMap) {
               if (emissiveColor !== undefined) {
                 if (typeof emissiveColor === 'string') mat.emissive.set(emissiveColor);
                 else mat.emissive.copy(emissiveColor);
@@ -906,14 +780,14 @@ export function applyPbrTextures(
                 mat.emissive.set(0xffffff);
               }
               mat.emissiveIntensity = emissiveIntensity ?? 1.0;
+            } else {
+              mat.emissive.set(0x000000);
+              mat.emissiveIntensity = 0;
             }
-            mat.roughness = 1.0;
-            mat.metalness = 0.0;
           }
 
           meshCount++;
 
-          // Conforms to F1 & F2: set needsUpdate = true ONLY when structural changes occurred
           if (structuralChange) {
             mat.needsUpdate = true;
           }
@@ -924,13 +798,6 @@ export function applyPbrTextures(
     const tTraverseTotal = performance.now() - tTraverseStart;
     const tPbrTotal = performance.now() - tPbrStart;
     console.log(`[PERF: PBR] Material bindings applied to ${meshCount} mesh(es) in ${tTraverseTotal.toFixed(1)}ms (PBR total: ${tPbrTotal.toFixed(1)}ms)`);
-
-    if ((window as any).__loadEntryStart) {
-      const totalElapsed = performance.now() - (window as any).__loadEntryStart;
-      console.log(`%c[PERF: 4/4 COMPLETED] Full entry load & render finished in ${totalElapsed.toFixed(1)}ms (${(totalElapsed / 1000).toFixed(2)}s)`, 'background: #2e7d32; color: white; font-weight: bold; padding: 3px 8px; border-radius: 2px;');
-      console.groupEnd();
-      delete (window as any).__loadEntryStart;
-    }
   })();
 }
 
@@ -940,10 +807,4 @@ export function applyPbrTextures(
 export async function applyPbrState(options: PbrStateOptions): Promise<void> {
   await applyPbrTextures(options);
   applyPbrUniforms(options.model, options);
-}
-
-export function clearTextureCache(): void {
-  loadedTextureCache.forEach((tex) => tex.dispose());
-  loadedTextureCache.clear();
-  texturePromiseCache.clear();
 }

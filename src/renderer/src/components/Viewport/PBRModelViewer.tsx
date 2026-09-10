@@ -262,6 +262,10 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
   useEffect(() => {
     if (!modelGroup) return;
 
+    const forcedNullSlots = (Object.entries(slotEnabled || {}) as [string, boolean][])
+      .filter(([_, enabled]) => !enabled)
+      .map(([slot]) => slot);
+
     applyPbrUniforms(modelGroup, {
       roughness: roughnessFactor,
       metalness: metalnessFactor,
@@ -276,7 +280,9 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
       sheenRoughness,
       transmission: transmissionFactor,
       ior,
-      displacementScale
+      displacementScale,
+      forcedNullSlots,
+      slotEnabled
     });
   }, [
     modelGroup,
@@ -293,7 +299,8 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     sheenRoughness,
     transmissionFactor,
     ior,
-    displacementScale
+    displacementScale,
+    slotEnabled
   ]);
 
   // Texture maps and structural PBR updates: asynchronous, recompiles shaders ONLY on structural changes

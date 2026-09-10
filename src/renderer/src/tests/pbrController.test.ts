@@ -337,5 +337,83 @@ describe('pbrController', () => {
       viewportBridge.unregister();
     });
   });
+
+  describe('Emissive map gating and slider interaction', () => {
+    it('does NOT apply white emissive glow when model has no emissive map and slider is moved', async () => {
+      const cleanMat = new THREE.MeshStandardMaterial({
+        roughness: 0.5,
+        metalness: 0.0,
+        emissive: new THREE.Color(0, 0, 0)
+      });
+      const cleanMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), cleanMat);
+      const cleanModel = new THREE.Group();
+      cleanModel.add(cleanMesh);
+
+      // Initialize textures without emissive map
+      await applyPbrTextures({
+        model: cleanModel,
+        baseColorUrl: null,
+        emissiveUrl: null
+      });
+
+      expect(cleanMat.emissive.getHexString()).toBe('000000');
+      expect(cleanMat.emissiveIntensity).toBe(0);
+
+      // Simulate moving a slider (e.g. roughness, metalness) which sends default store values (emissiveColor: #ffffff, emissiveIntensity: 1.0)
+      applyPbrUniforms(cleanModel, {
+        roughness: 0.8,
+        metalness: 0.2,
+        emissive: '#ffffff',
+        emissiveColor: '#ffffff',
+        emissiveIntensity: 1.0
+      });
+
+      // Emissive MUST remain 0 and black because no emissive map is attached!
+      expect(cleanMat.emissive.getHexString()).toBe('000000');
+      expect(cleanMat.emissiveIntensity).toBe(0);
+    });
+
+    it('keeps emissive disabled when forcedNullSlots includes emissive, even when sliders move', async () => {
+      const emissiveTex = new THREE.Texture();
+      mat.emissiveMap = emissiveTex;
+
+      // Forced null slot 'emissive' (e.g. user toggled emissive off)
+      applyPbrUniforms(model, {
+        roughness: 0.65,
+        emissive: '#ffffff',
+        emissiveIntensity: 2.0,
+        forcedNullSlots: ['emissive']
+      });
+
+      expect(mat.emissive.getHexString()).toBe('000000');
+      expect(mat.emissiveIntensity).toBe(0);
+
+      // Simulate user moving another slider with slotEnabled.emissive = false
+      applyPbrUniforms(model, {
+        roughness: 0.9,
+        emissive: '#ffffff',
+        emissiveIntensity: 1.0,
+        slotEnabled: { emissive: false }
+      });
+
+      expect(mat.emissive.getHexString()).toBe('000000');
+      expect(mat.emissiveIntensity).toBe(0);
+    });
+
+    it('applies emissive color and intensity when emissive map is attached and enabled', async () => {
+      const emissiveTex = new THREE.Texture();
+      mat.emissiveMap = emissiveTex;
+
+      applyPbrUniforms(model, {
+        roughness: 0.5,
+        emissive: '#00ff88',
+        emissiveIntensity: 2.5,
+        forcedNullSlots: []
+      });
+
+      expect(mat.emissive.getHexString()).toBe('00ff88');
+      expect(mat.emissiveIntensity).toBe(2.5);
+    });
+  });
 });
 

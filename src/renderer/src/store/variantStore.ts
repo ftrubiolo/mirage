@@ -163,7 +163,7 @@ export const useVariantStore = create<VariantState>((set, get) => ({
               normalScale: pbr.normalScale, normalInvertY: pbr.normalInvertY,
               roughnessFactor: pbr.roughnessFactor, metalnessFactor: pbr.metalnessFactor,
               aoIntensity: pbr.aoIntensity, emissiveIntensity: pbr.emissiveIntensity,
-              emissiveColor: pbr.emissiveColor, clearcoatFactor: pbr.clearcoatFactor,
+              emissiveColor: pbr.emissiveColor, emissiveFullGlow: pbr.emissiveFullGlow, clearcoatFactor: pbr.clearcoatFactor,
               clearcoatRoughness: pbr.clearcoatRoughness, sheenColor: pbr.sheenColor,
               sheenRoughness: pbr.sheenRoughness, transmissionFactor: pbr.transmissionFactor,
               ior: pbr.ior, displacementScale: pbr.displacementScale
@@ -246,7 +246,7 @@ export const useVariantStore = create<VariantState>((set, get) => ({
         normalScale: pbr.normalScale, normalInvertY: pbr.normalInvertY,
         roughnessFactor: pbr.roughnessFactor, metalnessFactor: pbr.metalnessFactor,
         aoIntensity: pbr.aoIntensity, emissiveIntensity: pbr.emissiveIntensity,
-        emissiveColor: pbr.emissiveColor, clearcoatFactor: pbr.clearcoatFactor,
+        emissiveColor: pbr.emissiveColor, emissiveFullGlow: pbr.emissiveFullGlow, clearcoatFactor: pbr.clearcoatFactor,
         clearcoatRoughness: pbr.clearcoatRoughness, sheenColor: pbr.sheenColor,
         sheenRoughness: pbr.sheenRoughness, transmissionFactor: pbr.transmissionFactor,
         ior: pbr.ior, displacementScale: pbr.displacementScale

@@ -4,6 +4,7 @@ import {
   applyPbrUniforms,
   applyPbrTextures,
   applyPbrState,
+  captureOriginalMaterials,
   type PbrUniformValues,
   type PbrTextureValues
 } from '../utils/pbrController';
@@ -413,6 +414,73 @@ describe('pbrController', () => {
 
       expect(mat.emissive.getHexString()).toBe('00ff88');
       expect(mat.emissiveIntensity).toBe(2.5);
+    });
+
+    it('applies full model glow when emissiveFullGlow is true even without an emissive map', async () => {
+      const cleanMat = new THREE.MeshStandardMaterial({
+        roughness: 0.5,
+        metalness: 0.0,
+        emissive: new THREE.Color(0, 0, 0)
+      });
+      const cleanMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), cleanMat);
+      const cleanModel = new THREE.Group();
+      cleanModel.add(cleanMesh);
+
+      // Capture original material as virgin state (no emissive)
+      captureOriginalMaterials(cleanModel);
+
+      // Default: emissiveFullGlow is false, slider moves with default store values
+      applyPbrUniforms(cleanModel, {
+        roughness: 0.7,
+        emissive: '#ff00aa',
+        emissiveIntensity: 2.0,
+        emissiveFullGlow: false
+      });
+      expect(cleanMat.emissive.getHexString()).toBe('000000');
+      expect(cleanMat.emissiveIntensity).toBe(0);
+
+      // User toggles "Brillo uniforme sin mapa" ON
+      applyPbrUniforms(cleanModel, {
+        roughness: 0.7,
+        emissive: '#ff00aa',
+        emissiveIntensity: 2.0,
+        emissiveFullGlow: true
+      });
+      expect(cleanMat.emissive.getHexString()).toBe('ff00aa');
+      expect(cleanMat.emissiveIntensity).toBe(2.0);
+
+      // User toggles it back OFF
+      applyPbrUniforms(cleanModel, {
+        roughness: 0.7,
+        emissive: '#ff00aa',
+        emissiveIntensity: 2.0,
+        emissiveFullGlow: false
+      });
+      expect(cleanMat.emissive.getHexString()).toBe('000000');
+      expect(cleanMat.emissiveIntensity).toBe(0);
+    });
+
+    it('forces emissive to zero when slot is disabled, even if emissiveFullGlow is true', async () => {
+      const cleanMat = new THREE.MeshStandardMaterial({
+        roughness: 0.5,
+        metalness: 0.0,
+        emissive: new THREE.Color(0, 0, 0)
+      });
+      const cleanMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), cleanMat);
+      const cleanModel = new THREE.Group();
+      cleanModel.add(cleanMesh);
+
+      captureOriginalMaterials(cleanModel);
+
+      applyPbrUniforms(cleanModel, {
+        emissive: '#ffff00',
+        emissiveIntensity: 3.0,
+        emissiveFullGlow: true,
+        slotEnabled: { emissive: false }
+      });
+
+      expect(cleanMat.emissive.getHexString()).toBe('000000');
+      expect(cleanMat.emissiveIntensity).toBe(0);
     });
   });
 });

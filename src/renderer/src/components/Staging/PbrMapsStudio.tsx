@@ -30,6 +30,7 @@ export const PbrMapsStudio: React.FC = React.memo(() => {
   const aoIntensity = useWorkbenchStore((s) => s.aoIntensity);
   const emissiveIntensity = useWorkbenchStore((s) => s.emissiveIntensity);
   const emissiveColor = useWorkbenchStore((s) => s.emissiveColor);
+  const emissiveFullGlow = useWorkbenchStore((s) => s.emissiveFullGlow);
   const clearcoatFactor = useWorkbenchStore((s) => s.clearcoatFactor);
   const clearcoatRoughness = useWorkbenchStore((s) => s.clearcoatRoughness);
   const sheenColor = useWorkbenchStore((s) => s.sheenColor);
@@ -45,6 +46,7 @@ export const PbrMapsStudio: React.FC = React.memo(() => {
   const setAoIntensity = useWorkbenchStore((s) => s.setAoIntensity);
   const setEmissiveIntensity = useWorkbenchStore((s) => s.setEmissiveIntensity);
   const setEmissiveColor = useWorkbenchStore((s) => s.setEmissiveColor);
+  const setEmissiveFullGlow = useWorkbenchStore((s) => s.setEmissiveFullGlow);
   const setClearcoatFactor = useWorkbenchStore((s) => s.setClearcoatFactor);
   const setClearcoatRoughness = useWorkbenchStore((s) => s.setClearcoatRoughness);
   const setSheenColor = useWorkbenchStore((s) => s.setSheenColor);
@@ -273,23 +275,44 @@ export const PbrMapsStudio: React.FC = React.memo(() => {
         addVariantLabel="Añadir Variante Emisiva (Arrastra imagen aquí)"
         pickTitle="Seleccionar Mapa Emisivo"
       >
-        <div className="grid grid-cols-2 gap-3 items-center pt-1 min-w-0">
-          <SliderControl
-            label="Intensidad Emisiva:"
-            value={emissiveIntensity}
-            onChange={setEmissiveIntensity}
-            min={0.0}
-            max={10.0}
-            step={0.1}
-            unit="x"
-            formatDecimals={1}
-          />
-          <ColorPickerControl
-            label="Color Emisivo:"
-            value={emissiveColor}
-            onChange={setEmissiveColor}
-            placeholder="#ffffff"
-          />
+        <div className="space-y-3 pt-1 min-w-0">
+          <div className="grid grid-cols-2 gap-3 items-center min-w-0">
+            <SliderControl
+              label="Intensidad Emisiva:"
+              value={emissiveIntensity}
+              onChange={setEmissiveIntensity}
+              min={0.0}
+              max={10.0}
+              step={0.1}
+              unit="x"
+              formatDecimals={1}
+            />
+            <ColorPickerControl
+              label="Color Emisivo:"
+              value={emissiveColor}
+              onChange={setEmissiveColor}
+              placeholder="#ffffff"
+            />
+          </div>
+
+          {/* Switch: Brillo uniforme sin mapa */}
+          <div className="p-2.5 rounded-xs bg-surface-lowest border border-hairline flex items-center justify-between gap-3 shadow-xs">
+            <div className="min-w-0">
+              <span className="text-xs font-semibold text-ink-primary block truncate">
+                Brillo uniforme sin mapa
+              </span>
+              <span className="text-[10px] text-ink-secondary block truncate">
+                {emissiveFullGlow
+                  ? 'Activo: Aplica emisión a toda la superficie aunque no haya mapa'
+                  : 'Inactivo: Solo emite luz con mapa de emisión asignado o embebido'}
+              </span>
+            </div>
+            <Switch
+              checked={emissiveFullGlow}
+              onChange={setEmissiveFullGlow}
+              title={emissiveFullGlow ? 'Desactivar brillo uniforme' : 'Activar brillo uniforme'}
+            />
+          </div>
         </div>
       </MapSlotPicker>
 

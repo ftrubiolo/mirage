@@ -96,6 +96,7 @@ export interface PbrUniformValues {
   color?: string | THREE.Color;
   emissive?: string | THREE.Color;
   emissiveColor?: string | THREE.Color;
+  emissiveFullGlow?: boolean;
   displacementScale?: number;
   forcedNullSlots?: string[];
   slotEnabled?: Partial<Record<string, boolean>>;
@@ -145,6 +146,7 @@ export interface PbrTextureOptions {
   aoIntensity?: number;
   emissiveIntensity?: number;
   emissiveColor?: string | THREE.Color;
+  emissiveFullGlow?: boolean;
   clearcoatFactor?: number;
   clearcoatRoughness?: number;
   sheenColor?: string | THREE.Color;
@@ -176,6 +178,40 @@ interface OrigMaterialData {
 }
 
 const originalMaterialCache = new WeakMap<THREE.Material, OrigMaterialData>();
+
+/**
+ * Captures pristine initial material properties before any runtime PBR modifications occur.
+ * Prevents effect lifecycle race conditions from poisoning original GLTF material state.
+ */
+export function captureOriginalMaterials(model: THREE.Object3D): void {
+  if (!model) return;
+  model.traverse((child) => {
+    if ((child as THREE.Mesh).isMesh) {
+      const mesh = child as THREE.Mesh;
+      const rawMats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const m of rawMats) {
+        if (m instanceof THREE.MeshStandardMaterial && !originalMaterialCache.has(m)) {
+          originalMaterialCache.set(m, {
+            map: m.map,
+            normalMap: m.normalMap,
+            roughnessMap: m.roughnessMap,
+            metalnessMap: m.metalnessMap,
+            aoMap: m.aoMap,
+            emissiveMap: m.emissiveMap,
+            emissive: m.emissive ? m.emissive.clone() : new THREE.Color(0, 0, 0),
+            emissiveIntensity: m.emissiveIntensity ?? 1.0,
+            clearcoatMap: (m as any).clearcoatMap || null,
+            sheenColorMap: (m as any).sheenColorMap || null,
+            transmissionMap: (m as any).transmissionMap || null,
+            alphaMap: m.alphaMap || null,
+            displacementMap: (m as any).displacementMap || null,
+            color: m.color ? m.color.clone() : new THREE.Color(1, 1, 1)
+          });
+        }
+      }
+    }
+  });
+}
 
 function upgradeToPhysicalMaterial(mat: THREE.MeshStandardMaterial): THREE.MeshPhysicalMaterial {
   const physMat = new THREE.MeshPhysicalMaterial();
@@ -298,7 +334,7 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
             }
           }
 
-          // Emissive: only active if slot is NOT disabled AND material actually has an emissive map or native emission
+          // Emissive: only active if slot is NOT disabled AND (material has map OR native emission OR emissiveFullGlow)
           if (isSlotDisabled('emissive')) {
             m.emissive.set(0x000000);
             m.emissiveIntensity = 0;
@@ -311,8 +347,9 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
                 (orig.emissive && (orig.emissive.r > 0 || orig.emissive.g > 0 || orig.emissive.b > 0))
               )
             );
+            const isFullGlow = Boolean(uniforms.emissiveFullGlow);
 
-            if (hasEmissiveMap) {
+            if (hasEmissiveMap || isFullGlow) {
               const col = uniforms.emissive !== undefined ? uniforms.emissive : uniforms.emissiveColor;
               if (col !== undefined) {
                 if (typeof col === 'string') m.emissive.set(col);
@@ -339,7 +376,7 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
                 m.emissiveIntensity = uniforms.emissiveIntensity;
               }
             } else {
-              // Material in viewer has no emissive map and had no native emissive: keep zeroed
+              // Material in viewer has no emissive map, no native emissive, and no full glow: keep zeroed
               m.emissive.set(0x000000);
               m.emissiveIntensity = 0;
             }
@@ -528,6 +565,7 @@ export function applyPbrTextures(
       aoIntensity,
       emissiveIntensity,
       emissiveColor,
+      emissiveFullGlow = false,
       clearcoatFactor,
       clearcoatRoughness,
       sheenColor,
@@ -661,17 +699,17 @@ export function applyPbrTextures(
               structuralChange = true;
             }
 
-            if (targetEmissiveMap) {
+            if (isNull('emissive')) {
+              mat.emissive.set(0x000000);
+              mat.emissiveIntensity = 0;
+            } else if (targetEmissiveMap || emissiveFullGlow) {
               if (emissiveColor !== undefined) {
                 if (typeof emissiveColor === 'string') mat.emissive.set(emissiveColor);
                 else mat.emissive.copy(emissiveColor);
               }
               if (emissiveIntensity !== undefined) mat.emissiveIntensity = emissiveIntensity;
-            } else if (isNull('emissive')) {
-              mat.emissive.set(0x000000);
-              mat.emissiveIntensity = 0;
             } else {
-              // No emissive map assigned and not forced null: preserve original if present, else zero out
+              // No emissive map assigned, not forced null, not full glow: preserve original if present, else zero out
               if (orig.emissive && (orig.emissive.r > 0 || orig.emissive.g > 0 || orig.emissive.b > 0)) {
                 mat.emissive.copy(orig.emissive);
                 mat.emissiveIntensity = orig.emissiveIntensity ?? 1.0;
@@ -772,7 +810,7 @@ export function applyPbrTextures(
             mat.roughness = chRoughness;
             mat.metalness = chMetalness;
 
-            if (debugChannel === 'emissive' && !isNull('emissive') && isolatedMap) {
+            if (debugChannel === 'emissive' && !isNull('emissive') && (isolatedMap || emissiveFullGlow)) {
               if (emissiveColor !== undefined) {
                 if (typeof emissiveColor === 'string') mat.emissive.set(emissiveColor);
                 else mat.emissive.copy(emissiveColor);

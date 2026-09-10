@@ -26,6 +26,7 @@ export interface LibraryEntrySettings {
   aoIntensity: number;
   emissiveIntensity: number;
   emissiveColor: string;
+  emissiveFullGlow?: boolean;
   clearcoatFactor: number;
   clearcoatRoughness: number;
   sheenColor: string;

@@ -5,7 +5,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { useThree } from '@react-three/fiber';
 import { useWorkbenchStore } from '../../store/workbenchStore';
 import { useViewportStore } from '../../store/viewportStore';
-import { applyPbrState, applyPbrTextures, applyPbrUniforms } from '../../utils/pbrController';
+import { applyPbrState, applyPbrTextures, applyPbrUniforms, captureOriginalMaterials } from '../../utils/pbrController';
 import { analyzeGlbHierarchy } from '../../utils/glbValidator';
 import { viewportBridge } from '../../utils/viewportBridge';
 
@@ -97,6 +97,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
             console.log(`[PERF: 3D VIEWER] GLB binary fetched & parsed in ${(tGltfParsed - tLoaderReady).toFixed(1)}ms`);
 
             const scene = gltf.scene;
+            captureOriginalMaterials(scene);
             rawSceneRef.current = scene;
 
             // 1. Analyze hierarchy and stats (raw scale 1.0)
@@ -246,6 +247,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     aoIntensity,
     emissiveIntensity,
     emissiveColor,
+    emissiveFullGlow,
     clearcoatFactor,
     clearcoatRoughness,
     sheenColor,
@@ -274,6 +276,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
       aoMapIntensity: aoIntensity,
       emissiveIntensity,
       emissive: emissiveColor,
+      emissiveFullGlow,
       clearcoat: clearcoatFactor,
       clearcoatRoughness,
       sheenColor,
@@ -293,6 +296,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     aoIntensity,
     emissiveIntensity,
     emissiveColor,
+    emissiveFullGlow,
     clearcoatFactor,
     clearcoatRoughness,
     sheenColor,
@@ -333,6 +337,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
       aoIntensity,
       emissiveIntensity,
       emissiveColor,
+      emissiveFullGlow,
       clearcoatFactor,
       clearcoatRoughness,
       sheenColor,
@@ -362,6 +367,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     useOrmPack,
     loadFromCache,
     slotEnabled,
+    emissiveFullGlow,
     debugChannel,
     showWireframe
   ]);

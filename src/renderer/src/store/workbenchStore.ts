@@ -64,6 +64,7 @@ export interface LoadWorkbenchData {
     aoIntensity?: number;
     emissiveIntensity?: number;
     emissiveColor?: string;
+    emissiveFullGlow?: boolean;
     clearcoatFactor?: number;
     clearcoatRoughness?: number;
     sheenColor?: string;
@@ -130,6 +131,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
   setAoIntensity: (val) => get().setPbrProperty('aoIntensity', val),
   setEmissiveIntensity: (val) => get().setPbrProperty('emissiveIntensity', val),
   setEmissiveColor: (val) => get().setPbrProperty('emissiveColor', val),
+  setEmissiveFullGlow: (val) => get().setPbrProperty('emissiveFullGlow', val),
   setClearcoatFactor: (val) => get().setPbrProperty('clearcoatFactor', val),
   setClearcoatRoughness: (val) => get().setPbrProperty('clearcoatRoughness', val),
   setSheenColor: (val) => get().setPbrProperty('sheenColor', val),
@@ -374,6 +376,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set, get) => ({
       aoIntensity: targetVarSettings.aoIntensity ?? defaultPbrParameters.aoIntensity,
       emissiveIntensity: targetVarSettings.emissiveIntensity ?? defaultPbrParameters.emissiveIntensity,
       emissiveColor: targetVarSettings.emissiveColor ?? defaultPbrParameters.emissiveColor,
+      emissiveFullGlow: targetVarSettings.emissiveFullGlow ?? defaultPbrParameters.emissiveFullGlow,
       clearcoatFactor: targetVarSettings.clearcoatFactor ?? defaultPbrParameters.clearcoatFactor,
       clearcoatRoughness: targetVarSettings.clearcoatRoughness ?? defaultPbrParameters.clearcoatRoughness,
       sheenColor: targetVarSettings.sheenColor ?? defaultPbrParameters.sheenColor,
@@ -442,7 +445,7 @@ useWorkbenchStore.setState = (partial: any, replace?: any) => {
 
   const pbrKeys: (keyof PbrMaterialState)[] = [
     'normalScale', 'normalInvertY', 'roughnessFactor', 'metalnessFactor', 'aoIntensity',
-    'emissiveIntensity', 'emissiveColor', 'clearcoatFactor', 'clearcoatRoughness',
+    'emissiveIntensity', 'emissiveColor', 'emissiveFullGlow', 'clearcoatFactor', 'clearcoatRoughness',
     'sheenColor', 'sheenRoughness', 'transmissionFactor', 'ior', 'displacementScale',
     'baseColorMap', 'normalMap', 'ormMap', 'aoMap', 'roughnessMap', 'metalnessMap',
     'emissiveMap', 'clearcoatMap', 'sheenMap', 'transmissionMap', 'alphaMap', 'displacementMap',

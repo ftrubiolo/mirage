@@ -69,6 +69,7 @@ export interface PbrMaterialParameters {
   aoIntensity: number;
   emissiveIntensity: number;
   emissiveColor: string;
+  emissiveFullGlow: boolean;
   clearcoatFactor: number;
   clearcoatRoughness: number;
   sheenColor: string;
@@ -86,6 +87,7 @@ export const defaultPbrParameters: PbrMaterialParameters = {
   aoIntensity: 1.0,
   emissiveIntensity: 1.0,
   emissiveColor: '#ffffff',
+  emissiveFullGlow: false,
   clearcoatFactor: 0.0,
   clearcoatRoughness: 0.1,
   sheenColor: '#ffffff',
@@ -124,6 +126,7 @@ export interface PbrMaterialState extends PbrMaterialParameters {
   setAoIntensity: (val: number) => void;
   setEmissiveIntensity: (val: number) => void;
   setEmissiveColor: (val: string) => void;
+  setEmissiveFullGlow: (val: boolean) => void;
   setClearcoatFactor: (val: number) => void;
   setClearcoatRoughness: (val: number) => void;
   setSheenColor: (val: string) => void;
@@ -190,6 +193,7 @@ export const usePbrMaterialStore = create<PbrMaterialState>((set, get) => ({
   setAoIntensity: (aoIntensity) => set({ aoIntensity }),
   setEmissiveIntensity: (emissiveIntensity) => set({ emissiveIntensity }),
   setEmissiveColor: (emissiveColor) => set({ emissiveColor }),
+  setEmissiveFullGlow: (emissiveFullGlow) => set({ emissiveFullGlow }),
   setClearcoatFactor: (clearcoatFactor) => set({ clearcoatFactor }),
   setClearcoatRoughness: (clearcoatRoughness) => set({ clearcoatRoughness }),
   setSheenColor: (sheenColor) => set({ sheenColor }),
@@ -273,6 +277,7 @@ export const usePbrMaterialStore = create<PbrMaterialState>((set, get) => ({
       aoIntensity: s.aoIntensity ?? defaultPbrParameters.aoIntensity,
       emissiveIntensity: s.emissiveIntensity ?? defaultPbrParameters.emissiveIntensity,
       emissiveColor: s.emissiveColor ?? defaultPbrParameters.emissiveColor,
+      emissiveFullGlow: s.emissiveFullGlow ?? defaultPbrParameters.emissiveFullGlow,
       clearcoatFactor: s.clearcoatFactor ?? defaultPbrParameters.clearcoatFactor,
       clearcoatRoughness: s.clearcoatRoughness ?? defaultPbrParameters.clearcoatRoughness,
       sheenColor: s.sheenColor ?? defaultPbrParameters.sheenColor,

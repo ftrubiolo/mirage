@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useModelStore } from '../store/modelStore';
-import { useWorkbenchStore } from '../store/workbenchStore';
+import { loadWorkbenchState } from '../store/workbenchActions';
 
 describe('modelStore & Model Replacement Cache Busting', () => {
   beforeEach(() => {
@@ -85,10 +85,8 @@ describe('modelStore & Model Replacement Cache Busting', () => {
   });
 
   it('loadWorkbenchState handles switching between different entries and preserves current model when same', () => {
-    const wb = useWorkbenchStore.getState();
-
     // 1. Load entry A
-    wb.loadWorkbenchState({
+    loadWorkbenchState({
       productId: 'chair',
       productSlug: 'chair',
       productName: 'Office Chair',
@@ -105,7 +103,7 @@ describe('modelStore & Model Replacement Cache Busting', () => {
     useModelStore.getState().setIsModelLoading(false);
 
     // 2. Re-hydrate entry A with same clean URL (e.g. updating metadata)
-    wb.loadWorkbenchState({
+    loadWorkbenchState({
       productId: 'chair',
       productSlug: 'chair',
       productName: 'Office Chair Renamed',
@@ -119,7 +117,7 @@ describe('modelStore & Model Replacement Cache Busting', () => {
     expect(useModelStore.getState().isModelLoading).toBe(false);
 
     // 3. Switch to entry B
-    wb.loadWorkbenchState({
+    loadWorkbenchState({
       productId: 'table',
       productSlug: 'table',
       productName: 'Dining Table',

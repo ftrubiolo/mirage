@@ -288,6 +288,11 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
 
       for (const m of rawMats) {
         if (m instanceof THREE.MeshStandardMaterial) {
+          // Tracks whether this material needs its shader program rebuilt.
+          // Uniform-only changes (roughness, metalness, intensities) must NOT
+          // set it; only changes to the *presence* of a shader feature do.
+          let structuralChange = false;
+
           // Roughness
           const roughness = uniforms.roughness !== undefined ? uniforms.roughness : uniforms.roughnessFactor;
           if (roughness !== undefined) {
@@ -384,38 +389,53 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
 
           // Physical properties (MeshPhysicalMaterial)
           if (m instanceof THREE.MeshPhysicalMaterial) {
+            // Clearcoat / Transmission / Sheen are "presence" features in
+            // three.js: the shader chunks for them are only compiled in when the
+            // factor is above zero at program-build time, and
+            // `WebGLRenderer.needsProgramChange` does NOT watch these factors.
+            // Assigning a value without flagging the crossing leaves the slider
+            // with no visible effect. Only the 0 <-> >0 transition needs the
+            // recompile, so dragging within the range stays cheap.
+            //
             // Clearcoat
+            let nextClearcoat = m.clearcoat;
             if (isSlotDisabled('clearcoat')) {
-              m.clearcoat = 0;
+              nextClearcoat = 0;
             } else {
               const clearcoat = uniforms.clearcoat !== undefined ? uniforms.clearcoat : uniforms.clearcoatFactor;
               if (clearcoat !== undefined) {
-                m.clearcoat = clearcoat;
+                nextClearcoat = clearcoat;
               }
               if (uniforms.clearcoatRoughness !== undefined) {
                 m.clearcoatRoughness = uniforms.clearcoatRoughness;
               }
             }
+            if (nextClearcoat > 0 !== m.clearcoat > 0) structuralChange = true;
+            m.clearcoat = nextClearcoat;
 
             // Transmission & IOR
+            let nextTransmission = m.transmission;
             if (isSlotDisabled('transmission')) {
-              m.transmission = 0;
+              nextTransmission = 0;
             } else {
               const transmission = uniforms.transmission !== undefined ? uniforms.transmission : uniforms.transmissionFactor;
               if (transmission !== undefined) {
-                m.transmission = transmission;
+                nextTransmission = transmission;
               }
               if (uniforms.ior !== undefined) {
                 m.ior = uniforms.ior;
               }
             }
+            if (nextTransmission > 0 !== m.transmission > 0) structuralChange = true;
+            m.transmission = nextTransmission;
 
             // Sheen
+            let nextSheen = m.sheen;
             if (isSlotDisabled('sheen')) {
-              m.sheen = 0;
+              nextSheen = 0;
             } else {
               if (uniforms.sheen !== undefined) {
-                m.sheen = uniforms.sheen;
+                nextSheen = uniforms.sheen;
               }
               if (uniforms.sheenColor !== undefined) {
                 if (typeof uniforms.sheenColor === 'string') {
@@ -428,6 +448,8 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
                 m.sheenRoughness = uniforms.sheenRoughness;
               }
             }
+            if (nextSheen > 0 !== m.sheen > 0) structuralChange = true;
+            m.sheen = nextSheen;
           }
 
           // Displacement
@@ -435,6 +457,12 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
             m.displacementScale = 0;
           } else if (uniforms.displacementScale !== undefined) {
             m.displacementScale = uniforms.displacementScale;
+          }
+
+          // Only the feature-presence crossings set above reach this. A plain
+          // slider drag between two non-zero values never recompiles.
+          if (structuralChange) {
+            m.needsUpdate = true;
           }
         }
       }
@@ -626,7 +654,8 @@ export function applyPbrTextures(
           );
 
           if (needsPhysical && !(mat instanceof THREE.MeshPhysicalMaterial)) {
-            const physMat = upgradeToPhysicalMaterial(mat);
+            const previousMat = mat;
+            const physMat = upgradeToPhysicalMaterial(previousMat);
             originalMaterialCache.set(physMat, orig);
             mat = physMat;
             if (Array.isArray(mesh.material)) {
@@ -634,6 +663,10 @@ export function applyPbrTextures(
             } else {
               mesh.material = physMat;
             }
+            // The replaced MeshStandardMaterial is no longer referenced by the
+            // mesh. Its textures are shared with the new material, so only the
+            // material itself is disposed here.
+            previousMat.dispose();
             structuralChange = true;
           }
 
@@ -840,7 +873,8 @@ export function applyPbrTextures(
 }
 
 /**
- * Backward-compatible helper applying both textures and dynamic uniforms.
+ * Applies textures and uniforms together, in the order the viewport uses them.
+ * This is the entry point the integration tests drive.
  */
 export async function applyPbrState(options: PbrStateOptions): Promise<void> {
   await applyPbrTextures(options);

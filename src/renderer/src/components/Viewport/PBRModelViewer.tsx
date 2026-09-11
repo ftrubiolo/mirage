@@ -3,9 +3,10 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { useThree } from '@react-three/fiber';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { useModelStore } from '../../store/modelStore';
+import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
 import { useViewportStore } from '../../store/viewportStore';
-import { applyPbrState, applyPbrTextures, applyPbrUniforms, captureOriginalMaterials } from '../../utils/pbrController';
+import { applyPbrTextures, applyPbrUniforms, captureOriginalMaterials, clearTextureCache } from '../../utils/pbrController';
 import { analyzeGlbHierarchy } from '../../utils/glbValidator';
 import { viewportBridge } from '../../utils/viewportBridge';
 
@@ -39,13 +40,11 @@ export async function getSharedGltfLoader(): Promise<GLTFLoader> {
 interface PBRModelViewerProps {
   modelUrl: string;
   orbitControlsRef: React.MutableRefObject<any>;
-  isEmbeddedPreview?: boolean;
 }
 
 export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
   modelUrl,
-  orbitControlsRef,
-  isEmbeddedPreview = false
+  orbitControlsRef
 }) => {
   const { camera } = useThree();
   const [modelGroup, setModelGroup] = useState<THREE.Group | null>(null);
@@ -53,11 +52,9 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const rawSceneRef = useRef<THREE.Group | null>(null);
 
-  const {
-    setModelStats,
-    unitScale,
-    setIsModelLoading
-  } = useWorkbenchStore();
+  const setModelStats = useModelStore((state) => state.setModelStats);
+  const unitScale = useModelStore((state) => state.unitScale);
+  const setIsModelLoading = useModelStore((state) => state.setIsModelLoading);
 
   const { showWireframe, resetCameraCounter } = useViewportStore();
 
@@ -65,9 +62,8 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
   useEffect(() => {
     if (!modelUrl) {
       setLoading(false);
-      if (!isEmbeddedPreview) {
-        setIsModelLoading(false);
-      }
+            setIsModelLoading(false);
+    
       return;
     }
 
@@ -76,16 +72,15 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     console.log(`[PERF: 3D VIEWER] Starting GLB load for: ${modelUrl}`);
 
     setLoading(true);
-    if (!isEmbeddedPreview) {
-      setIsModelLoading(true);
-    }
+        setIsModelLoading(true);
+  
     setError(null);
 
     // Safety watchdog timeout (6000ms): guarantees isModelLoading is never permanently stuck
     const watchdog = setTimeout(() => {
-      if (!isEmbeddedPreview && !isCancelled) {
+      if (!isCancelled) {
         console.warn(`[PBRModelViewer] Watchdog triggered after 6000ms for ${modelUrl}. Clearing stuck loading overlay.`);
-        useWorkbenchStore.getState().setIsModelLoading(false);
+        useModelStore.getState().setIsModelLoading(false);
       }
     }, 6000);
 
@@ -113,14 +108,20 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
                     mesh.geometry.dispose();
                   }
                   if (mesh.material) {
-                    if (Array.isArray(mesh.material)) {
-                      mesh.material.forEach((m) => m.dispose());
-                    } else {
-                      mesh.material.dispose();
+                    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                    for (const material of materials) {
+                      // Textures injected from the PBR library are cached
+                      // module-wide and shared between materials, so disposing
+                      // the material does not free them. Drop the whole texture
+                      // cache with the old model; entries still in use by the
+                      // new model are re-fetched on demand.
+                      material.dispose();
                     }
                   }
                 }
               });
+              // Nothing now references the previous model's injected textures.
+              clearTextureCache();
             }
 
             const scene = gltf.scene;
@@ -172,10 +173,9 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
             }
 
             setModelGroup(scene);
-            if (!isEmbeddedPreview) {
-              viewportBridge.registerModel(scene);
-              setIsModelLoading(false);
-            }
+                        viewportBridge.registerModel(scene);
+            setIsModelLoading(false);
+          
             setLoading(false);
             console.log(`[PERF: 3D VIEWER] Model placed in scene in ${(performance.now() - tModelStart).toFixed(1)}ms`);
           },
@@ -186,9 +186,8 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
             console.error(`[PERF: 3D VIEWER] Error loading model after ${(performance.now() - tModelStart).toFixed(1)}ms:`, err);
             setError('No se pudo cargar el modelo 3D. Verifica el archivo.');
             setLoading(false);
-            if (!isEmbeddedPreview) {
-              setIsModelLoading(false);
-            }
+                        setIsModelLoading(false);
+          
           }
         );
       } catch (err) {
@@ -197,9 +196,8 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
         console.error(`[PERF: 3D VIEWER] Loader init error after ${(performance.now() - tModelStart).toFixed(1)}ms:`, err);
         setError('Error al inicializar el visor 3D.');
         setLoading(false);
-        if (!isEmbeddedPreview) {
-          setIsModelLoading(false);
-        }
+                setIsModelLoading(false);
+      
       }
     }
 
@@ -208,12 +206,11 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     return () => {
       clearTimeout(watchdog);
       isCancelled = true;
-      if (!isEmbeddedPreview) {
-        viewportBridge.registerModel(null);
-        useWorkbenchStore.getState().setIsModelLoading(false);
-      }
+            viewportBridge.registerModel(null);
+      useModelStore.getState().setIsModelLoading(false);
+    
     };
-  }, [modelUrl, isEmbeddedPreview]);
+  }, [modelUrl]);
 
   // Handle dynamic unit scale change (e.g. mm -> m or cm -> m)
   useEffect(() => {
@@ -223,16 +220,19 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     scene.scale.set(unitScale, unitScale, unitScale);
     scene.updateMatrixWorld(true);
 
-    // Compute bounding box and re-center on floor
+    // Compute bounding box and re-center on floor.
+    //
+    // These must be ABSOLUTE assignments. The loader path sets the same values
+    // with `.set()`; using `+=` here made each unit-scale change re-apply the
+    // previous offset on top of the current one, so the model drifted further
+    // off-centre every time.
     const box = new THREE.Box3().setFromObject(scene);
     const center = new THREE.Vector3();
     box.getCenter(center);
     const size = new THREE.Vector3();
     box.getSize(size);
 
-    scene.position.x += -center.x;
-    scene.position.y += -box.min.y;
-    scene.position.z += -center.z;
+    scene.position.set(-center.x, -box.min.y, -center.z);
     scene.updateMatrixWorld(true);
 
     // Re-frame camera
@@ -253,39 +253,37 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     }
   }, [unitScale]);
 
-  const {
-    baseColorMap,
-    normalMap,
-    ormMap,
-    aoMap,
-    roughnessMap,
-    metalnessMap,
-    emissiveMap,
-    clearcoatMap,
-    sheenMap,
-    transmissionMap,
-    alphaMap,
-    displacementMap,
-    useOrmPack,
-    normalScale,
-    normalInvertY,
-    roughnessFactor,
-    metalnessFactor,
-    aoIntensity,
-    emissiveIntensity,
-    emissiveColor,
-    emissiveFullGlow,
-    clearcoatFactor,
-    clearcoatRoughness,
-    sheenColor,
-    sheenRoughness,
-    transmissionFactor,
-    ior,
-    displacementScale,
-    loadFromCache,
-    slotEnabled,
-    debugChannel
-  } = useWorkbenchStore();
+  const baseColorMap = usePbrMaterialStore((state) => state.baseColorMap);
+  const normalMap = usePbrMaterialStore((state) => state.normalMap);
+  const ormMap = usePbrMaterialStore((state) => state.ormMap);
+  const aoMap = usePbrMaterialStore((state) => state.aoMap);
+  const roughnessMap = usePbrMaterialStore((state) => state.roughnessMap);
+  const metalnessMap = usePbrMaterialStore((state) => state.metalnessMap);
+  const emissiveMap = usePbrMaterialStore((state) => state.emissiveMap);
+  const clearcoatMap = usePbrMaterialStore((state) => state.clearcoatMap);
+  const sheenMap = usePbrMaterialStore((state) => state.sheenMap);
+  const transmissionMap = usePbrMaterialStore((state) => state.transmissionMap);
+  const alphaMap = usePbrMaterialStore((state) => state.alphaMap);
+  const displacementMap = usePbrMaterialStore((state) => state.displacementMap);
+  const useOrmPack = usePbrMaterialStore((state) => state.useOrmPack);
+  const normalScale = usePbrMaterialStore((state) => state.normalScale);
+  const normalInvertY = usePbrMaterialStore((state) => state.normalInvertY);
+  const roughnessFactor = usePbrMaterialStore((state) => state.roughnessFactor);
+  const metalnessFactor = usePbrMaterialStore((state) => state.metalnessFactor);
+  const aoIntensity = usePbrMaterialStore((state) => state.aoIntensity);
+  const emissiveIntensity = usePbrMaterialStore((state) => state.emissiveIntensity);
+  const emissiveColor = usePbrMaterialStore((state) => state.emissiveColor);
+  const emissiveFullGlow = usePbrMaterialStore((state) => state.emissiveFullGlow);
+  const clearcoatFactor = usePbrMaterialStore((state) => state.clearcoatFactor);
+  const clearcoatRoughness = usePbrMaterialStore((state) => state.clearcoatRoughness);
+  const sheenColor = usePbrMaterialStore((state) => state.sheenColor);
+  const sheenRoughness = usePbrMaterialStore((state) => state.sheenRoughness);
+  const transmissionFactor = usePbrMaterialStore((state) => state.transmissionFactor);
+  const ior = usePbrMaterialStore((state) => state.ior);
+  const displacementScale = usePbrMaterialStore((state) => state.displacementScale);
+  const loadFromCache = usePbrMaterialStore((state) => state.loadFromCache);
+  const slotEnabled = usePbrMaterialStore((state) => state.slotEnabled);
+  const debugChannel = usePbrMaterialStore((state) => state.debugChannel);
 
   // Dynamic PBR uniform updates: synchronous, zero recompilation, 60 FPS slider response
   useEffect(() => {

@@ -77,7 +77,19 @@ export async function processTextureTask(options: TextureProcessOptions): Promis
             reject(new Error(res.error || 'Error desconocido al procesar'));
           }
         } catch {
-          resolve(options.outputPath);
+          // Unparseable stdout: verify the work actually landed on disk rather
+          // than reporting success on the strength of the exit code alone.
+          fs.stat(options.outputPath)
+            .then((stat) => {
+              if (stat.size > 0) {
+                resolve(options.outputPath);
+              } else {
+                reject(new Error(`El proceso no produjo salida: ${stderr || stdout}`));
+              }
+            })
+            .catch(() =>
+              reject(new Error(`No se pudo verificar la salida del proceso: ${stderr || stdout}`))
+            );
         }
       } else {
         reject(new Error(`Proceso falló con código ${code}: ${stderr || stdout}`));

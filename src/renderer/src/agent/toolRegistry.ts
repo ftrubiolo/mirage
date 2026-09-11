@@ -1,12 +1,19 @@
-import { useWorkbenchStore, SlotName, ALL_SLOT_NAMES } from '../store/workbenchStore';
+import {
+  ALL_SLOT_NAMES,
+  PbrMaterialParameters,
+  SlotName,
+  usePbrMaterialStore
+} from '../store/pbrMaterialStore';
+import { useModelStore } from '../store/modelStore';
 import { useViewportStore, EnvironmentPreset } from '../store/viewportStore';
 import {
   commandManager,
+  isMaterialParameter,
   SetPbrPropertyCommand,
   SetEnvironmentPresetCommand,
-  ToggleSlotEnabledCommand
-} from './commandManager';
-import { ProposedAction } from '../types/agent';
+  ToggleSlotEnabledCommand,
+  TransactionCommand
+} from '../utils/commandManager';
 import { GLOBAL_MATERIAL_PRESETS } from '../types/library';
 
 export interface AgentToolDeclaration {
@@ -51,9 +58,17 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
       required: ['property', 'value']
     },
     execute: async ({ property, value }) => {
-      const wb = useWorkbenchStore.getState();
-      const before = (wb as any)[property];
-      const cmd = new SetPbrPropertyCommand(property, value);
+      // The schema above is advisory: the model's output is untrusted, so the
+      // property name is re-checked here against the real parameter set.
+      if (!isMaterialParameter(property)) {
+        throw new Error(`Propiedad PBR desconocida: ${String(property)}`);
+      }
+      if (typeof value !== 'number' && typeof value !== 'string' && typeof value !== 'boolean') {
+        throw new Error('Valor inválido para el parámetro PBR');
+      }
+      const pbr = usePbrMaterialStore.getState();
+      const before = pbr[property as keyof PbrMaterialParameters];
+      const cmd = new SetPbrPropertyCommand(property, value as number | string);
       await commandManager.execute(cmd);
       return {
         summary: `Ajustado ${property} de ${before} a ${value}`,
@@ -80,8 +95,8 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
       required: ['slot', 'enabled']
     },
     execute: async ({ slot, enabled }) => {
-      const wb = useWorkbenchStore.getState();
-      const before = wb.slotEnabled[slot as SlotName] ?? true;
+      const pbr = usePbrMaterialStore.getState();
+      const before = pbr.slotEnabled[slot as SlotName] ?? true;
       const cmd = new ToggleSlotEnabledCommand(slot as SlotName, enabled);
       await commandManager.execute(cmd);
       return {
@@ -130,9 +145,9 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
       required: ['channel']
     },
     execute: async ({ channel }) => {
-      const wb = useWorkbenchStore.getState();
-      const before = wb.debugChannel;
-      wb.setDebugChannel(channel);
+      const pbr = usePbrMaterialStore.getState();
+      const before = pbr.debugChannel;
+      pbr.setDebugChannel(channel);
       return {
         summary: `Pase de depuración cambiado a "${channel}"`,
         diff: [{ property: 'debugChannel', before, after: channel }]
@@ -147,8 +162,7 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
       properties: {}
     },
     execute: async () => {
-      const wb = useWorkbenchStore.getState();
-      const stats = wb.modelStats;
+      const stats = useModelStore.getState().modelStats;
       if (!stats) {
         return {
           summary: 'No hay modelo cargado para auditar.',
@@ -190,37 +204,29 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
         return { summary: `Preset "${presetId}" no encontrado.`, diff: [] };
       }
 
-      commandManager.beginTransaction(`Aplicar Preset: ${preset.name}`);
-      const wb = useWorkbenchStore.getState();
-      const diff: { property: string; before: any; after: any }[] = [];
-
-      if (presetId === 'cuero') {
-        diff.push({ property: 'roughnessFactor', before: wb.roughnessFactor, after: 0.35 });
-        diff.push({ property: 'metalnessFactor', before: wb.metalnessFactor, after: 0.0 });
-        diff.push({ property: 'clearcoatFactor', before: wb.clearcoatFactor, after: 0.2 });
-        wb.setRoughnessFactor(0.35);
-        wb.setMetalnessFactor(0.0);
-        wb.setClearcoatFactor(0.2);
-      } else if (presetId === 'lino') {
-        diff.push({ property: 'roughnessFactor', before: wb.roughnessFactor, after: 0.85 });
-        diff.push({ property: 'metalnessFactor', before: wb.metalnessFactor, after: 0.0 });
-        diff.push({ property: 'sheenRoughness', before: wb.sheenRoughness, after: 0.6 });
-        wb.setRoughnessFactor(0.85);
-        wb.setMetalnessFactor(0.0);
-        wb.setSheenRoughness(0.6);
-      } else if (presetId === 'metal') {
-        diff.push({ property: 'roughnessFactor', before: wb.roughnessFactor, after: 0.2 });
-        diff.push({ property: 'metalnessFactor', before: wb.metalnessFactor, after: 0.9 });
-        wb.setRoughnessFactor(0.2);
-        wb.setMetalnessFactor(0.9);
-      } else if (presetId === 'madera') {
-        diff.push({ property: 'roughnessFactor', before: wb.roughnessFactor, after: 0.5 });
-        diff.push({ property: 'metalnessFactor', before: wb.metalnessFactor, after: 0.0 });
-        wb.setRoughnessFactor(0.5);
-        wb.setMetalnessFactor(0.0);
+      const values = MATERIAL_PRESET_VALUES[String(presetId)];
+      if (!values) {
+        return { summary: `Preset "${presetId}" sin valores definidos.`, diff: [] };
       }
 
-      await commandManager.commitTransaction(`Aplicar Preset: ${preset.name}`);
+      const pbr = usePbrMaterialStore.getState();
+      const diff = Object.entries(values).map(([property, after]) => ({
+        property,
+        before: (pbr as any)[property],
+        after
+      }));
+
+      // Each change is recorded as a real command inside a transaction, so the
+      // whole preset is one undoable step. The previous implementation mutated
+      // the stores directly between begin/commit, which committed an EMPTY
+      // transaction: the agent reported success and Ctrl+Z did nothing.
+      const commands = Object.entries(values).map(
+        ([property, after]) => new SetPbrPropertyCommand(property, after)
+      );
+      await commandManager.execute(
+        new TransactionCommand(`Aplicar Preset: ${preset.name}`, commands)
+      );
+
       return {
         summary: `Preset "${preset.name}" aplicado correctamente.`,
         diff
@@ -228,6 +234,17 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
     }
   }
 ];
+
+/**
+ * Preset id -> the material parameters it sets. Held as data so the diff shown
+ * to the user and the commands actually executed cannot drift apart.
+ */
+const MATERIAL_PRESET_VALUES: Record<string, Record<string, number | string>> = {
+  cuero: { roughnessFactor: 0.35, metalnessFactor: 0.0, clearcoatFactor: 0.2 },
+  lino: { roughnessFactor: 0.85, metalnessFactor: 0.0, sheenRoughness: 0.6 },
+  metal: { roughnessFactor: 0.2, metalnessFactor: 0.9 },
+  madera: { roughnessFactor: 0.5, metalnessFactor: 0.0 }
+};
 
 export function getOpenAIToolsDeclarations(mcpTools: any[] = []): any[] {
   const tools: any[] = [];

@@ -153,35 +153,46 @@ export async function openPathInSystemExplorer(targetPath: string): Promise<bool
   // Spawn detached xdg-open/gio and unref to guarantee immediate non-blocking return.
   if (isLinux) {
     return new Promise<boolean>((resolve) => {
+      // Resolves once the process has actually spawned (not once it exits), so
+      // the UI stays responsive while still reporting a genuine failure.
+      const tryGio = () => {
+        try {
+          const gio = spawn('gio', ['open', folderToOpen], {
+            detached: true,
+            stdio: 'ignore'
+          });
+          gio.once('spawn', () => {
+            gio.unref();
+            resolve(true);
+          });
+          gio.once('error', (gioErr) => {
+            console.error('[openPathInSystemExplorer] gio open failed:', gioErr);
+            resolve(false);
+          });
+        } catch (err) {
+          console.error('[openPathInSystemExplorer] Failed to spawn gio:', err);
+          resolve(false);
+        }
+      };
+
       try {
         const child = spawn('xdg-open', [folderToOpen], {
           detached: true,
           stdio: 'ignore'
         });
 
-        child.on('error', (err) => {
-          console.warn('[openPathInSystemExplorer] xdg-open error, trying gio open fallback:', err);
-          try {
-            const gio = spawn('gio', ['open', folderToOpen], {
-              detached: true,
-              stdio: 'ignore'
-            });
-            gio.on('error', (gioErr) => {
-              console.error('[openPathInSystemExplorer] gio open failed:', gioErr);
-              resolve(false);
-            });
-            gio.unref();
-            resolve(true);
-          } catch {
-            resolve(false);
-          }
+        child.once('spawn', () => {
+          child.unref();
+          resolve(true);
         });
 
-        child.unref();
-        resolve(true);
+        child.once('error', (err) => {
+          console.warn('[openPathInSystemExplorer] xdg-open error, trying gio open fallback:', err);
+          tryGio();
+        });
       } catch (err) {
         console.error('[openPathInSystemExplorer] Failed to spawn xdg-open:', err);
-        resolve(false);
+        tryGio();
       }
     });
   }
@@ -189,18 +200,25 @@ export async function openPathInSystemExplorer(targetPath: string): Promise<bool
   // macOS: open command detached
   if (isMacOS) {
     return new Promise<boolean>((resolve) => {
+      const fallback = () => {
+        shell
+          .openPath(folderToOpen)
+          .then((err) => resolve(!err))
+          .catch(() => resolve(false));
+      };
+
       try {
         const child = spawn('open', [folderToOpen], {
           detached: true,
           stdio: 'ignore'
         });
-        child.on('error', () => {
-          shell.openPath(folderToOpen).then((err) => resolve(!err)).catch(() => resolve(false));
+        child.once('spawn', () => {
+          child.unref();
+          resolve(true);
         });
-        child.unref();
-        resolve(true);
+        child.once('error', () => fallback());
       } catch {
-        shell.openPath(folderToOpen).then((err) => resolve(!err)).catch(() => resolve(false));
+        fallback();
       }
     });
   }

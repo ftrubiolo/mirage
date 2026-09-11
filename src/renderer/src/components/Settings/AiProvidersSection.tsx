@@ -306,7 +306,7 @@ export const AiProvidersSection: React.FC = () => {
 
       {/* Clean Slate Empty State */}
       {providers.length === 0 ? (
-        <div className="p-8 rounded-lg bg-surface-lowest border border-hairline flex flex-col items-center justify-center text-center space-y-4 shadow-xs">
+        <div className="p-8 rounded-xs bg-surface-lowest border border-hairline flex flex-col items-center justify-center text-center space-y-4 shadow-xs">
           <div className="p-3.5 rounded-full bg-surface-low border border-hairline text-action shadow-xs">
             <Sparkles className="w-6 h-6" />
           </div>
@@ -321,14 +321,14 @@ export const AiProvidersSection: React.FC = () => {
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <button
               onClick={handleOpenAddStandard}
-              className="px-4 py-2 bg-action hover:bg-action-hover text-white text-xs font-semibold rounded-lg shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2 bg-action hover:bg-action-hover text-white text-xs font-semibold rounded-xs shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Añadir Proveedor</span>
             </button>
             <button
               onClick={handleOpenAddCustom}
-              className="px-4 py-2 bg-surface-low hover:bg-surface-high border border-hairline text-ink-primary text-xs font-medium rounded-lg shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2 bg-surface-low hover:bg-surface-high border border-hairline text-ink-primary text-xs font-medium rounded-xs shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
             >
               <Server className="w-4 h-4 text-action" />
               <span>Añadir Servidor Local / Custom</span>
@@ -343,7 +343,7 @@ export const AiProvidersSection: React.FC = () => {
             return (
               <div
                 key={p.id}
-                className="flex items-center justify-between p-3.5 bg-surface-lowest border border-hairline rounded-lg hover:border-hairline-strong transition-all shadow-xs"
+                className="flex items-center justify-between p-3.5 bg-surface-lowest border border-hairline rounded-xs hover:border-hairline-strong transition-all shadow-xs"
               >
                 <div className="flex items-center gap-3">
                   <span
@@ -387,7 +387,7 @@ export const AiProvidersSection: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <button
               onClick={handleOpenAddStandard}
-              className="py-2.5 px-4 rounded-lg border border-dashed border-hairline-strong hover:border-action bg-surface-low/50 hover:bg-surface-low text-ink-secondary hover:text-ink-primary text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="py-2.5 px-4 rounded-xs border border-dashed border-hairline-strong hover:border-action bg-surface-low/50 hover:bg-surface-low text-ink-secondary hover:text-ink-primary text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4 text-action" />
               <span>Añadir Proveedor</span>
@@ -395,7 +395,7 @@ export const AiProvidersSection: React.FC = () => {
 
             <button
               onClick={handleOpenAddCustom}
-              className="py-2.5 px-4 rounded-lg border border-dashed border-hairline-strong hover:border-action bg-surface-low/50 hover:bg-surface-low text-ink-secondary hover:text-ink-primary text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              className="py-2.5 px-4 rounded-xs border border-dashed border-hairline-strong hover:border-action bg-surface-low/50 hover:bg-surface-low text-ink-secondary hover:text-ink-primary text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <Server className="w-4 h-4 text-action" />
               <span>Añadir Servidor Local / Custom</span>
@@ -446,7 +446,7 @@ export const AiProvidersSection: React.FC = () => {
       >
         <form onSubmit={handleConnectStandard} className="space-y-4 text-xs font-body">
           {standardError && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg flex items-start gap-2 text-xs text-rose-400">
+            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xs flex items-start gap-2 text-xs text-rose-400">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <div className="leading-snug">{standardError}</div>
             </div>
@@ -576,7 +576,7 @@ export const AiProvidersSection: React.FC = () => {
       >
         <form onSubmit={handleConnectCustom} className="space-y-4 text-xs font-body">
           {customError && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg flex items-start gap-2 text-xs text-rose-400">
+            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xs flex items-start gap-2 text-xs text-rose-400">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <div className="leading-snug">{customError}</div>
             </div>

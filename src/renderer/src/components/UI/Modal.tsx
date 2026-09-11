@@ -54,7 +54,7 @@ export const Modal: React.FC<ModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`bg-surface-lowest border border-hairline-strong rounded-lg shadow-2xl w-full ${sizeClasses[size]} overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 cursor-default select-text ${className}`}
+        className={`bg-surface-lowest border border-hairline-strong rounded-xs shadow-2xl w-full ${sizeClasses[size]} overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 cursor-default select-text ${className}`}
       >
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-hairline bg-surface-low flex items-center justify-between shrink-0 select-none">
@@ -66,7 +66,7 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-container transition-colors cursor-pointer"
+            className="p-1 rounded-xs text-ink-tertiary hover:text-ink-primary hover:bg-surface-container transition-colors cursor-pointer"
             title="Cerrar modal (Esc)"
           >
             <X className="w-4 h-4" />

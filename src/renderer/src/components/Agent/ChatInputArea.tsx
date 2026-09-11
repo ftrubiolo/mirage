@@ -1,10 +1,12 @@
 import React, { useRef, useEffect } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Square } from 'lucide-react';
 
 export interface ChatInputAreaProps {
   inputText: string;
   onInputChange: (value: string) => void;
   onSend: () => void;
+  /** Aborts the in-flight request, keeping whatever was already streamed. */
+  onStop?: () => void;
   disabled?: boolean;
   isStreaming?: boolean;
   placeholder?: string;
@@ -14,6 +16,7 @@ export const ChatInputArea: React.FC<ChatInputAreaProps> = ({
   inputText,
   onInputChange,
   onSend,
+  onStop,
   disabled = false,
   isStreaming = false,
   placeholder = 'Escribe una instrucción para el modelo o consulta técnica... (Enter para enviar)'
@@ -26,6 +29,11 @@ export const ChatInputArea: React.FC<ChatInputAreaProps> = ({
       if (inputText.trim() && !disabled && !isStreaming) {
         onSend();
       }
+    }
+    // Escape acts as a panic stop while the model is generating.
+    if (e.key === 'Escape' && isStreaming && onStop) {
+      e.preventDefault();
+      onStop();
     }
   };
 
@@ -48,15 +56,26 @@ export const ChatInputArea: React.FC<ChatInputAreaProps> = ({
         className="flex-1 bg-transparent resize-none text-xs text-ink-primary placeholder:text-ink-tertiary focus:outline-none p-1 font-body leading-relaxed disabled:opacity-50 select-text"
       />
 
-      <button
-        type="button"
-        onClick={onSend}
-        disabled={!inputText.trim() || disabled || isStreaming}
-        className="p-2.5 bg-action hover:bg-action-hover text-white rounded-xs transition-colors disabled:opacity-40 shrink-0 cursor-pointer shadow-xs"
-        title="Enviar instrucción (Enter)"
-      >
-        <Send className="w-4 h-4" />
-      </button>
+      {isStreaming && onStop ? (
+        <button
+          type="button"
+          onClick={onStop}
+          className="p-2.5 bg-surface-container hover:bg-surface-high text-ink-primary border border-hairline rounded-xs transition-colors shrink-0 cursor-pointer"
+          title="Detener la generación (Esc)"
+        >
+          <Square className="w-4 h-4" />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={onSend}
+          disabled={!inputText.trim() || disabled}
+          className="p-2.5 bg-action hover:bg-action-hover text-white rounded-xs transition-colors disabled:opacity-40 shrink-0 cursor-pointer shadow-xs"
+          title="Enviar instrucción (Enter)"
+        >
+          <Send className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 };

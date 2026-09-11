@@ -2,6 +2,7 @@ import React from 'react';
 import { Box } from 'lucide-react';
 import { LibraryEntry } from '../../types/library';
 import { ResizeHandle } from '../UI/ResizeHandle';
+import { StatusBadge, StatusVariant } from '../UI/StatusBadge';
 
 export interface TechnicalSheetSectionProps {
   currentEntry: LibraryEntry;
@@ -22,6 +23,26 @@ export const TechnicalSheetSection: React.FC<TechnicalSheetSectionProps> = ({
   handleMouseDown,
   handleReset
 }) => {
+  // Exhaustive over LibraryEntry['status'], so adding a status without a
+  // matching palette tier becomes a compile error.
+  const statusVariant: StatusVariant = ((): StatusVariant => {
+    switch (currentEntry.status) {
+      case 'active':
+        return 'active';
+      case 'workshop':
+        return 'workshop';
+      case 'pending':
+        return 'pending';
+      case 'madeToOrder':
+        return 'madeToOrder';
+      case 'dispatched':
+        return 'dispatched';
+      case 'neutral':
+      default:
+        return 'neutral';
+    }
+  })();
+
   return (
     <aside
       style={{ width: `${sidebarWidth}px` }}
@@ -68,9 +89,9 @@ export const TechnicalSheetSection: React.FC<TechnicalSheetSectionProps> = ({
             {currentEntry.title}
           </h2>
           <div className="flex items-center gap-2 mt-1">
-            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-mono uppercase font-semibold border rounded-xs bg-emerald-50 text-emerald-800 border-emerald-300/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-500/30">
+            <StatusBadge variant={statusVariant}>
               {currentEntry.status || 'Workshop'}
-            </span>
+            </StatusBadge>
             <span className="text-[11px] font-mono text-ink-secondary capitalize">
               {currentEntry.category || 'Mobiliario'}
             </span>

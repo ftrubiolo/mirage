@@ -279,6 +279,104 @@ export async function exportModelToGLB(): Promise<ArrayBuffer> {
   });
 }
 
+function stripMaterialTextures(mat: THREE.Material): THREE.Material {
+  const clean = mat.clone() as any;
+  clean.map = null;
+  clean.normalMap = null;
+  clean.roughnessMap = null;
+  clean.metalnessMap = null;
+  clean.aoMap = null;
+  clean.emissiveMap = null;
+  clean.clearcoatMap = null;
+  clean.clearcoatRoughnessMap = null;
+  clean.sheenColorMap = null;
+  clean.sheenRoughnessMap = null;
+  clean.transmissionMap = null;
+  clean.alphaMap = null;
+  clean.displacementMap = null;
+  clean.needsUpdate = true;
+  return clean;
+}
+
+/**
+ * Exports clean 3D geometry scaled 1:1 in meters without heavy embedded textures.
+ * Conforms to the Sera Muebles geometry.glb template specification.
+ */
+export async function exportCleanGeometryGLB(): Promise<ArrayBuffer> {
+  const targetObject = viewportBridge.modelGroup || viewportBridge.scene;
+  if (!targetObject) {
+    throw new Error('No hay ningún modelo 3D cargado para exportar.');
+  }
+
+  const cloned = targetObject.clone(true);
+
+  cloned.traverse((child) => {
+    if ((child as THREE.Mesh).isMesh) {
+      const mesh = child as THREE.Mesh;
+      if (mesh.material) {
+        if (Array.isArray(mesh.material)) {
+          mesh.material = mesh.material.map((m) => stripMaterialTextures(m));
+        } else {
+          mesh.material = stripMaterialTextures(mesh.material);
+        }
+      }
+    }
+  });
+
+  const { GLTFExporter } = await import('three/examples/jsm/exporters/GLTFExporter.js');
+  const exporter = new GLTFExporter();
+
+  return new Promise<ArrayBuffer>((resolve, reject) => {
+    exporter.parse(
+      cloned,
+      (result) => {
+        if (result instanceof ArrayBuffer) {
+          resolve(result);
+        } else {
+          const str = JSON.stringify(result);
+          const buf = new TextEncoder().encode(str).buffer;
+          resolve(buf);
+        }
+      },
+      (error) => reject(error),
+      {
+        binary: true,
+        embedImages: false,
+        includeCustomExtensions: true
+      }
+    );
+  });
+}
+
+export interface UsdzExportOptions {
+  maxTextureSize?: number;
+  quickLookCompatible?: boolean;
+}
+
+/**
+ * Exports model to Apple AR Quick Look USDZ archive.
+ */
+export async function exportModelToUSDZ(options: UsdzExportOptions = {}): Promise<ArrayBuffer> {
+  const targetObject = viewportBridge.modelGroup || viewportBridge.scene;
+  if (!targetObject) {
+    throw new Error('No hay ningún modelo 3D cargado para exportar.');
+  }
+
+  const { USDZExporter } = await import('three/examples/jsm/exporters/USDZExporter.js');
+  const exporter = new USDZExporter();
+
+  const uint8Result = await exporter.parseAsync(targetObject, {
+    quickLookCompatible: true,
+    maxTextureSize: options.maxTextureSize || 2048,
+    ...options
+  });
+
+  return uint8Result.buffer.slice(
+    uint8Result.byteOffset,
+    uint8Result.byteOffset + uint8Result.byteLength
+  );
+}
+
 export async function createWebPackageZip(params: {
   glbBuffer: ArrayBuffer;
   posterBlob: Blob;

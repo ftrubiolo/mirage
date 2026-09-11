@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MoreVertical, Maximize2 } from 'lucide-react';
-import { SlotName, MapVariantItem } from '../../store/workbenchStore';
+import { SlotName } from '../../store/pbrMaterialStore';
+import { MapVariantItem } from '../../store/variantStore';
 import { ThumbnailImage } from '../UI/ThumbnailImage';
 import { MapVariantContextMenu } from './MapVariantContextMenu';
 
@@ -139,12 +140,16 @@ export const MapVariantRowItem: React.FC<MapVariantRowItemProps> = React.memo(({
           setDragOverKey(rowDropKey);
         }}
         onDragLeave={() => setDragOverKey(null)}
-        onDrop={(e) => {
+        onDrop={async (e) => {
           e.preventDefault();
           setDragOverKey(null);
           if (e.dataTransfer.files.length > 0) {
             const filePath = window.electronAPI.getPathForFile(e.dataTransfer.files[0]);
-            if (filePath) onDropReplace(filePath);
+            if (filePath) {
+              // Grant the main process read access to the dropped asset's folder.
+              await window.electronAPI.approveDroppedPath(filePath);
+              onDropReplace(filePath);
+            }
           }
         }}
         className={`p-2.5 rounded-xs border transition-all flex items-center justify-between gap-3 cursor-pointer group ${

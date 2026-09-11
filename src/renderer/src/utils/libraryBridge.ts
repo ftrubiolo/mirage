@@ -1,4 +1,11 @@
-import { useWorkbenchStore, SlotName, PbrSlotMap } from '../store/workbenchStore';
+import { SlotName, PbrSlotMap, usePbrMaterialStore } from '../store/pbrMaterialStore';
+import { useModelStore } from '../store/modelStore';
+import {
+  selectActiveColorwayId,
+  selectColorways,
+  useVariantStore
+} from '../store/variantStore';
+import { loadWorkbenchState, resetWorkbenchStores } from '../store/workbenchActions';
 import { useAppStore } from '../store/appStore';
 import { LibraryEntry, LibraryEntrySettings, FurnitureCategory } from '../types/library';
 import { captureViewportSnapshot } from './viewportBridge';
@@ -7,6 +14,7 @@ import { getFileName, getFileExt, isPathInside } from './pathUtils';
 let isProgrammaticUpdate = false;
 let lastSavedHash = '';
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+let changeCheckTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const setProgrammaticUpdate = (val: boolean) => {
   isProgrammaticUpdate = val;
@@ -17,49 +25,55 @@ export const cancelAutoSave = () => {
     clearTimeout(autoSaveTimer);
     autoSaveTimer = null;
   }
+  if (changeCheckTimer) {
+    clearTimeout(changeCheckTimer);
+    changeCheckTimer = null;
+  }
   useAppStore.getState().setIsAutoSaving(false);
 };
 
-export const computeWorkbenchHash = (state: any): string => {
-  if (!state) return '';
+export const computeWorkbenchHash = (): string => {
+  const model = useModelStore.getState();
+  const pbr = usePbrMaterialStore.getState();
+  const variant = useVariantStore.getState();
   return JSON.stringify({
-    name: state.productName,
-    model: state.modelFilePath,
-    modelFileSize: state.modelFileSize,
-    baseColor: state.baseColorMap?.filePath,
-    normal: state.normalMap?.filePath,
-    orm: state.ormMap?.filePath,
-    ao: state.aoMap?.filePath,
-    rough: state.roughnessMap?.filePath,
-    metal: state.metalnessMap?.filePath,
-    emissive: state.emissiveMap?.filePath,
-    clearcoat: state.clearcoatMap?.filePath,
-    sheen: state.sheenMap?.filePath,
-    transmission: state.transmissionMap?.filePath,
-    alpha: state.alphaMap?.filePath,
-    disp: state.displacementMap?.filePath,
-    normalScale: state.normalScale,
-    normalInvertY: state.normalInvertY,
-    roughnessFactor: state.roughnessFactor,
-    metalnessFactor: state.metalnessFactor,
-    aoIntensity: state.aoIntensity,
-    emissiveIntensity: state.emissiveIntensity,
-    emissiveColor: state.emissiveColor,
-    emissiveFullGlow: state.emissiveFullGlow,
-    clearcoatFactor: state.clearcoatFactor,
-    clearcoatRoughness: state.clearcoatRoughness,
-    sheenColor: state.sheenColor,
-    sheenRoughness: state.sheenRoughness,
-    transmissionFactor: state.transmissionFactor,
-    ior: state.ior,
-    displacementScale: state.displacementScale,
-    unitScale: state.unitScale,
-    unitType: state.unitType,
-    useOrmPack: state.useOrmPack,
-    loadFromCache: state.loadFromCache,
-    slotEnabled: state.slotEnabled,
-    variants: Array.isArray(state.variants)
-      ? state.variants.map((v: any) => ({
+    name: model.productName,
+    model: model.modelFilePath,
+    modelFileSize: model.modelFileSize,
+    baseColor: pbr.baseColorMap?.filePath,
+    normal: pbr.normalMap?.filePath,
+    orm: pbr.ormMap?.filePath,
+    ao: pbr.aoMap?.filePath,
+    rough: pbr.roughnessMap?.filePath,
+    metal: pbr.metalnessMap?.filePath,
+    emissive: pbr.emissiveMap?.filePath,
+    clearcoat: pbr.clearcoatMap?.filePath,
+    sheen: pbr.sheenMap?.filePath,
+    transmission: pbr.transmissionMap?.filePath,
+    alpha: pbr.alphaMap?.filePath,
+    disp: pbr.displacementMap?.filePath,
+    normalScale: pbr.normalScale,
+    normalInvertY: pbr.normalInvertY,
+    roughnessFactor: pbr.roughnessFactor,
+    metalnessFactor: pbr.metalnessFactor,
+    aoIntensity: pbr.aoIntensity,
+    emissiveIntensity: pbr.emissiveIntensity,
+    emissiveColor: pbr.emissiveColor,
+    emissiveFullGlow: pbr.emissiveFullGlow,
+    clearcoatFactor: pbr.clearcoatFactor,
+    clearcoatRoughness: pbr.clearcoatRoughness,
+    sheenColor: pbr.sheenColor,
+    sheenRoughness: pbr.sheenRoughness,
+    transmissionFactor: pbr.transmissionFactor,
+    ior: pbr.ior,
+    displacementScale: pbr.displacementScale,
+    unitScale: model.unitScale,
+    unitType: model.unitType,
+    useOrmPack: pbr.useOrmPack,
+    loadFromCache: pbr.loadFromCache,
+    slotEnabled: pbr.slotEnabled,
+    variants: Array.isArray(variant.variants)
+      ? variant.variants.map((v: any) => ({
           id: v.id,
           name: v.name,
           isDefault: v.isDefault,
@@ -69,47 +83,57 @@ export const computeWorkbenchHash = (state: any): string => {
           slotEnabled: v.slotEnabled
         }))
       : [],
-    activeVariantId: state.activeVariantId,
-    mapVariants: state.mapVariants
-      ? Object.entries(state.mapVariants).map(([s, list]: [string, any]) => ({
+    activeVariantId: variant.activeVariantId,
+    mapVariants: variant.mapVariants
+      ? Object.entries(variant.mapVariants).map(([s, list]: [string, any]) => ({
           slot: s,
           variants: (list || []).map((v: any) => ({ id: v.id, name: v.name, file: v.filePath }))
         }))
       : [],
-    activeVariantIds: state.activeVariantIds,
-    colorways: Array.isArray(state.colorways)
-      ? state.colorways.map((c: any) => ({ id: c.id, name: c.name, file: c.baseColorFilePath }))
-      : [],
-    activeColorwayId: state.activeColorwayId
+    activeVariantIds: variant.activeVariantIds,
+    colorways: selectColorways(variant).map((c) => ({
+      id: c.id,
+      name: c.name,
+      file: c.baseColorFilePath
+    })),
+    activeColorwayId: selectActiveColorwayId(variant)
   });
 };
 
 export const syncSavedHash = (hash?: string) => {
-  lastSavedHash = hash !== undefined ? hash : computeWorkbenchHash(useWorkbenchStore.getState());
+  lastSavedHash = hash !== undefined ? hash : computeWorkbenchHash();
 };
 
-export const handleWorkbenchChange = (state: any) => {
+export const handleWorkbenchChange = (): void => {
   // Guard 1: Ignore any programmatic store updates (loading, resetting, hydration)
   if (isProgrammaticUpdate) return;
 
   // Guard 2: Only auto-save if an entry is actively loaded in the workbench
-  const activeSlug = useAppStore.getState().activeEntrySlug;
-  if (!activeSlug) return;
+  if (!useAppStore.getState().activeEntrySlug) return;
 
-  // Guard 3: Compare against previous saved baseline hash
-  const currentHash = computeWorkbenchHash(state);
-  if (!lastSavedHash) {
+  // Hashing walks the whole variant/map tree, and store notifications arrive at
+  // input-event rate while a slider is dragged. Coalesce the burst: the actual
+  // write is debounced by 500ms anyway, so nothing is lost by checking late.
+  if (changeCheckTimer) clearTimeout(changeCheckTimer);
+  changeCheckTimer = setTimeout(() => {
+    changeCheckTimer = null;
+    if (isProgrammaticUpdate) return;
+    if (!useAppStore.getState().activeEntrySlug) return;
+
+    const currentHash = computeWorkbenchHash();
+    if (!lastSavedHash) {
+      lastSavedHash = currentHash;
+      return;
+    }
+
+    if (lastSavedHash === currentHash) {
+      return;
+    }
+
+    // A genuine user modification occurred -> update hash and trigger auto-save
     lastSavedHash = currentHash;
-    return;
-  }
-
-  if (lastSavedHash === currentHash) {
-    return;
-  }
-
-  // A genuine user modification occurred -> update hash and trigger auto-save
-  lastSavedHash = currentHash;
-  autoSaveActiveEntry(false);
+    autoSaveActiveEntry(false);
+  }, 150);
 };
 
 export const resetWorkbench = async () => {
@@ -118,7 +142,7 @@ export const resetWorkbench = async () => {
   useAppStore.getState().setActiveEntry(null);
   useAppStore.getState().setActiveEntrySlug(null);
   setProgrammaticUpdate(true);
-  useWorkbenchStore.getState().resetAll();
+  resetWorkbenchStores();
   syncSavedHash('');
   setProgrammaticUpdate(false);
 };
@@ -134,14 +158,15 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
 
   try {
     const activeSlug = useAppStore.getState().activeEntrySlug;
-    const store = useWorkbenchStore.getState();
+    const model = useModelStore.getState();
+    const variant = useVariantStore.getState();
 
     // If this entry is already open and loaded in the workbench, check if target variant needs switching
-    if (activeSlug === entry.slug && store.modelUrl) {
-      if (targetVariantId && targetVariantId !== store.activeVariantId) {
-        store.selectVariant(targetVariantId);
+    if (activeSlug === entry.slug && model.modelUrl) {
+      if (targetVariantId && targetVariantId !== variant.activeVariantId) {
+        variant.selectVariant(targetVariantId);
       }
-      store.setIsModelLoading(false);
+      model.setIsModelLoading(false);
       useAppStore.getState().setView('workbench');
       return;
     }
@@ -155,9 +180,9 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
 
     // If model is already loaded and identical, ensure loading flag is off
     const cleanModelUrl = modelUrl ? modelUrl.split('?')[0] : null;
-    const cleanStoreUrl = store.modelUrl ? store.modelUrl.split('?')[0] : null;
+    const cleanStoreUrl = model.modelUrl ? model.modelUrl.split('?')[0] : null;
     if (!cleanModelUrl || cleanModelUrl === cleanStoreUrl) {
-      store.setIsModelLoading(false);
+      model.setIsModelLoading(false);
     }
 
     // Restore maps
@@ -220,7 +245,7 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
     });
 
     // Apply entire state atomically
-    store.loadWorkbenchState({
+    loadWorkbenchState({
       productId: entry.slug,
       productSlug: entry.slug,
       productName: entry.title,
@@ -244,7 +269,7 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
     useAppStore.getState().setActiveEntrySlug(entry.slug);
 
     // Sync baseline hash so no auto-save is triggered from loading
-    syncSavedHash(computeWorkbenchHash(useWorkbenchStore.getState()));
+    syncSavedHash(computeWorkbenchHash());
   } finally {
     setProgrammaticUpdate(false);
   }
@@ -260,7 +285,9 @@ export const saveWorkbenchToLibrary = async (params: {
   status?: LibraryEntry['status'];
   skipPoster?: boolean;
 }): Promise<LibraryEntry> => {
-  const store = useWorkbenchStore.getState();
+  const model = useModelStore.getState();
+  const pbr = usePbrMaterialStore.getState();
+  const variant = useVariantStore.getState();
   const currentActiveEntry = useAppStore.getState().activeEntry;
   const { slug, title } = params;
   const category = params.category || currentActiveEntry?.category || 'otro';
@@ -285,8 +312,8 @@ export const saveWorkbenchToLibrary = async (params: {
       posterUrl = window.electronAPI.toAssetUrl(savedPoster.filePath);
 
       // Also update active variant poster
-      if (store.activeVariantId) {
-        store.setVariantPoster(store.activeVariantId, posterUrl, posterFileName);
+      if (variant.activeVariantId) {
+        variant.setVariantPoster(variant.activeVariantId, posterUrl, posterFileName);
       }
     } catch (err) {
       console.warn('Could not capture viewport snapshot for library entry:', err);
@@ -294,15 +321,15 @@ export const saveWorkbenchToLibrary = async (params: {
   }
 
   // 2. Copy model to library if needed
-  let finalModelPath = store.modelFilePath;
-  let finalModelName = store.modelFilePath ? getFileName(store.modelFilePath) : null;
+  let finalModelPath = model.modelFilePath;
+  let finalModelName = model.modelFilePath ? getFileName(model.modelFilePath) : null;
 
-  if (store.modelFilePath && !isPathInside(store.modelFilePath, slug)) {
+  if (model.modelFilePath && !isPathInside(model.modelFilePath, slug)) {
     try {
-      const ext = getFileExt(store.modelFilePath).replace('.', '') || 'glb';
+      const ext = getFileExt(model.modelFilePath).replace('.', '') || 'glb';
       const copied = await window.electronAPI.copyFileToLibrary({
         entrySlug: slug,
-        sourceFilePath: store.modelFilePath,
+        sourceFilePath: model.modelFilePath,
         targetType: 'model',
         ext
       });
@@ -314,7 +341,7 @@ export const saveWorkbenchToLibrary = async (params: {
   }
 
   // 3. Build canonical root maps dictionary based on Default Variant (or active variant fallback)
-  const defaultVar = store.variants.find((v) => v.isDefault) || store.variants[0];
+  const defaultVar = variant.variants.find((v) => v.isDefault) || variant.variants[0];
   const mapsRecord: Record<string, { fileName: string; filePath: string; fileSize?: number }> = {};
 
   const slotNames: SlotName[] = [
@@ -333,7 +360,7 @@ export const saveWorkbenchToLibrary = async (params: {
   ];
 
   for (const slot of slotNames) {
-    const defaultSlotMap = defaultVar?.maps?.[slot] || (store.activeVariantId === defaultVar?.id ? (store as any)[`${slot}Map`] : null);
+    const defaultSlotMap = defaultVar?.maps?.[slot] || (variant.activeVariantId === defaultVar?.id ? (pbr as any)[`${slot}Map`] : null);
     if (defaultSlotMap && defaultSlotMap.filePath) {
       mapsRecord[slot] = {
         fileName: defaultSlotMap.fileName || `${slot}.webp`,
@@ -345,25 +372,25 @@ export const saveWorkbenchToLibrary = async (params: {
 
   // 4. Gather settings
   const settings: LibraryEntrySettings = {
-    normalScale: store.normalScale,
-    normalInvertY: store.normalInvertY,
-    roughnessFactor: store.roughnessFactor,
-    metalnessFactor: store.metalnessFactor,
-    aoIntensity: store.aoIntensity,
-    emissiveIntensity: store.emissiveIntensity,
-    emissiveColor: store.emissiveColor,
-    emissiveFullGlow: store.emissiveFullGlow,
-    clearcoatFactor: store.clearcoatFactor,
-    clearcoatRoughness: store.clearcoatRoughness,
-    sheenColor: store.sheenColor,
-    sheenRoughness: store.sheenRoughness,
-    transmissionFactor: store.transmissionFactor,
-    ior: store.ior,
-    displacementScale: store.displacementScale,
-    unitScale: store.unitScale,
-    unitType: store.unitType,
-    useOrmPack: store.useOrmPack,
-    loadFromCache: store.loadFromCache
+    normalScale: pbr.normalScale,
+    normalInvertY: pbr.normalInvertY,
+    roughnessFactor: pbr.roughnessFactor,
+    metalnessFactor: pbr.metalnessFactor,
+    aoIntensity: pbr.aoIntensity,
+    emissiveIntensity: pbr.emissiveIntensity,
+    emissiveColor: pbr.emissiveColor,
+    emissiveFullGlow: pbr.emissiveFullGlow,
+    clearcoatFactor: pbr.clearcoatFactor,
+    clearcoatRoughness: pbr.clearcoatRoughness,
+    sheenColor: pbr.sheenColor,
+    sheenRoughness: pbr.sheenRoughness,
+    transmissionFactor: pbr.transmissionFactor,
+    ior: pbr.ior,
+    displacementScale: pbr.displacementScale,
+    unitScale: model.unitScale,
+    unitType: model.unitType,
+    useOrmPack: pbr.useOrmPack,
+    loadFromCache: pbr.loadFromCache
   };
 
   const now = new Date().toISOString();
@@ -380,29 +407,29 @@ export const saveWorkbenchToLibrary = async (params: {
     posterFileName,
     modelFileName: finalModelName,
     modelFilePath: finalModelPath,
-    modelFileSize: store.modelFileSize,
-    dimensions: store.modelStats?.dimensions || currentActiveEntry?.dimensions || null,
-    stats: store.modelStats
+    modelFileSize: model.modelFileSize,
+    dimensions: model.modelStats?.dimensions || currentActiveEntry?.dimensions || null,
+    stats: model.modelStats
       ? {
-          triangleCount: store.modelStats.triangleCount,
-          vertexCount: store.modelStats.vertexCount,
-          meshCount: store.modelStats.meshCount
+          triangleCount: model.modelStats.triangleCount,
+          vertexCount: model.modelStats.vertexCount,
+          meshCount: model.modelStats.meshCount
         }
       : currentActiveEntry?.stats || null,
-    variants: store.variants,
-    activeVariantId: store.activeVariantId || undefined,
+    variants: variant.variants,
+    activeVariantId: variant.activeVariantId || undefined,
     maps: mapsRecord,
-    colorways: store.colorways,
-    mapVariants: store.mapVariants,
-    activeVariantIds: store.activeVariantIds,
-    slotEnabled: store.slotEnabled,
+    colorways: selectColorways(variant),
+    mapVariants: variant.mapVariants,
+    activeVariantIds: variant.activeVariantIds,
+    slotEnabled: pbr.slotEnabled,
     settings
   };
 
   await window.electronAPI.saveLibraryEntry(entry);
   useAppStore.getState().setActiveEntry(entry);
   useAppStore.getState().setActiveEntrySlug(slug);
-  syncSavedHash(computeWorkbenchHash(store));
+  syncSavedHash(computeWorkbenchHash());
 
   return entry;
 };
@@ -418,9 +445,9 @@ export const flushAutoSave = async () => {
 
   try {
     useAppStore.getState().setIsAutoSaving(true);
-    const store = useWorkbenchStore.getState();
+    const model = useModelStore.getState();
     const activeEntry = useAppStore.getState().activeEntry;
-    const title = store.productName || activeEntry?.title || activeSlug;
+    const title = model.productName || activeEntry?.title || activeSlug;
 
     const savedEntry = await saveWorkbenchToLibrary({
       title,
@@ -466,9 +493,9 @@ export const autoSaveActiveEntry = (immediate = false) => {
         return;
       }
 
-      const store = useWorkbenchStore.getState();
+      const model = useModelStore.getState();
       const activeEntry = useAppStore.getState().activeEntry;
-      const title = store.productName || activeEntry?.title || activeSlug;
+      const title = model.productName || activeEntry?.title || activeSlug;
 
       const savedEntry = await saveWorkbenchToLibrary({
         title,

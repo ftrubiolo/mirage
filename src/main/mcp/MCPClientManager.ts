@@ -85,9 +85,7 @@ export class MCPClientManager {
 
   public async loadAndSyncConfig(): Promise<void> {
     try {
-      const raw = await fs.readFile(this.configPath, 'utf-8');
-      const data = JSON.parse(raw);
-      const mcpServers: Record<string, any> = data.mcpServers || {};
+      const mcpServers = await this.readDeclaredServers();
 
       for (const [id, conf] of Object.entries(mcpServers)) {
         if (!this.servers.has(id)) {
@@ -115,6 +113,53 @@ export class MCPClientManager {
     }
   }
 
+  /** Reads the user-authored server declarations from disk. */
+  private async readDeclaredServers(): Promise<Record<string, any>> {
+    try {
+      const raw = await fs.readFile(this.configPath, 'utf-8');
+      const data = JSON.parse(raw);
+      const mcpServers = data?.mcpServers;
+      if (!mcpServers || typeof mcpServers !== 'object' || Array.isArray(mcpServers)) {
+        return {};
+      }
+      return mcpServers as Record<string, any>;
+    } catch {
+      return {};
+    }
+  }
+
+  /**
+   * A config may only be connected if the user already declared it in
+   * `mcp_config.json`. The renderer is untrusted, so it must not be able to
+   * introduce a new command line for the main process to spawn; it can only ask
+   * for something the user wrote down themselves.
+   */
+  public async isDeclaredServer(config: McpServerConfig): Promise<boolean> {
+    if (!config || typeof config.id !== 'string' || config.id.length === 0) return false;
+
+    const declared = await this.readDeclaredServers();
+    const entry = declared[config.id];
+    if (!entry || typeof entry !== 'object') return false;
+    if (entry.enabled === false) return false;
+
+    if (entry.url) {
+      return typeof config.url === 'string' && config.url === entry.url;
+    }
+
+    if (typeof entry.command !== 'string' || entry.command.length === 0) return false;
+    if (config.command !== entry.command) return false;
+
+    // Args must match the declaration exactly — no appending extra flags.
+    const declaredArgs = Array.isArray(entry.args) ? entry.args.map(String) : [];
+    const requestedArgs = Array.isArray(config.args) ? config.args.map(String) : [];
+    if (declaredArgs.length !== requestedArgs.length) return false;
+    for (let i = 0; i < declaredArgs.length; i++) {
+      if (declaredArgs[i] !== requestedArgs[i]) return false;
+    }
+
+    return true;
+  }
+
   public async connectServer(config: McpServerConfig): Promise<boolean> {
     await this.disconnectServer(config.id);
 
@@ -138,9 +183,11 @@ export class MCPClientManager {
           requestInit: { headers: config.headers }
         });
       } else if (config.command) {
-        const shellEnv = resolveLoginShellEnvironment();
-        const mergedEnv: Record<string, string> = {};
-        for (const [k, v] of Object.entries({ ...shellEnv, ...(config.env || {}) })) {
+        const shellEnv = await resolveLoginShellEnvironment();
+        // Only PATH-class variables come from the shell; everything else must be
+        // declared explicitly by the user in mcp_config.json for this server.
+        const mergedEnv: Record<string, string> = { ...shellEnv };
+        for (const [k, v] of Object.entries(config.env || {})) {
           if (typeof v === 'string') mergedEnv[k] = v;
         }
 
@@ -243,8 +290,14 @@ export class MCPClientManager {
   }
 
   public async shutdownAll(): Promise<void> {
-    for (const id of Array.from(this.servers.keys())) {
-      await this.disconnectServer(id);
-    }
+    // Bounded: a server whose transport never handshook must not be able to
+    // hold up application shutdown.
+    const closeWithTimeout = async (id: string) => {
+      await Promise.race([
+        this.disconnectServer(id),
+        new Promise<void>((resolve) => setTimeout(resolve, 1000))
+      ]).catch(() => {});
+    };
+    await Promise.all(Array.from(this.servers.keys()).map(closeWithTimeout));
   }
 }

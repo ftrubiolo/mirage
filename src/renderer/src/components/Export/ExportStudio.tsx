@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { PackageCheck, CheckCircle2, AlertCircle } from 'lucide-react';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
+import { useModelStore } from '../../store/modelStore';
+import { useAppStore } from '../../store/appStore';
+import {
+  generateExportConfig as buildExportConfig,
+  setMapSlotForActiveVariant
+} from '../../store/workbenchActions';
 import { PerformanceAudit } from '../Audit/PerformanceAudit';
 import { PosterCapturePanel } from './PosterCapturePanel';
 import { GlbExportPanel } from './GlbExportPanel';
@@ -9,17 +15,17 @@ import { TexturePipelinePanel } from './TexturePipelinePanel';
 export { PosterCapturePanel, GlbExportPanel, TexturePipelinePanel };
 
 export const ExportStudio: React.FC = () => {
-  const {
-    modelStats,
-    normalMap,
-    roughnessMap,
-    baseColorMap,
-    setMapSlot,
-    openOrmPacker,
-    productId,
-    productName,
-    generateExportConfig
-  } = useWorkbenchStore();
+  // One narrow selector per field: an object-returning selector would produce a
+  // fresh reference on every render and loop under zustand v5.
+  const normalMap = usePbrMaterialStore((s) => s.normalMap);
+  const roughnessMap = usePbrMaterialStore((s) => s.roughnessMap);
+  const baseColorMap = usePbrMaterialStore((s) => s.baseColorMap);
+  const modelStats = useModelStore((s) => s.modelStats);
+  const setMapSlot = setMapSlotForActiveVariant;
+  const openOrmPacker = useAppStore((s) => s.openOrmPacker);
+  const productId = useModelStore((s) => s.productId);
+  const productName = useModelStore((s) => s.productName);
+  const generateExportConfig = buildExportConfig;
 
   const [capturedPosterBlob, setCapturedPosterBlob] = useState<Blob | null>(null);
   const [exportMessage, setExportMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);

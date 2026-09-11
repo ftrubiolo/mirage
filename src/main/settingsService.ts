@@ -73,8 +73,17 @@ export const DEFAULT_SETTINGS: MirageSettings = {
 };
 
 /**
+ * Keys that must never be assigned from a parsed payload: writing them walks
+ * the prototype chain and can pollute Object.prototype for the whole process.
+ */
+const FORBIDDEN_MERGE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+/**
  * Deeply merges source properties into target object.
  * Does not mutate input objects; preserves existing sub-objects unless overridden.
+ *
+ * Prototype-polluting keys are dropped, and only own enumerable properties are
+ * read, so a hostile settings payload cannot reach `Object.prototype`.
  */
 export function deepMerge<T extends Record<string, any>>(
   target: T,
@@ -87,6 +96,11 @@ export function deepMerge<T extends Record<string, any>>(
   }
 
   for (const key of Object.keys(source)) {
+    if (FORBIDDEN_MERGE_KEYS.has(key)) {
+      console.warn(`[SettingsService] Ignored forbidden settings key: ${key}`);
+      continue;
+    }
+
     const sourceVal = (source as any)[key];
     const targetVal = result[key];
 

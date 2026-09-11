@@ -8,7 +8,10 @@ import { EntryDetailView } from './components/Library/EntryDetailView';
 import { SettingsView } from './components/Settings/SettingsView';
 import { AgentStudioView } from './components/Agent/AgentStudioView';
 import { SaveToLibraryModal } from './components/Library/SaveToLibraryModal';
-import { useWorkbenchStore } from './store/workbenchStore';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { useModelStore } from './store/modelStore';
+import { usePbrMaterialStore } from './store/pbrMaterialStore';
+import { useVariantStore } from './store/variantStore';
 import { useAppStore, initSettingsFromFile } from './store/appStore';
 import { useAgentStore } from './store/agentStore';
 import { handleWorkbenchChange, flushAutoSave } from './utils/libraryBridge';
@@ -17,8 +20,9 @@ import { getSharedGltfLoader } from './components/Viewport/PBRModelViewer';
 export const App: React.FC = () => {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
-  const { currentView } = useAppStore();
-  const { setModel: _setModel } = useWorkbenchStore();
+  const currentView = useAppStore((s) => s.currentView);
+  const selectedEntryForDetail = useAppStore((s) => s.selectedEntryForDetail);
+  const setView = useAppStore((s) => s.setView);
 
   // Warm up DRACO / GLTF loader, initialize AI agent providers and load settings from disk on startup
   useEffect(() => {
@@ -27,11 +31,13 @@ export const App: React.FC = () => {
     initSettingsFromFile().catch(() => {});
   }, []);
 
-  // Auto-save active library entry when user changes workbench parameters, model, textures, or name
+  // Auto-save the active library entry when workbench parameters, model,
+  // textures, or the name change. All three domain stores are watched because
+  // an edit can touch any of them.
   useEffect(() => {
-    const unsubscribe = useWorkbenchStore.subscribe((state) => {
-      handleWorkbenchChange(state);
-    });
+    const unsubscribeModel = useModelStore.subscribe(() => handleWorkbenchChange());
+    const unsubscribePbr = usePbrMaterialStore.subscribe(() => handleWorkbenchChange());
+    const unsubscribeVariant = useVariantStore.subscribe(() => handleWorkbenchChange());
 
     const handleBeforeUnload = () => {
       flushAutoSave();
@@ -57,7 +63,9 @@ export const App: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      unsubscribe();
+      unsubscribeModel();
+      unsubscribePbr();
+      unsubscribeVariant();
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('keydown', handleKeyDown);
     };
@@ -81,56 +89,72 @@ export const App: React.FC = () => {
           }`}
           style={{ visibility: currentView === 'workbench' ? 'visible' : 'hidden' }}
         >
-          <WorkbenchView />
+          <ErrorBoundary fallbackTitle="Mesa de trabajo">
+            <WorkbenchView />
+          </ErrorBoundary>
         </div>
 
         {/* Hub View */}
         {currentView === 'hub' && (
           <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-            <HubView />
+            <ErrorBoundary fallbackTitle="Inicio">
+              <HubView />
+            </ErrorBoundary>
           </div>
         )}
 
         {/* Library View */}
         {currentView === 'library' && (
           <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-            <LibraryView />
+            <ErrorBoundary fallbackTitle="Biblioteca">
+              <LibraryView />
+            </ErrorBoundary>
           </div>
         )}
 
         {/* Entry Detail View (Split 1/3 - 2/3) */}
         {currentView === 'entryDetail' && (
           <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-            <EntryDetailView
-              entry={useAppStore.getState().selectedEntryForDetail}
-              onBack={() => useAppStore.getState().setView('library')}
-            />
+            <ErrorBoundary fallbackTitle="Detalle de pieza">
+              <EntryDetailView
+                entry={selectedEntryForDetail}
+                onBack={() => setView('library')}
+              />
+            </ErrorBoundary>
           </div>
         )}
 
         {/* Settings View */}
         {currentView === 'settings' && (
           <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-            <SettingsView />
+            <ErrorBoundary fallbackTitle="Configuración">
+              <SettingsView />
+            </ErrorBoundary>
           </div>
         )}
 
         {/* Agent Studio View */}
         {currentView === 'agent' && (
           <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-            <AgentStudioView />
+            <ErrorBoundary fallbackTitle="Estudio IA">
+              <AgentStudioView />
+            </ErrorBoundary>
           </div>
         )}
       </div>
 
       {/* Global Sharp ORM Texture Packer Dialog Modal */}
-      <OrmPackerModal />
+      <ErrorBoundary fallbackTitle="Empaquetador ORM">
+        <OrmPackerModal />
+      </ErrorBoundary>
 
       {/* Save Current Workbench State to Library Modal */}
-      <SaveToLibraryModal
-        isOpen={isSaveModalOpen}
-        onClose={() => setIsSaveModalOpen(false)}
-      />
+      <ErrorBoundary fallbackTitle="Guardar en biblioteca">
+        <SaveToLibraryModal
+          isOpen={isSaveModalOpen}
+          onClose={() => setIsSaveModalOpen(false)}
+        />
+      </ErrorBoundary>
     </div>
   );
 };

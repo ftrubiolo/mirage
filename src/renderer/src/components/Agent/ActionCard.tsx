@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { ProposedAction } from '../../types/agent';
 import { useAgentStore } from '../../store/agentStore';
-import { commandManager } from '../../agent/commandManager';
+import { commandManager } from '../../utils/commandManager';
 
 interface ActionCardProps {
   action: ProposedAction;

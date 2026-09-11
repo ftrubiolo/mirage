@@ -195,14 +195,3 @@ export const STANDARD_PROVIDERS: ProviderDefinition[] = [
 /**
  * Helper to convert a ProviderDefinition into an AIProviderConfig instance.
  */
-export function createProviderConfig(def: ProviderDefinition, hasKey = false): AIProviderConfig {
-  return {
-    id: def.id,
-    name: def.name,
-    baseUrl: def.baseUrl,
-    defaultModel: def.defaultModel,
-    availableModels: [...def.popularModels],
-    hasKey,
-    status: hasKey ? 'active' : 'unconfigured'
-  };
-}

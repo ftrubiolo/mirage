@@ -32,6 +32,11 @@ interface AppState {
   setWorkbenchSidebarCollapsed: (collapsed: boolean) => void;
   toggleWorkbenchSidebar: () => void;
 
+  /** Whether the global Sharp ORM packer dialog is open. UI state, not model state. */
+  isOrmPackerOpen: boolean;
+  openOrmPacker: () => void;
+  closeOrmPacker: () => void;
+
   setView: (view: AppView) => void;
   setSelectedEntryForDetail: (entry: LibraryEntry | null) => void;
   setIsAutoSaving: (saving: boolean) => void;
@@ -118,16 +123,14 @@ const applyDensityClass = (density: FontDensity) => {
 
 let appSettingsTimeout: any = null;
 const persistSettingsToFile = () => {
-  if (typeof window === 'undefined' || !window.electronAPI?.saveSettings) return;
+  if (typeof window === 'undefined' || !window.electronAPI?.updateSettings) return;
   clearTimeout(appSettingsTimeout);
   appSettingsTimeout = setTimeout(async () => {
     try {
-      const current = await window.electronAPI.loadSettings().catch(() => ({}));
-      const appSettings = useAppStore.getState().settings;
-      await window.electronAPI.saveSettings({
-        ...current,
-        ...appSettings
-      });
+      // Only this store's own slice is sent. The main process deep-merges it
+      // into the canonical document under a write mutex, so a concurrent
+      // viewport-store save can no longer be clobbered by a stale snapshot.
+      await window.electronAPI.updateSettings({ ...useAppStore.getState().settings });
     } catch (err) {
       console.warn('[appStore] Error saving settings to disk:', err);
     }
@@ -173,6 +176,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   lastAutoSavedAt: null,
   workbenchSidebarWidth: getStoredSidebarWidth(),
   isWorkbenchSidebarCollapsed: getStoredSidebarCollapsed(),
+  isOrmPackerOpen: false,
+
+  openOrmPacker: () => set({ isOrmPackerOpen: true }),
+  closeOrmPacker: () => set({ isOrmPackerOpen: false }),
 
   setWorkbenchSidebarWidth: (width: number) => {
     const minWidth = 340;

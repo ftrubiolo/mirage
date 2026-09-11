@@ -4,13 +4,12 @@ import {
   ChatMessage,
   SessionItem,
   PermissionMode,
-  ProposedAction,
-  INITIAL_PROVIDERS
+  ProposedAction
 } from '../types/agent';
 import { serializeSceneForPrompt } from '../agent/sceneSerializer';
 import { MIRAGE_INTERNAL_TOOLS, getOpenAIToolsDeclarations } from '../agent/toolRegistry';
-import { commandManager } from '../agent/commandManager';
-import { useWorkbenchStore } from './workbenchStore';
+import { commandManager } from '../utils/commandManager';
+import { usePbrMaterialStore } from './pbrMaterialStore';
 
 interface AgentState {
   providers: AIProviderConfig[];
@@ -35,6 +34,8 @@ interface AgentState {
   deleteSession: (id: string) => void;
   clearCurrentSession: () => void;
   sendMessage: (text: string) => Promise<void>;
+  /** Aborts the in-flight model request, keeping whatever was already streamed. */
+  cancelStreaming: () => void;
   applyProposedAction: (actionId: string) => Promise<void>;
   rejectProposedAction: (actionId: string) => void;
 }
@@ -101,6 +102,13 @@ const saveSessionsToStorage = (sessions: SessionItem[], activeId?: string) => {
 const initialSessions = getStoredSessions();
 const initialActiveSessionId = getStoredActiveSessionId(initialSessions);
 
+/**
+ * Handle for the in-flight model request. Held at module scope because it is a
+ * transient resource, not observable state: nothing renders differently based
+ * on the controller itself.
+ */
+let activeAbortController: AbortController | null = null;
+
 export const useAgentStore = create<AgentState>((set, get) => ({
   providers: getStoredProviders(),
   activeProviderId: null,
@@ -149,11 +157,36 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       }
     }
 
+    // `pendingActions` is deliberately not persisted, but the message copies of
+    // those actions are. Any action still marked `pending` in a restored
+    // session can therefore never be approved -- the store no longer holds it
+    // and `applyProposedAction` would silently no-op. Mark them expired so the
+    // UI stops offering a button that does nothing.
+    const reconciledSessions = curSessions.map((s) => ({
+      ...s,
+      messages: s.messages.map((m) =>
+        m.isStreaming || m.toolCalls?.some((tc) => tc.status === 'pending')
+          ? {
+              ...m,
+              // A stream that was interrupted by an app restart cannot resume.
+              isStreaming: false,
+              toolCalls: m.toolCalls?.map((tc) =>
+                tc.status === 'pending' ? { ...tc, status: 'rejected' as const } : tc
+              )
+            }
+          : m
+      )
+    }));
+
+    saveSessionsToStorage(reconciledSessions, get().activeSessionId);
+
     set({
       providers: checkedProviders,
       activeProviderId: resolvedProv ? resolvedProv.id : null,
       activeModel: activeMdl,
-      mcpTools
+      mcpTools,
+      sessions: reconciledSessions,
+      pendingActions: []
     });
   },
 
@@ -259,6 +292,9 @@ export const useAgentStore = create<AgentState>((set, get) => ({
   },
 
   switchSession: (id) => {
+    // Pending approvals belong to the session that produced them; tool-call ids
+    // are only unique within a run, so a flat list would cross-wire them.
+    set({ pendingActions: [] });
     const session = get().sessions.find((s) => s.id === id);
     saveSessionsToStorage(get().sessions, id);
     if (session) {
@@ -296,12 +332,24 @@ export const useAgentStore = create<AgentState>((set, get) => ({
     const action = get().pendingActions.find((a) => a.id === actionId);
     if (!action) return;
 
-    commandManager.beginTransaction(action.summary);
     const internalTool = MIRAGE_INTERNAL_TOOLS.find((t) => t.name === action.toolName);
+
     if (internalTool && action.rawArgs) {
-      await internalTool.execute(action.rawArgs);
+      // Built-in tools mutate local scene state, so they are grouped into one
+      // undoable transaction.
+      commandManager.beginTransaction(action.summary);
+      try {
+        await internalTool.execute(action.rawArgs);
+      } finally {
+        await commandManager.commitTransaction(action.summary);
+      }
+    } else if (action.toolName.includes('__') && window.electronAPI) {
+      // Approved MCP call. It cannot be undone — the effects are outside the
+      // app — so it is recorded as applied with its arguments for the audit log.
+      await window.electronAPI.callMcpTool(action.toolName, action.rawArgs || {});
+    } else {
+      return;
     }
-    await commandManager.commitTransaction(action.summary);
 
     set((state) => ({
       pendingActions: state.pendingActions.filter((a) => a.id !== actionId),
@@ -342,6 +390,13 @@ export const useAgentStore = create<AgentState>((set, get) => ({
         };
       })
     }));
+  },
+
+  cancelStreaming: () => {
+    if (activeAbortController) {
+      activeAbortController.abort();
+      activeAbortController = null;
+    }
   },
 
   sendMessage: async (text: string) => {
@@ -412,6 +467,11 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       sessions: updatedSessions
     });
 
+    // Declared outside the try so the error path can preserve whatever the
+    // model already produced instead of discarding it.
+    let streamedContent = '';
+    let streamedThought = '';
+
     try {
       const scenePrompt = serializeSceneForPrompt();
       const session = sessions.find((s) => s.id === activeSessionId);
@@ -457,13 +517,17 @@ Instrucciones Críticas:
         requestBody.tool_choice = 'auto';
       }
 
+      const controller = new AbortController();
+      activeAbortController = controller;
+
       const response = await fetch(`${provider.baseUrl.replace(/\/+$/, '')}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
       });
 
       if (!response.ok) {
@@ -475,24 +539,34 @@ Instrucciones Críticas:
       if (!reader) throw new Error('No se pudo inicializar el stream de respuesta.');
 
       const decoder = new TextDecoder();
-      let streamedContent = '';
-      let streamedThought = '';
       let streamUsage: any = undefined;
       let activeStreamingTool: string | null = null;
       const toolCallsMap: Record<number, { id: string; name: string; arguments: string }> = {};
 
-      while (true) {
+      // SSE frames are not aligned to chunk boundaries. A partial line is held
+      // in `lineBuffer` until its terminating newline arrives; previously the
+      // split fragments were parsed independently and silently dropped.
+      let lineBuffer = '';
+      let streamFinished = false;
+
+      while (!streamFinished) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        lineBuffer += decoder.decode(value, { stream: true });
+        const lines = lineBuffer.split('\n');
+        // The last element is an incomplete line unless the chunk ended on \n.
+        lineBuffer = lines.pop() ?? '';
 
         for (const line of lines) {
           const trimmed = line.trim();
           if (!trimmed.startsWith('data:')) continue;
           const dataStr = trimmed.replace(/^data:\s*/, '').trim();
-          if (dataStr === '[DONE]') continue;
+          if (dataStr === '') continue;
+          if (dataStr === '[DONE]') {
+            streamFinished = true;
+            break;
+          }
 
           try {
             const parsed = JSON.parse(dataStr);
@@ -648,10 +722,10 @@ Instrucciones Críticas:
             });
           } else {
             // Ask to confirm mode
-            const wb = useWorkbenchStore.getState();
+            const pbr = usePbrMaterialStore.getState();
             const diff: any[] = [];
             if (tc.name === 'set_pbr_parameter' && args.property) {
-              diff.push({ property: args.property, before: (wb as any)[args.property], after: args.value });
+              diff.push({ property: args.property, before: (pbr as any)[args.property], after: args.value });
             }
             const action: ProposedAction = {
               id: tc.id,
@@ -665,20 +739,41 @@ Instrucciones Críticas:
             set((state) => ({ pendingActions: [...state.pendingActions, action] }));
           }
         } else if (tc.name.includes('__') && window.electronAPI) {
-          // MCP tool call
-          try {
-            const mcpRes = await window.electronAPI.callMcpTool(tc.name, args);
-            proposedActions.push({
+          // MCP tool call.
+          //
+          // MCP tools are the ones that can touch the outside world (files,
+          // shell, network), so they go through the SAME approval gate as the
+          // built-in tools. Previously this branch executed unconditionally in
+          // both permission modes, which made `ask-to-confirm` decorative for
+          // exactly the tools that most needed it.
+          if (permissionMode !== 'auto-apply') {
+            const action: ProposedAction = {
               id: tc.id,
               toolName: tc.name,
-              summary: `Herramienta MCP ${tc.name} ejecutada`,
+              summary: `Herramienta MCP propuesta: ${tc.name}`,
               diff: [],
-              status: 'applied',
-              appliedAt: new Date().toLocaleTimeString()
-            });
-            streamedContent += `\n\n*Resultado MCP:* \`\`\`json\n${JSON.stringify(mcpRes, null, 2)}\n\`\`\``;
-          } catch (mcpErr: any) {
-            streamedContent += `\n\n[Error] Error ejecutando herramienta MCP ${tc.name}: ${mcpErr.message}`;
+              status: 'pending',
+              rawArgs: args
+            };
+            proposedActions.push(action);
+            set((state) => ({ pendingActions: [...state.pendingActions, action] }));
+          } else {
+            try {
+              const mcpRes = await window.electronAPI.callMcpTool(tc.name, args);
+              proposedActions.push({
+                id: tc.id,
+                toolName: tc.name,
+                summary: `Herramienta MCP ${tc.name} ejecutada`,
+                diff: [],
+                status: 'applied',
+                appliedAt: new Date().toLocaleTimeString(),
+                // Retained so the audit trail records what was actually sent.
+                rawArgs: args
+              });
+              streamedContent += `\n\n*Resultado MCP:* \`\`\`json\n${JSON.stringify(mcpRes, null, 2)}\n\`\`\``;
+            } catch (mcpErr: any) {
+              streamedContent += `\n\n[Error] Error ejecutando herramienta MCP ${tc.name}: ${mcpErr.message}`;
+            }
           }
         }
       }
@@ -730,6 +825,23 @@ Instrucciones Críticas:
         sessions: finalSessions
       });
     } catch (err: any) {
+      // Distinguish a user-initiated stop from a genuine failure, and keep
+      // whatever the model already produced. Replacing the partial answer with
+      // the error string threw away the only useful output on the most common
+      // failure mode (a mid-stream 429 / connection reset).
+      const wasCancelled =
+        err?.name === 'AbortError' || /abort/i.test(String(err?.message || ''));
+
+      const notice = wasCancelled
+        ? '\n\n---\n*Generación detenida por el usuario.*'
+        : `\n\n---\n**Error de comunicación con el modelo:** ${err?.message || err}`;
+
+      const preserved = streamedContent
+        ? `${streamedContent}${notice}`
+        : wasCancelled
+        ? '*Generación detenida antes de recibir contenido.*'
+        : `Error de comunicación con el modelo: ${err?.message || err}`;
+
       const errSessions = get().sessions.map((s) => {
         if (s.id !== activeSessionId) return s;
         return {
@@ -739,7 +851,8 @@ Instrucciones Críticas:
             m.id === assistantMsgId
               ? {
                   ...m,
-                  content: `Error de comunicación con el modelo: ${err.message || err}`,
+                  content: preserved,
+                  thought: streamedThought || m.thought,
                   isStreaming: false
                 }
               : m
@@ -753,6 +866,8 @@ Instrucciones Críticas:
         isStreaming: false,
         sessions: errSessions
       });
+    } finally {
+      activeAbortController = null;
     }
   }
 }));

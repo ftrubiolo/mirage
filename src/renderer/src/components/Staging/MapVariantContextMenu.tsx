@@ -7,7 +7,7 @@ import {
   Edit2,
   Trash2
 } from 'lucide-react';
-import { MapVariantItem } from '../../store/workbenchStore';
+import { MapVariantItem } from '../../store/variantStore';
 
 export interface MapVariantContextMenuProps {
   x: number;

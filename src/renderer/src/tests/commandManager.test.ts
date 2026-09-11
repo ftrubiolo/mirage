@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Command, TransactionCommand, commandManager, isInteractiveTextInput } from '@renderer/utils/commandManager';
-import { commandManager as agentCommandManager, isInteractiveTextInput as agentIsInteractiveTextInput } from '@renderer/agent/commandManager';
 
 // Re-export for any test helpers or external consumers
 export { isInteractiveTextInput };
@@ -268,11 +267,6 @@ describe('commandManager', () => {
 
       document.body.removeChild(canvas);
       undoSpy.mockRestore();
-    });
-
-    it('shares the exact same singleton instance between utils and agent paths', () => {
-      expect(commandManager).toBe(agentCommandManager);
-      expect(isInteractiveTextInput).toBe(agentIsInteractiveTextInput);
     });
 
     it('global window keydown listener ignores undo/redo when event originates in HTMLInputElement', () => {

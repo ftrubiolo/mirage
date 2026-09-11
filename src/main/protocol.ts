@@ -2,6 +2,7 @@ import { protocol, net } from 'electron';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isWindows } from './platform';
+import { canRead } from './accessPolicy';
 
 /**
  * Resolves any `local-asset://` URL into an absolute, normalized local filesystem path
@@ -57,6 +58,14 @@ export function registerLocalAssetProtocol(): void {
   protocol.handle('local-asset', async (request) => {
     try {
       const finalFilePath = resolveAssetUrlToPath(request.url);
+
+      // The renderer is untrusted: this scheme must never become a general
+      // purpose file reader. Only paths inside an approved root are served.
+      if (!(await canRead(finalFilePath))) {
+        console.warn('[protocol:local-asset] Denied (outside approved roots):', finalFilePath);
+        return new Response('Access denied', { status: 403 });
+      }
+
       const fileUrl = pathToFileURL(finalFilePath).toString();
       return await net.fetch(fileUrl);
     } catch (err) {

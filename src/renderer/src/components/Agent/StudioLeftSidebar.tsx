@@ -1,7 +1,8 @@
 import React from 'react';
 import { Box, Layers } from 'lucide-react';
-import { useWorkbenchStore, ALL_SLOT_NAMES } from '../../store/workbenchStore';
-import { EmbeddedViewport } from './EmbeddedViewport';
+import { ALL_SLOT_NAMES, PbrSlotMap, SlotName, usePbrMaterialStore } from '../../store/pbrMaterialStore';
+import { useModelStore } from '../../store/modelStore';
+import { EmbeddedViewport } from '../Viewport/EmbeddedViewport';
 import { ResizeHandle } from '../UI/ResizeHandle';
 
 export interface StudioLeftSidebarProps {
@@ -17,16 +18,32 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
   onMouseDown,
   onDoubleClick
 }) => {
-  const {
-    productName,
-    modelStats,
-    unitType,
-    slotEnabled,
-    roughnessFactor,
-    metalnessFactor,
-    normalScale,
-    aoIntensity
-  } = useWorkbenchStore();
+  const productName = useModelStore((s) => s.productName);
+  const modelStats = useModelStore((s) => s.modelStats);
+  const unitType = useModelStore((s) => s.unitType);
+  const slotEnabled = usePbrMaterialStore((s) => s.slotEnabled);
+  const roughnessFactor = usePbrMaterialStore((s) => s.roughnessFactor);
+  const metalnessFactor = usePbrMaterialStore((s) => s.metalnessFactor);
+  const normalScale = usePbrMaterialStore((s) => s.normalScale);
+  const aoIntensity = usePbrMaterialStore((s) => s.aoIntensity);
+  // The seven slots listed below are subscribed individually so the map badges stay live.
+  const baseColorMap = usePbrMaterialStore((s) => s.baseColorMap);
+  const normalMap = usePbrMaterialStore((s) => s.normalMap);
+  const ormMap = usePbrMaterialStore((s) => s.ormMap);
+  const aoMap = usePbrMaterialStore((s) => s.aoMap);
+  const roughnessMap = usePbrMaterialStore((s) => s.roughnessMap);
+  const metalnessMap = usePbrMaterialStore((s) => s.metalnessMap);
+  const emissiveMap = usePbrMaterialStore((s) => s.emissiveMap);
+
+  const slotMaps: Partial<Record<SlotName, PbrSlotMap>> = {
+    baseColor: baseColorMap,
+    normal: normalMap,
+    orm: ormMap,
+    ao: aoMap,
+    roughness: roughnessMap,
+    metalness: metalnessMap,
+    emissive: emissiveMap
+  };
 
   const dims = modelStats?.dimensions;
   const dimText = dims
@@ -127,7 +144,7 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
           <div className="space-y-1">
             {ALL_SLOT_NAMES.slice(0, 7).map((slot) => {
               const isEnabled = slotEnabled[slot] ?? true;
-              const map = (useWorkbenchStore.getState() as any)[`${slot}Map`];
+              const map = slotMaps[slot];
               const hasMap = Boolean(map?.url || map?.filePath);
 
               return (

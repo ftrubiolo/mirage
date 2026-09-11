@@ -1,5 +1,5 @@
 import React from 'react';
-import { SlotName } from '../../store/workbenchStore';
+import { SlotName } from '../../store/pbrMaterialStore';
 import { Switch } from '../UI/Switch';
 
 export interface MapSlotHeaderProps {

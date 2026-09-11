@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
 import * as fs from 'node:fs/promises';
+import * as fsSync from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 
@@ -25,7 +26,8 @@ import {
 import {
   useVariantStore,
   deriveAvailableTexturesForSlot,
-  type MapVariantItem
+  type MapVariantItem,
+  selectColorways
 } from '../store/variantStore';
 
 import {
@@ -34,7 +36,6 @@ import {
   type SlotName
 } from '../store/pbrMaterialStore';
 
-import { useWorkbenchStore } from '../store/workbenchStore';
 import { useAppStore } from '../store/appStore';
 import { viewportBridge } from '../utils/viewportBridge';
 
@@ -146,8 +147,13 @@ describe('Adversarial Graphics & State Stress Harness (M5 - R1 & R2)', () => {
       const elapsed = performance.now() - startTime;
       console.log(`[CHALLENGER 1 BENCHMARK] 1000 uniform updates across 5 materials completed in ${elapsed.toFixed(2)}ms (${(elapsed / 1000).toFixed(4)}ms/tick)`);
 
-      // Performance ceiling: 1000 ticks should complete in under 500ms
-      expect(elapsed).toBeLessThan(500);
+      // NOTE: there is deliberately NO wall-clock ceiling here.
+      //
+      // An `expect(elapsed).toBeLessThan(500)` used to live at this point. It was
+      // a flake source under parallel test load and it added nothing: if this
+      // path regressed to forcing shader recompiles, the per-tick
+      // `needsUpdate` spies and the `material.version` checks below fail
+      // deterministically. `elapsed` is logged for humans instead.
 
       // Verify that version was strictly NOT incremented on any material
       for (let idx = 0; idx < allMaterials.length; idx++) {
@@ -264,26 +270,43 @@ describe('Adversarial Graphics & State Stress Harness (M5 - R1 & R2)', () => {
   // Requirement R1: Single Active WebGL Context & Render Loop Gating
   // =========================================================================
   describe('Requirement R1: Single Active WebGL Context', () => {
-    it('EmbeddedViewport in Viewport/ and Agent/ contains ZERO <Canvas> tags', async () => {
+    it('exactly one <Canvas> exists in the whole renderer', async () => {
+      // Walk the renderer source and count React Three Fiber <Canvas> mounts.
+      // A second one would mean a second WebGL context and a duplicated GLB.
+      const root = path.resolve(__dirname, '..');
+      const offenders: string[] = [];
+
+      const walk = (dir: string) => {
+        for (const entry of fsSync.readdirSync(dir, { withFileTypes: true })) {
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            if (entry.name === 'tests') continue;
+            walk(full);
+            continue;
+          }
+          if (!entry.name.endsWith('.tsx') && !entry.name.endsWith('.ts')) continue;
+          const content = fsSync.readFileSync(full, 'utf-8');
+          if (/<Canvas[\s>]/.test(content)) {
+            offenders.push(path.relative(root, full));
+          }
+        }
+      };
+      walk(root);
+
+      expect(offenders).toEqual(['components/Viewport/Canvas3D.tsx']);
+    });
+
+    it('EmbeddedViewport renders a 2D canvas fed by the shared renderer, never its own context', async () => {
       const viewportPath = path.resolve(__dirname, '../components/Viewport/EmbeddedViewport.tsx');
-      const agentPath = path.resolve(__dirname, '../components/Agent/EmbeddedViewport.tsx');
-
       const viewportContent = await fs.readFile(viewportPath, 'utf-8');
-      const agentContent = await fs.readFile(agentPath, 'utf-8');
 
-      // Check Viewport/EmbeddedViewport.tsx
-      // Must NOT contain <Canvas or import { Canvas } from '@react-three/fiber'
+      // Must NOT mount an R3F canvas or import the fiber renderer.
       expect(viewportContent).not.toMatch(/<Canvas[\s>]/);
       expect(viewportContent).not.toMatch(/from\s+['"]@react-three\/fiber['"]/);
 
-      // Must use standard HTML canvas element and viewportBridge.renderPreview
+      // Must draw into a plain HTML canvas by copying the shared WebGL output.
       expect(viewportContent).toMatch(/<canvas[\s\S]*?ref=\{canvasRef\}/);
       expect(viewportContent).toContain('viewportBridge.renderPreview');
-
-      // Check Agent/EmbeddedViewport.tsx
-      // Must be a clean re-export without Canvas
-      expect(agentContent).not.toMatch(/<Canvas[\s>]/);
-      expect(agentContent).toContain("export { EmbeddedViewport } from '../Viewport/EmbeddedViewport'");
     });
 
     it('Canvas3D pauses frameloop when view is not workbench (frameloop="never")', async () => {
@@ -562,7 +585,7 @@ describe('Adversarial Graphics & State Stress Harness (M5 - R1 & R2)', () => {
 
       // Eliminated from mapVariants pool and derived colorways
       expect(stateAfterDelete.mapVariants.baseColor.some((m) => m.id === sharedBaseTexture.id)).toBe(false);
-      expect(stateAfterDelete.colorways.some((c) => c.id === sharedBaseTexture.id)).toBe(false);
+      expect(selectColorways(stateAfterDelete).some((c) => c.id === sharedBaseTexture.id)).toBe(false);
 
       // Active pbrMaterialStore map slot is cleared (filePath & url are null/falsy)
       const currentBaseMap = usePbrMaterialStore.getState().baseColorMap;

@@ -8,7 +8,7 @@ import {
   ArrowRightLeft,
   Wrench
 } from 'lucide-react';
-import { SlotName } from '../../store/workbenchStore';
+import { SlotName } from '../../store/pbrMaterialStore';
 import {
   convertImageToWebpCanvas,
   flipNormalMapCanvas,

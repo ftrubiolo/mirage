@@ -101,6 +101,42 @@
     font-family: var(--font-body);
   }
 
+  /**
+   * Interface density.
+   *
+   * The Settings control has always written `data-density` onto <html>; these
+   * rules are what make it do something. Only two axes are scaled — text scale
+   * and control height — so layout keeps using the standard Tailwind spacing
+   * scale (DESIGN.md §6.10 bans arbitrary ad-hoc utilities).
+   */
+  html[data-density='standard'] {
+    --density-font-scale: 1;
+    --density-control-height: 30px;
+  }
+
+  html[data-density='compact'] {
+    --density-font-scale: 0.9375; /* 15/16 */
+    --density-control-height: 26px;
+  }
+
+  html[data-density='dense'] {
+    --density-font-scale: 0.875; /* 14/16 */
+    --density-control-height: 22px;
+  }
+
+  html[data-density='compact'] body,
+  html[data-density='dense'] body {
+    font-size: calc(1rem * var(--density-font-scale, 1));
+  }
+
+  /* Form controls share a height so rows stay aligned at every density. */
+  html[data-density] input[type='text'],
+  html[data-density] input[type='number'],
+  html[data-density] input[type='search'],
+  html[data-density] select {
+    min-height: var(--density-control-height, 30px);
+  }
+
   /* Strict Metrology: tabular numerals for all mono fonts */
   .font-mono,
   [data-tabular-nums] {

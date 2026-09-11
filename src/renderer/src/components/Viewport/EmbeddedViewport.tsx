@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { RotateCw, RefreshCw, Box, Layers, Maximize2 } from 'lucide-react';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { useModelStore } from '../../store/modelStore';
+import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
 import { useAppStore } from '../../store/appStore';
 import { viewportBridge } from '../../utils/viewportBridge';
 
 export const EmbeddedViewport: React.FC = () => {
-  const modelUrl = useWorkbenchStore((state) => state.modelUrl);
-  const debugChannel = useWorkbenchStore((state) => state.debugChannel);
-  const setDebugChannel = useWorkbenchStore((state) => state.setDebugChannel);
+  const modelUrl = useModelStore((state) => state.modelUrl);
+  const debugChannel = usePbrMaterialStore((state) => state.debugChannel);
+  const setDebugChannel = usePbrMaterialStore((state) => state.setDebugChannel);
   const setView = useAppStore((state) => state.setView);
 
   const [autoRotate, setAutoRotate] = useState(false);

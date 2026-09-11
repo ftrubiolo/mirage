@@ -1,4 +1,10 @@
-import { useWorkbenchStore, ALL_SLOT_NAMES } from '../store/workbenchStore';
+import { ALL_SLOT_NAMES, usePbrMaterialStore } from '../store/pbrMaterialStore';
+import { useModelStore } from '../store/modelStore';
+import {
+  selectActiveColorwayId,
+  selectColorways,
+  useVariantStore
+} from '../store/variantStore';
 import { useViewportStore } from '../store/viewportStore';
 import { useAppStore } from '../store/appStore';
 
@@ -18,48 +24,52 @@ export interface SceneContextSnapshot {
 }
 
 export function extractSceneSnapshot(): SceneContextSnapshot {
-  const wb = useWorkbenchStore.getState();
+  const model = useModelStore.getState();
+  const pbr = usePbrMaterialStore.getState();
+  const variant = useVariantStore.getState();
   const vp = useViewportStore.getState();
 
-  const activeVariant = wb.variants.find((v) => v.id === wb.activeVariantId);
-  const activeColorway = wb.colorways.find((c) => c.id === wb.activeColorwayId);
+  const activeVariant = variant.variants.find((v) => v.id === variant.activeVariantId);
+  const activeColorway = selectColorways(variant).find(
+    (c) => c.id === selectActiveColorwayId(variant)
+  );
 
   const activeMaps: string[] = [];
   for (const slot of ALL_SLOT_NAMES) {
-    const isEnabled = wb.slotEnabled[slot] ?? true;
-    const map = (wb as any)[`${slot}Map`];
+    const isEnabled = pbr.slotEnabled[slot] ?? true;
+    const map = (pbr as any)[`${slot}Map`];
     if (isEnabled && (map?.url || map?.filePath)) {
       activeMaps.push(`${slot}: ${map.fileName || 'asignado'}`);
     }
   }
 
   return {
-    modelName: wb.productName || wb.modelFilePath?.split('/').pop() || 'Sin modelo cargado',
-    triangleCount: wb.modelStats?.triangleCount ?? 0,
-    vertexCount: wb.modelStats?.vertexCount ?? 0,
-    meshCount: wb.modelStats?.meshCount ?? 0,
-    dimensions: wb.modelStats?.dimensions ?? null,
-    unitType: wb.unitType,
+    modelName: model.productName || model.modelFilePath?.split('/').pop() || 'Sin modelo cargado',
+    triangleCount: model.modelStats?.triangleCount ?? 0,
+    vertexCount: model.modelStats?.vertexCount ?? 0,
+    meshCount: model.modelStats?.meshCount ?? 0,
+    dimensions: model.modelStats?.dimensions ?? null,
+    unitType: model.unitType,
     activeVariantName: activeVariant?.name || 'Default',
     activeColorwayName: activeColorway?.name || null,
-    debugChannel: wb.debugChannel,
+    debugChannel: pbr.debugChannel,
     environmentPreset: vp.environmentPreset,
     activeMaps,
     pbrValues: {
-      roughnessFactor: wb.roughnessFactor,
-      metalnessFactor: wb.metalnessFactor,
-      normalScale: wb.normalScale,
-      normalInvertY: wb.normalInvertY,
-      aoIntensity: wb.aoIntensity,
-      emissiveIntensity: wb.emissiveIntensity,
-      emissiveColor: wb.emissiveColor,
-      clearcoatFactor: wb.clearcoatFactor,
-      clearcoatRoughness: wb.clearcoatRoughness,
-      sheenColor: wb.sheenColor,
-      sheenRoughness: wb.sheenRoughness,
-      transmissionFactor: wb.transmissionFactor,
-      ior: wb.ior,
-      displacementScale: wb.displacementScale
+      roughnessFactor: pbr.roughnessFactor,
+      metalnessFactor: pbr.metalnessFactor,
+      normalScale: pbr.normalScale,
+      normalInvertY: pbr.normalInvertY,
+      aoIntensity: pbr.aoIntensity,
+      emissiveIntensity: pbr.emissiveIntensity,
+      emissiveColor: pbr.emissiveColor,
+      clearcoatFactor: pbr.clearcoatFactor,
+      clearcoatRoughness: pbr.clearcoatRoughness,
+      sheenColor: pbr.sheenColor,
+      sheenRoughness: pbr.sheenRoughness,
+      transmissionFactor: pbr.transmissionFactor,
+      ior: pbr.ior,
+      displacementScale: pbr.displacementScale
     }
   };
 }

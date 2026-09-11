@@ -16,7 +16,7 @@ import {
   FolderOpen
 } from 'lucide-react';
 import { useViewportStore, EnvironmentPreset } from '../../store/viewportStore';
-import { useWorkbenchStore, DebugChannel } from '../../store/workbenchStore';
+import { usePbrMaterialStore, DebugChannel } from '../../store/pbrMaterialStore';
 
 export const ViewportToolbar: React.FC = () => {
   const {
@@ -43,8 +43,8 @@ export const ViewportToolbar: React.FC = () => {
     zoomOut3D
   } = useViewportStore();
 
-  const debugChannel = useWorkbenchStore((state) => state.debugChannel);
-  const setDebugChannel = useWorkbenchStore((state) => state.setDebugChannel);
+  const debugChannel = usePbrMaterialStore((state) => state.debugChannel);
+  const setDebugChannel = usePbrMaterialStore((state) => state.setDebugChannel);
 
   const [isChannelDropdownOpen, setIsChannelDropdownOpen] = useState(false);
   const [isEnvDropdownOpen, setIsEnvDropdownOpen] = useState(false);

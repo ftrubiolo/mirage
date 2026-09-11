@@ -1,13 +1,13 @@
 import React from 'react';
 import { Ruler } from 'lucide-react';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { useModelStore } from '../../store/modelStore';
 import { NumberInput } from '../UI/NumberInput';
 
 export const ScaleChecker: React.FC = () => {
-  const modelStats = useWorkbenchStore((state) => state.modelStats);
-  const unitScale = useWorkbenchStore((state) => state.unitScale);
-  const unitType = useWorkbenchStore((state) => state.unitType);
-  const setUnitScale = useWorkbenchStore((state) => state.setUnitScale);
+  const modelStats = useModelStore((state) => state.modelStats);
+  const unitScale = useModelStore((state) => state.unitScale);
+  const unitType = useModelStore((state) => state.unitType);
+  const setUnitScale = useModelStore((state) => state.setUnitScale);
 
   if (!modelStats) {
     return (

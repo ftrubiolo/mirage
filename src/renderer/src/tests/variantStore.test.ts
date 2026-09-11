@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useVariantStore, deriveAvailableTexturesForSlot, MapVariantItem } from '../store/variantStore';
+import {
+  useVariantStore,
+  deriveAvailableTexturesForSlot,
+  selectColorways,
+  type MapVariantItem
+} from '../store/variantStore';
 import { usePbrMaterialStore } from '../store/pbrMaterialStore';
-import { useWorkbenchStore } from '../store/workbenchStore';
+import { useModelStore } from '../store/modelStore';
+import { setMaterialProperty } from '../store/workbenchActions';
 import { EntryVariant } from '../types/library';
 
 describe('variantStore & Unified Variant Model (F8)', () => {
@@ -103,7 +109,7 @@ describe('variantStore & Unified Variant Model (F8)', () => {
       // Invalidation check: Deleted texture must NOT resurrect into mapVariants or colorways!
       const finalState = useVariantStore.getState();
       const resurrectedInPool = finalState.mapVariants.baseColor.some((m) => m.id === textureItem.id);
-      const resurrectedInColorways = finalState.colorways.some((c) => c.id === textureItem.id);
+      const resurrectedInColorways = selectColorways(finalState).some((c) => c.id === textureItem.id);
 
       expect(resurrectedInPool).toBe(false);
       expect(resurrectedInColorways).toBe(false);
@@ -124,19 +130,19 @@ describe('variantStore & Unified Variant Model (F8)', () => {
       store.addMapVariant('baseColor', item1);
 
       let state = useVariantStore.getState();
-      expect(state.colorways).toHaveLength(1);
-      expect(state.colorways[0].name).toBe('Lino Blanco');
-      expect(state.colorways[0].baseColorUrl).toBe('blob:lino-blanco');
+      expect(selectColorways(state)).toHaveLength(1);
+      expect(selectColorways(state)[0].name).toBe('Lino Blanco');
+      expect(selectColorways(state)[0].baseColorUrl).toBe('blob:lino-blanco');
 
       // Rename map variant
       store.renameMapVariant('baseColor', 'c1', 'Lino Marfil');
       state = useVariantStore.getState();
-      expect(state.colorways[0].name).toBe('Lino Marfil');
+      expect(selectColorways(state)[0].name).toBe('Lino Marfil');
 
       // Remove map variant
       store.removeMapVariant('baseColor', 'c1');
       state = useVariantStore.getState();
-      expect(state.colorways).toHaveLength(0);
+      expect(selectColorways(state)).toHaveLength(0);
     });
   });
 
@@ -169,16 +175,13 @@ describe('variantStore & Unified Variant Model (F8)', () => {
     });
   });
 
-  describe('Backward Compatibility via useWorkbenchStore facade', () => {
-    it('supports useWorkbenchStore selectors and actions transparently', () => {
-      const wb = useWorkbenchStore.getState();
+  describe('Cross-store material property sync via workbenchActions', () => {
+    it('writes model state to the model store and material properties to the PBR store and active variant', () => {
+      useModelStore.getState().setModel('/models/armchair.glb', 'blob:armchair', 2048);
+      expect(useModelStore.getState().modelFilePath).toBe('/models/armchair.glb');
+      expect(useModelStore.getState().modelFileSize).toBe(2048);
 
-      wb.setModel('/models/armchair.glb', 'blob:armchair', 2048);
-      expect(useWorkbenchStore.getState().modelFilePath).toBe('/models/armchair.glb');
-      expect(useWorkbenchStore.getState().modelFileSize).toBe(2048);
-
-      wb.setRoughnessFactor(0.42);
-      expect(useWorkbenchStore.getState().roughnessFactor).toBe(0.42);
+      setMaterialProperty('roughnessFactor', 0.42);
       expect(usePbrMaterialStore.getState().roughnessFactor).toBe(0.42);
 
       const activeId = useVariantStore.getState().activeVariantId;

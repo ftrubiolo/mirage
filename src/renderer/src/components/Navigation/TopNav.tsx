@@ -8,7 +8,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAppStore, AppView } from '../../store/appStore';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { useModelStore } from '../../store/modelStore';
 import { flushAutoSave } from '../../utils/libraryBridge';
 
 interface TopNavProps {
@@ -24,11 +24,9 @@ export const TopNav: React.FC<TopNavProps> = React.memo(({ onOpenSaveModal }) =>
     lastAutoSavedAt
   } = useAppStore();
 
-  const {
-    productName,
-    modelStats,
-    setProductMeta
-  } = useWorkbenchStore();
+  const productName = useModelStore((s) => s.productName);
+  const modelStats = useModelStore((s) => s.modelStats);
+  const setProductMeta = useModelStore((s) => s.setProductMeta);
 
   const [justSaved, setJustSaved] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

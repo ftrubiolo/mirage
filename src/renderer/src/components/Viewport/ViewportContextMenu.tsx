@@ -18,7 +18,7 @@ import {
   PanelRight
 } from 'lucide-react';
 import { useViewportStore, CameraPreset, LightingPreset, EnvironmentPreset } from '../../store/viewportStore';
-import { useWorkbenchStore, DebugChannel } from '../../store/workbenchStore';
+import { usePbrMaterialStore, DebugChannel } from '../../store/pbrMaterialStore';
 import { useAppStore } from '../../store/appStore';
 import { useKeybindsStore, KeybindAction } from '../../utils/keybindsManager';
 import { captureViewportSnapshot } from '../../utils/viewportBridge';
@@ -76,7 +76,8 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
   const isWorkbenchSidebarCollapsed = useAppStore((s) => s.isWorkbenchSidebarCollapsed);
   const toggleWorkbenchSidebar = useAppStore((s) => s.toggleWorkbenchSidebar);
 
-  const { debugChannel, setDebugChannel } = useWorkbenchStore();
+  const debugChannel = usePbrMaterialStore((s) => s.debugChannel);
+  const setDebugChannel = usePbrMaterialStore((s) => s.setDebugChannel);
   const getShortcutLabel = useKeybindsStore((s) => s.getShortcutLabel);
 
   // Close when clicking outside or pressing Escape

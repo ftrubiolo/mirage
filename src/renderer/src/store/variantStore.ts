@@ -85,8 +85,6 @@ export interface VariantState {
   activeVariantId: string | null;
   mapVariants: Record<SlotName, MapVariantItem[]>;
   activeVariantIds: Record<SlotName, string | null>;
-  colorways: ColorwayItem[];
-  activeColorwayId: string | null;
 
   selectVariant: (variantId: string) => void;
   createVariant: (name: string, cloneCurrent?: boolean) => void;
@@ -109,9 +107,22 @@ export interface VariantState {
 
   syncActiveVariantSlot: (slot: SlotName, map: PbrSlotMap | null) => void;
   syncActiveVariantParameters: (params: Partial<PbrMaterialParameters>) => void;
-  setVariants: (variants: EntryVariant[], activeVariantId?: string | null) => void;
   resetVariants: () => void;
 }
+
+/**
+ * Colorways are a *projection* of the baseColor texture variants, not state.
+ *
+ * They used to be stored and recomputed by hand at seven mutation sites, which
+ * meant any new site that forgot to recompute would silently desync the swatch
+ * list. Deriving on read makes that class of bug impossible.
+ */
+export const selectColorways = (state: VariantState): ColorwayItem[] =>
+  deriveColorways(state.mapVariants.baseColor);
+
+/** The active colorway is simply the active baseColor texture variant. */
+export const selectActiveColorwayId = (state: VariantState): string | null =>
+  state.activeVariantIds.baseColor ?? null;
 
 const defaultVariant: EntryVariant = {
   id: 'var-default',
@@ -127,8 +138,6 @@ export const useVariantStore = create<VariantState>((set, get) => ({
   activeVariantId: 'var-default',
   mapVariants: createEmptyMapVariants(),
   activeVariantIds: createEmptyActiveVariantIds(),
-  colorways: [],
-  activeColorwayId: null,
 
   selectVariant: (variantId: string) => {
     const state = get();
@@ -209,8 +218,6 @@ export const useVariantStore = create<VariantState>((set, get) => ({
       activeVariantId: variantId,
       mapVariants: nextMapVariants,
       activeVariantIds: nextActiveIds,
-      colorways: deriveColorways(nextMapVariants.baseColor),
-      activeColorwayId: nextActiveIds.baseColor
     });
 
     usePbrMaterialStore.getState().applyVariantMaterialState(
@@ -348,8 +355,6 @@ export const useVariantStore = create<VariantState>((set, get) => ({
         variants: updatedVariants,
         mapVariants: nextMapVariants,
         activeVariantIds: nextActiveIds,
-        colorways: deriveColorways(nextMapVariants.baseColor),
-        activeColorwayId: nextActiveIds.baseColor
       };
     });
 
@@ -381,8 +386,7 @@ export const useVariantStore = create<VariantState>((set, get) => ({
 
     set({
       variants: updatedVariants,
-      activeVariantIds: { ...state.activeVariantIds, [slot]: id },
-      activeColorwayId: slot === 'baseColor' ? id : state.activeColorwayId
+      activeVariantIds: { ...state.activeVariantIds, [slot]: id }
     });
 
     usePbrMaterialStore.getState().setMapSlot(slot, {
@@ -429,8 +433,6 @@ export const useVariantStore = create<VariantState>((set, get) => ({
       variants: updatedVariants,
       mapVariants: nextMapVariants,
       activeVariantIds: nextActiveIds,
-      colorways: deriveColorways(nextMapVariants.baseColor),
-      activeColorwayId: nextActiveIds.baseColor
     });
 
     const activeVar = updatedVariants.find((v) => v.id === state.activeVariantId);
@@ -465,7 +467,6 @@ export const useVariantStore = create<VariantState>((set, get) => ({
       return {
         variants: updatedVariants,
         mapVariants: nextMapVariants,
-        colorways: deriveColorways(nextMapVariants.baseColor)
       };
     });
   },
@@ -551,30 +552,12 @@ export const useVariantStore = create<VariantState>((set, get) => ({
     usePbrMaterialStore.setState(params as any);
   },
 
-  setVariants: (variants: EntryVariant[], activeVariantId?: string | null) => {
-    const actId = activeVariantId || variants.find((v) => v.isDefault)?.id || variants[0]?.id || null;
-    const initialMapVariants = createEmptyMapVariants();
-    for (const slot of ALL_SLOT_NAMES) {
-      initialMapVariants[slot] = deriveAvailableTexturesForSlot(variants, slot);
-    }
-
-    set({
-      variants,
-      activeVariantId: actId,
-      mapVariants: initialMapVariants,
-      colorways: deriveColorways(initialMapVariants.baseColor),
-      activeColorwayId: initialMapVariants.baseColor[0]?.id || null
-    });
-  },
-
   resetVariants: () => {
     set({
       variants: [defaultVariant],
       activeVariantId: 'var-default',
       mapVariants: createEmptyMapVariants(),
       activeVariantIds: createEmptyActiveVariantIds(),
-      colorways: [],
-      activeColorwayId: null
     });
   }
 }));

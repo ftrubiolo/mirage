@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Image as ImageIcon, X, Loader2 } from 'lucide-react';
-import { SlotName, MapVariantItem, useWorkbenchStore } from '../../store/workbenchStore';
+import { SlotName } from '../../store/pbrMaterialStore';
+import { MapVariantItem, useVariantStore } from '../../store/variantStore';
 import { useAppStore } from '../../store/appStore';
 import { getNextSlotTargetType } from './MapSlotPicker';
 import { convertImageToWebpCanvas } from '../../utils/canvasTextureProcessor';
@@ -21,7 +22,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
   variant,
   allVariants
 }) => {
-  const addMapVariant = useWorkbenchStore((state) => state.addMapVariant);
+  const addMapVariant = useVariantStore((state) => state.addMapVariant);
 
   const [resolution, setResolution] = useState<number>(2048);
   const [quality, setQuality] = useState<number>(85);

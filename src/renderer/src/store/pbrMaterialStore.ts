@@ -119,22 +119,6 @@ export interface PbrMaterialState extends PbrMaterialParameters {
 
   setPbrProperty: <K extends keyof PbrMaterialParameters>(key: K, value: PbrMaterialParameters[K]) => void;
 
-  setNormalScale: (val: number) => void;
-  setNormalInvertY: (val: boolean) => void;
-  setRoughnessFactor: (val: number) => void;
-  setMetalnessFactor: (val: number) => void;
-  setAoIntensity: (val: number) => void;
-  setEmissiveIntensity: (val: number) => void;
-  setEmissiveColor: (val: string) => void;
-  setEmissiveFullGlow: (val: boolean) => void;
-  setClearcoatFactor: (val: number) => void;
-  setClearcoatRoughness: (val: number) => void;
-  setSheenColor: (val: string) => void;
-  setSheenRoughness: (val: number) => void;
-  setTransmissionFactor: (val: number) => void;
-  setIor: (val: number) => void;
-  setDisplacementScale: (val: number) => void;
-
   setMapSlot: (slot: SlotName, data: PbrSlotMap) => void;
   clearMapSlot: (slot: SlotName) => void;
   setSlotEnabled: (slot: SlotName, enabled: boolean) => void;
@@ -185,22 +169,6 @@ export const usePbrMaterialStore = create<PbrMaterialState>((set, get) => ({
   setPbrProperty: (key, value) => {
     set({ [key]: value } as any);
   },
-
-  setNormalScale: (normalScale) => set({ normalScale }),
-  setNormalInvertY: (normalInvertY) => set({ normalInvertY }),
-  setRoughnessFactor: (roughnessFactor) => set({ roughnessFactor }),
-  setMetalnessFactor: (metalnessFactor) => set({ metalnessFactor }),
-  setAoIntensity: (aoIntensity) => set({ aoIntensity }),
-  setEmissiveIntensity: (emissiveIntensity) => set({ emissiveIntensity }),
-  setEmissiveColor: (emissiveColor) => set({ emissiveColor }),
-  setEmissiveFullGlow: (emissiveFullGlow) => set({ emissiveFullGlow }),
-  setClearcoatFactor: (clearcoatFactor) => set({ clearcoatFactor }),
-  setClearcoatRoughness: (clearcoatRoughness) => set({ clearcoatRoughness }),
-  setSheenColor: (sheenColor) => set({ sheenColor }),
-  setSheenRoughness: (sheenRoughness) => set({ sheenRoughness }),
-  setTransmissionFactor: (transmissionFactor) => set({ transmissionFactor }),
-  setIor: (ior) => set({ ior }),
-  setDisplacementScale: (displacementScale) => set({ displacementScale }),
 
   setMapSlot: (slot, data) => {
     const mapKey = `${slot}Map` as const;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
-import { MapVariantItem } from '../../store/workbenchStore';
+import { MapVariantItem } from '../../store/variantStore';
 
 export interface MapSlotDeleteCandidate {
   variant: MapVariantItem;

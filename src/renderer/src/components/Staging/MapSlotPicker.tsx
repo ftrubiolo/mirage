@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useWorkbenchStore, SlotName, MapVariantItem } from '../../store/workbenchStore';
+import { SlotName, usePbrMaterialStore } from '../../store/pbrMaterialStore';
+import { MapVariantItem, useVariantStore } from '../../store/variantStore';
 import { useAppStore } from '../../store/appStore';
 import { WebpConvertModal } from './WebpConvertModal';
 import { ImageLightboxModal } from '../UI/ImageLightboxModal';
@@ -47,18 +48,18 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
   children,
   embeddedInSection = true
 }) => {
-  const variants = useWorkbenchStore((s) => s.mapVariants[slot] || EMPTY_VARIANTS);
-  const activeVariantId = useWorkbenchStore((s) => s.activeVariantIds[slot]);
-  const isEnabled = useWorkbenchStore((s) => (s.slotEnabled ? s.slotEnabled[slot] ?? true : true));
-  const loadFromCache = useWorkbenchStore((s) => s.loadFromCache);
-  const setSlotEnabled = useWorkbenchStore((s) => s.setSlotEnabled);
-  const addMapVariant = useWorkbenchStore((s) => s.addMapVariant);
-  const selectMapVariant = useWorkbenchStore((s) => s.selectMapVariant);
-  const removeMapVariant = useWorkbenchStore((s) => s.removeMapVariant);
-  const renameMapVariant = useWorkbenchStore((s) => s.renameMapVariant);
-  const updateMapVariant = useWorkbenchStore((s) => s.updateMapVariant);
-  const entryVariants = useWorkbenchStore((s) => s.variants);
-  const currentEntryVariantId = useWorkbenchStore((s) => s.activeVariantId);
+  const variants = useVariantStore((s) => s.mapVariants[slot] || EMPTY_VARIANTS);
+  const activeVariantId = useVariantStore((s) => s.activeVariantIds[slot]);
+  const isEnabled = usePbrMaterialStore((s) => (s.slotEnabled ? s.slotEnabled[slot] ?? true : true));
+  const loadFromCache = usePbrMaterialStore((s) => s.loadFromCache);
+  const setSlotEnabled = usePbrMaterialStore((s) => s.setSlotEnabled);
+  const addMapVariant = useVariantStore((s) => s.addMapVariant);
+  const selectMapVariant = useVariantStore((s) => s.selectMapVariant);
+  const removeMapVariant = useVariantStore((s) => s.removeMapVariant);
+  const renameMapVariant = useVariantStore((s) => s.renameMapVariant);
+  const updateMapVariant = useVariantStore((s) => s.updateMapVariant);
+  const entryVariants = useVariantStore((s) => s.variants);
+  const currentEntryVariantId = useVariantStore((s) => s.activeVariantId);
 
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [webpConvertVariant, setWebpConvertVariant] = useState<MapVariantItem | null>(null);
@@ -256,6 +257,8 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
       const file = e.dataTransfer.files[0];
       const filePath = window.electronAPI.getPathForFile(file);
       if (filePath) {
+        // Grant the main process read access to the dropped asset's folder.
+        await window.electronAPI.approveDroppedPath(filePath);
         await handleAddVariantWithFile(filePath);
       }
     }

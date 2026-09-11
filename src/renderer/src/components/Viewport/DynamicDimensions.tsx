@@ -3,7 +3,7 @@ import { Html, Line } from '@react-three/drei';
 import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useViewportStore } from '../../store/viewportStore';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { useModelStore } from '../../store/modelStore';
 
 interface DynamicDimensionsProps {
   dimensions: {
@@ -15,7 +15,7 @@ interface DynamicDimensionsProps {
 
 export const DynamicDimensions: React.FC<DynamicDimensionsProps> = ({ dimensions }) => {
   const showDimensions = useViewportStore((state) => state.showDimensions);
-  const unitType = useWorkbenchStore((state) => state.unitType);
+  const unitType = useModelStore((state) => state.unitType);
   const viewportTheme = useViewportStore((state) => state.viewportTheme);
   const { camera } = useThree();
 

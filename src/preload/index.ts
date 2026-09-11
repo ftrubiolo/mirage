@@ -35,6 +35,7 @@ export interface ElectronAPI {
   saveFileDialog: (options?: { defaultPath?: string; filters?: { name: string; extensions: string[] }[]; title?: string }) => Promise<string | null>;
   writeFile: (filePath: string, content: string) => Promise<boolean>;
   writeBinaryFile: (filePath: string, buffer: Uint8Array | ArrayBuffer) => Promise<boolean>;
+  readBinaryFile: (filePath: string) => Promise<Uint8Array>;
   getFileInfo: (filePath: string) => Promise<FileInfo>;
   watchFile: (filePath: string) => Promise<boolean>;
   stopWatching: () => Promise<boolean>;
@@ -43,6 +44,7 @@ export interface ElectronAPI {
   getResourcePath: (relativePath: string) => Promise<string>;
   toAssetUrl: (filePath: string) => string;
   getPathForFile: (file: File) => string;
+  approveDroppedPath: (filePath: string) => Promise<boolean>;
   onFileChanged: (callback: (filePath: string) => void) => () => void;
   // Library methods
   getLibraryPath: () => Promise<string>;
@@ -75,6 +77,12 @@ export interface ElectronAPI {
   getKeybindsPath: () => Promise<string>;
   loadSettings: () => Promise<any>;
   saveSettings: (settings: any) => Promise<boolean>;
+  /**
+   * Merges a partial settings object in the main process. Preferred over
+   * `saveSettings` for anything that only owns part of the document: the merge
+   * happens in main under a mutex, so two callers cannot clobber each other.
+   */
+  updateSettings: (partial: Record<string, unknown>) => Promise<{ success: boolean; settings: any }>;
   getSettingsPath: () => Promise<string>;
 }
 
@@ -84,6 +92,7 @@ const api: ElectronAPI = {
   saveFileDialog: (options) => ipcRenderer.invoke('dialog:saveFile', options),
   writeFile: (filePath, content) => ipcRenderer.invoke('fs:writeFile', filePath, content),
   writeBinaryFile: (filePath, buffer) => ipcRenderer.invoke('fs:writeBinaryFile', filePath, buffer),
+  readBinaryFile: (filePath) => ipcRenderer.invoke('fs:readBinaryFile', filePath),
   getFileInfo: (filePath) => ipcRenderer.invoke('fs:getFileInfo', filePath),
   watchFile: (filePath) => ipcRenderer.invoke('watcher:watch', filePath),
   stopWatching: () => ipcRenderer.invoke('watcher:stop'),
@@ -124,6 +133,7 @@ const api: ElectronAPI = {
   getKeybindsPath: () => ipcRenderer.invoke('keybinds:getPath'),
   loadSettings: () => ipcRenderer.invoke('settings:load'),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
+  updateSettings: (partial) => ipcRenderer.invoke('settings:update', partial),
   getSettingsPath: () => ipcRenderer.invoke('settings:getPath'),
   toAssetUrl: (filePath: string) => {
     if (!filePath) return '';
@@ -148,6 +158,7 @@ const api: ElectronAPI = {
       return (file as unknown as { path?: string }).path || '';
     }
   },
+  approveDroppedPath: (filePath: string) => ipcRenderer.invoke('fs:approveDroppedPath', filePath),
   onFileChanged: (callback) => {
     const handler = (_event: Electron.IpcRendererEvent, filePath: string) => callback(filePath);
     ipcRenderer.on('file:changed', handler);

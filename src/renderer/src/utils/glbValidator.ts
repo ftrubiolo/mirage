@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ModelStats } from '../store/workbenchStore';
+import type { ModelStats } from '../store/modelStore';
 
 export function analyzeGlbHierarchy(scene: THREE.Object3D): ModelStats {
   let triangleCount = 0;

@@ -12,22 +12,20 @@ import {
   Camera,
   X
 } from 'lucide-react';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { useVariantStore } from '../../store/variantStore';
 import { captureViewportSnapshot } from '../../utils/viewportBridge';
 import { useAppStore } from '../../store/appStore';
 import { Switch } from '../UI/Switch';
 
 export const VariantBottomToolbar: React.FC = () => {
-  const {
-    variants,
-    activeVariantId,
-    selectVariant,
-    createVariant,
-    renameVariant,
-    deleteVariant,
-    setVariantDefault,
-    setVariantPoster
-  } = useWorkbenchStore();
+  const variants = useVariantStore((state) => state.variants);
+  const activeVariantId = useVariantStore((state) => state.activeVariantId);
+  const selectVariant = useVariantStore((state) => state.selectVariant);
+  const createVariant = useVariantStore((state) => state.createVariant);
+  const renameVariant = useVariantStore((state) => state.renameVariant);
+  const deleteVariant = useVariantStore((state) => state.deleteVariant);
+  const setVariantDefault = useVariantStore((state) => state.setVariantDefault);
+  const setVariantPoster = useVariantStore((state) => state.setVariantPoster);
 
   const activeEntrySlug = useAppStore((state) => state.activeEntrySlug);
 

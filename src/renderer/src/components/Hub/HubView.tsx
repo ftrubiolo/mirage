@@ -8,7 +8,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { useModelStore } from '../../store/modelStore';
 import { LibraryEntry } from '../../types/library';
 import { loadEntryIntoWorkbench, resetWorkbench } from '../../utils/libraryBridge';
 
@@ -18,7 +18,8 @@ interface HubViewProps {
 
 export const HubView: React.FC<HubViewProps> = () => {
   const { setView } = useAppStore();
-  const { productName, modelFilePath } = useWorkbenchStore();
+  const productName = useModelStore((s) => s.productName);
+  const modelFilePath = useModelStore((s) => s.modelFilePath);
 
   const [recentEntries, setRecentEntries] = useState<LibraryEntry[]>([]);
   const [isLoadingRecents, setIsLoadingRecents] = useState(true);

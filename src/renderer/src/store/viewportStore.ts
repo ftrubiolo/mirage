@@ -118,16 +118,15 @@ interface ViewportState {
 
 let syncTimeout: any = null;
 const requestSaveSettings = () => {
-  if (typeof window === 'undefined' || !window.electronAPI?.saveSettings) return;
+  if (typeof window === 'undefined' || !window.electronAPI?.updateSettings) return;
   clearTimeout(syncTimeout);
   syncTimeout = setTimeout(async () => {
     try {
-      const current = await window.electronAPI.loadSettings().catch(() => ({}));
+      // Sends only the viewport slice; the main process merges it into the
+      // canonical document under a write mutex. Reading the whole document
+      // first and writing it back would reintroduce a lost-update race.
       const vp = useViewportStore.getState().getPersistableSettings();
-      await window.electronAPI.saveSettings({
-        ...current,
-        viewport: vp
-      });
+      await window.electronAPI.updateSettings({ viewport: vp });
     } catch (err) {
       console.warn('[ViewportStore] Failed to save settings to disk:', err);
     }

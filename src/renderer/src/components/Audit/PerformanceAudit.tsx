@@ -1,10 +1,10 @@
 import React from 'react';
 import { Cpu, CheckCircle2, AlertTriangle, Layers, ShieldCheck } from 'lucide-react';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { useModelStore } from '../../store/modelStore';
 
 export const PerformanceAudit: React.FC = () => {
-  const modelStats = useWorkbenchStore((state) => state.modelStats);
-  const modelFileSize = useWorkbenchStore((state) => state.modelFileSize);
+  const modelStats = useModelStore((state) => state.modelStats);
+  const modelFileSize = useModelStore((state) => state.modelFileSize);
 
   if (!modelStats) {
     return (

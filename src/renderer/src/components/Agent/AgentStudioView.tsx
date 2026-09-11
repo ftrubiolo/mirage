@@ -16,7 +16,8 @@ export const AgentStudioView: React.FC = () => {
     sessions,
     activeSessionId,
     isStreaming,
-    sendMessage
+    sendMessage,
+    cancelStreaming
   } = useAgentStore();
 
   const setView = useAppStore((state) => state.setView);
@@ -94,6 +95,7 @@ export const AgentStudioView: React.FC = () => {
               inputText={inputText}
               onInputChange={setInputText}
               onSend={handleSend}
+              onStop={() => cancelStreaming()}
               disabled={!hasConfiguredProvider}
               isStreaming={isStreaming}
               placeholder={

@@ -11,7 +11,9 @@ import {
   Database,
   Package
 } from 'lucide-react';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
+import { useAppStore } from '../../store/appStore';
+import { setMaterialProperty } from '../../store/workbenchActions';
 import { Checkbox } from '../UI/Checkbox';
 import { Switch } from '../UI/Switch';
 import { SliderControl } from '../UI/SliderControl';
@@ -21,42 +23,45 @@ import { MapSlotPicker, getNextBaseColorTargetType, getNextSlotTargetType } from
 export { getNextBaseColorTargetType, getNextSlotTargetType };
 
 export const PbrMapsStudio: React.FC = React.memo(() => {
-  const useOrmPack = useWorkbenchStore((s) => s.useOrmPack);
-  const setUseOrmPack = useWorkbenchStore((s) => s.setUseOrmPack);
-  const normalScale = useWorkbenchStore((s) => s.normalScale);
-  const normalInvertY = useWorkbenchStore((s) => s.normalInvertY);
-  const roughnessFactor = useWorkbenchStore((s) => s.roughnessFactor);
-  const metalnessFactor = useWorkbenchStore((s) => s.metalnessFactor);
-  const aoIntensity = useWorkbenchStore((s) => s.aoIntensity);
-  const emissiveIntensity = useWorkbenchStore((s) => s.emissiveIntensity);
-  const emissiveColor = useWorkbenchStore((s) => s.emissiveColor);
-  const emissiveFullGlow = useWorkbenchStore((s) => s.emissiveFullGlow);
-  const clearcoatFactor = useWorkbenchStore((s) => s.clearcoatFactor);
-  const clearcoatRoughness = useWorkbenchStore((s) => s.clearcoatRoughness);
-  const sheenColor = useWorkbenchStore((s) => s.sheenColor);
-  const sheenRoughness = useWorkbenchStore((s) => s.sheenRoughness);
-  const transmissionFactor = useWorkbenchStore((s) => s.transmissionFactor);
-  const ior = useWorkbenchStore((s) => s.ior);
-  const displacementScale = useWorkbenchStore((s) => s.displacementScale);
+  const useOrmPack = usePbrMaterialStore((s) => s.useOrmPack);
+  const setUseOrmPack = usePbrMaterialStore((s) => s.setUseOrmPack);
+  const normalScale = usePbrMaterialStore((s) => s.normalScale);
+  const normalInvertY = usePbrMaterialStore((s) => s.normalInvertY);
+  const roughnessFactor = usePbrMaterialStore((s) => s.roughnessFactor);
+  const metalnessFactor = usePbrMaterialStore((s) => s.metalnessFactor);
+  const aoIntensity = usePbrMaterialStore((s) => s.aoIntensity);
+  const emissiveIntensity = usePbrMaterialStore((s) => s.emissiveIntensity);
+  const emissiveColor = usePbrMaterialStore((s) => s.emissiveColor);
+  const emissiveFullGlow = usePbrMaterialStore((s) => s.emissiveFullGlow);
+  const clearcoatFactor = usePbrMaterialStore((s) => s.clearcoatFactor);
+  const clearcoatRoughness = usePbrMaterialStore((s) => s.clearcoatRoughness);
+  const sheenColor = usePbrMaterialStore((s) => s.sheenColor);
+  const sheenRoughness = usePbrMaterialStore((s) => s.sheenRoughness);
+  const transmissionFactor = usePbrMaterialStore((s) => s.transmissionFactor);
+  const ior = usePbrMaterialStore((s) => s.ior);
+  const displacementScale = usePbrMaterialStore((s) => s.displacementScale);
 
-  const setNormalScale = useWorkbenchStore((s) => s.setNormalScale);
-  const setNormalInvertY = useWorkbenchStore((s) => s.setNormalInvertY);
-  const setRoughnessFactor = useWorkbenchStore((s) => s.setRoughnessFactor);
-  const setMetalnessFactor = useWorkbenchStore((s) => s.setMetalnessFactor);
-  const setAoIntensity = useWorkbenchStore((s) => s.setAoIntensity);
-  const setEmissiveIntensity = useWorkbenchStore((s) => s.setEmissiveIntensity);
-  const setEmissiveColor = useWorkbenchStore((s) => s.setEmissiveColor);
-  const setEmissiveFullGlow = useWorkbenchStore((s) => s.setEmissiveFullGlow);
-  const setClearcoatFactor = useWorkbenchStore((s) => s.setClearcoatFactor);
-  const setClearcoatRoughness = useWorkbenchStore((s) => s.setClearcoatRoughness);
-  const setSheenColor = useWorkbenchStore((s) => s.setSheenColor);
-  const setSheenRoughness = useWorkbenchStore((s) => s.setSheenRoughness);
-  const setTransmissionFactor = useWorkbenchStore((s) => s.setTransmissionFactor);
-  const setIor = useWorkbenchStore((s) => s.setIor);
-  const setDisplacementScale = useWorkbenchStore((s) => s.setDisplacementScale);
-  const openOrmPacker = useWorkbenchStore((s) => s.openOrmPacker);
-  const loadFromCache = useWorkbenchStore((s) => s.loadFromCache);
-  const setLoadFromCache = useWorkbenchStore((s) => s.setLoadFromCache);
+  // Material edits go through one orchestrating action so the active variant
+  // records the value too. The 15 near-identical per-parameter setters these
+  // replace no longer exist.
+  const setNormalScale = (v: number) => setMaterialProperty('normalScale', v);
+  const setNormalInvertY = (v: boolean) => setMaterialProperty('normalInvertY', v);
+  const setRoughnessFactor = (v: number) => setMaterialProperty('roughnessFactor', v);
+  const setMetalnessFactor = (v: number) => setMaterialProperty('metalnessFactor', v);
+  const setAoIntensity = (v: number) => setMaterialProperty('aoIntensity', v);
+  const setEmissiveIntensity = (v: number) => setMaterialProperty('emissiveIntensity', v);
+  const setEmissiveColor = (v: string) => setMaterialProperty('emissiveColor', v);
+  const setEmissiveFullGlow = (v: boolean) => setMaterialProperty('emissiveFullGlow', v);
+  const setClearcoatFactor = (v: number) => setMaterialProperty('clearcoatFactor', v);
+  const setClearcoatRoughness = (v: number) => setMaterialProperty('clearcoatRoughness', v);
+  const setSheenColor = (v: string) => setMaterialProperty('sheenColor', v);
+  const setSheenRoughness = (v: number) => setMaterialProperty('sheenRoughness', v);
+  const setTransmissionFactor = (v: number) => setMaterialProperty('transmissionFactor', v);
+  const setIor = (v: number) => setMaterialProperty('ior', v);
+  const setDisplacementScale = (v: number) => setMaterialProperty('displacementScale', v);
+  const openOrmPacker = useAppStore((s) => s.openOrmPacker);
+  const loadFromCache = usePbrMaterialStore((s) => s.loadFromCache);
+  const setLoadFromCache = usePbrMaterialStore((s) => s.setLoadFromCache);
 
   return (
     <div className="space-y-4 text-ink-primary font-body select-none">

@@ -8,7 +8,8 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
+import { useModelStore } from '../../store/modelStore';
 import { LibraryEntry } from '../../types/library';
 import { saveWorkbenchToLibrary } from '../../utils/libraryBridge';
 
@@ -23,7 +24,10 @@ export const SaveToLibraryModal: React.FC<SaveToLibraryModalProps> = ({
   onClose,
   onSaved
 }) => {
-  const { productName, productSlug, modelFilePath, activeMapsCount } = useWorkbenchStore();
+  const productName = useModelStore((s) => s.productName);
+  const productSlug = useModelStore((s) => s.productSlug);
+  const modelFilePath = useModelStore((s) => s.modelFilePath);
+  const activeMapsCount = usePbrMaterialStore((s) => s.activeMapsCount);
 
   const [title, setTitle] = useState(productName || '');
   const [slug, setSlug] = useState(productSlug || '');

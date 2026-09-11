@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Package, FolderOpen, Loader2 } from 'lucide-react';
-import { useWorkbenchStore, MapVariantItem } from '../../store/workbenchStore';
+import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
+import { MapVariantItem, useVariantStore } from '../../store/variantStore';
 import { useAppStore } from '../../store/appStore';
 import { getNextSlotTargetType } from './MapSlotPicker';
 import { packOrmWithCanvas } from '../../utils/canvasOrmPacker';
 import { autoSaveActiveEntry } from '../../utils/libraryBridge';
 
 export const OrmPackerModal: React.FC = () => {
-  const {
-    isOrmPackerOpen,
-    closeOrmPacker,
-    mapVariants,
-    addMapVariant,
-    setUseOrmPack
-  } = useWorkbenchStore();
+  const isOrmPackerOpen = useAppStore((state) => state.isOrmPackerOpen);
+  const closeOrmPacker = useAppStore((state) => state.closeOrmPacker);
+  const mapVariants = useVariantStore((state) => state.mapVariants);
+  const addMapVariant = useVariantStore((state) => state.addMapVariant);
+  const setUseOrmPack = usePbrMaterialStore((state) => state.setUseOrmPack);
 
   const [mode, setMode] = useState<'gltf' | 'separate'>('gltf');
   const [aoPath, setAoPath] = useState('');
@@ -32,16 +31,16 @@ export const OrmPackerModal: React.FC = () => {
   // Pre-fill from active slots and auto-suggest variant name when opening
   useEffect(() => {
     if (isOrmPackerOpen) {
-      const state = useWorkbenchStore.getState();
-      if (state.aoMap.filePath) setAoPath(state.aoMap.filePath);
-      if (state.roughnessMap.filePath) setRoughnessPath(state.roughnessMap.filePath);
-      if (state.metalnessMap.filePath) setMetalnessPath(state.metalnessMap.filePath);
-      if (state.aoMap.filePath && (state.roughnessMap.filePath || state.metalnessMap.filePath)) {
+      const pbrState = usePbrMaterialStore.getState();
+      if (pbrState.aoMap.filePath) setAoPath(pbrState.aoMap.filePath);
+      if (pbrState.roughnessMap.filePath) setRoughnessPath(pbrState.roughnessMap.filePath);
+      if (pbrState.metalnessMap.filePath) setMetalnessPath(pbrState.metalnessMap.filePath);
+      if (pbrState.aoMap.filePath && (pbrState.roughnessMap.filePath || pbrState.metalnessMap.filePath)) {
         setMode('separate');
       }
 
       const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
-      const existingVariants = state.mapVariants['orm'] || [];
+      const existingVariants = useVariantStore.getState().mapVariants['orm'] || [];
       const targetType = getNextSlotTargetType('orm', existingVariants, activeSlug);
       
       const defaultName = `${activeSlug}_${targetType}`;

@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import { Upload, FileCode, CheckCircle2 } from 'lucide-react';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { useModelStore } from '../../store/modelStore';
 import { useAppStore } from '../../store/appStore';
 import { ScaleChecker } from '../Audit/ScaleChecker';
 
 export const ModelDropZone: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
-  const {
-    modelFilePath,
-    modelFileSize,
-    setModel,
-    setProductMeta
-  } = useWorkbenchStore();
+  const modelFilePath = useModelStore((s) => s.modelFilePath);
+  const modelFileSize = useModelStore((s) => s.modelFileSize);
+  const setModel = useModelStore((s) => s.setModel);
+  const setProductMeta = useModelStore((s) => s.setProductMeta);
 
   const handleFile = async (filePath: string) => {
     if (!filePath.toLowerCase().endsWith('.glb') && !filePath.toLowerCase().endsWith('.gltf')) {
@@ -60,6 +58,8 @@ export const ModelDropZone: React.FC = () => {
       const file = e.dataTransfer.files[0];
       const filePath = window.electronAPI.getPathForFile(file);
       if (filePath) {
+        // Grant the main process read access to the dropped asset's folder.
+        await window.electronAPI.approveDroppedPath(filePath);
         await handleFile(filePath);
       }
     }

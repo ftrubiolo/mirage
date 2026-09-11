@@ -9,7 +9,7 @@ import { CameraController } from './CameraController';
 import { ViewportContextMenu } from './ViewportContextMenu';
 import { ViewportToolbar } from './ViewportToolbar';
 import { VariantBottomToolbar } from './VariantBottomToolbar';
-import { useWorkbenchStore } from '../../store/workbenchStore';
+import { useModelStore } from '../../store/modelStore';
 import { useViewportStore } from '../../store/viewportStore';
 import { useAppStore } from '../../store/appStore';
 import { useKeybindsStore } from '../../utils/keybindsManager';
@@ -67,23 +67,33 @@ const ViewportResizeHandler: React.FC = () => {
 };
 
 export const Canvas3D: React.FC = React.memo(() => {
-  const modelUrl = useWorkbenchStore((state) => state.modelUrl);
-  const modelStats = useWorkbenchStore((state) => state.modelStats);
-  const isModelLoading = useWorkbenchStore((state) => state.isModelLoading);
-  const productName = useWorkbenchStore((state) => state.productName);
+  const modelUrl = useModelStore((state) => state.modelUrl);
+  const modelStats = useModelStore((state) => state.modelStats);
+  const isModelLoading = useModelStore((state) => state.isModelLoading);
+  const productName = useModelStore((state) => state.productName);
   const autoRotate = useViewportStore((state) => state.autoRotate);
   const cameraZoomAction = useViewportStore((state) => state.cameraZoomAction);
   const viewportTheme = useViewportStore((state) => state.viewportTheme);
   const currentView = useAppStore((state) => state.currentView);
   const orbitControlsRef = useRef<any>(null);
   const prevZoomAction = useRef(cameraZoomAction);
+  const [isContextLost, setIsContextLost] = useState(false);
+  const contextCleanupRef = useRef<(() => void) | null>(null);
+
+  // Release the WebGL context-loss listeners when the canvas unmounts.
+  useEffect(() => {
+    return () => {
+      contextCleanupRef.current?.();
+      contextCleanupRef.current = null;
+    };
+  }, []);
 
   // Safety watchdog: auto-dismiss overlay if stuck for more than 5s
   useEffect(() => {
     if (isModelLoading) {
       const timer = setTimeout(() => {
         console.warn('[Canvas3D] Watchdog: isModelLoading active for >5s, auto-dismissing overlay.');
-        useWorkbenchStore.getState().setIsModelLoading(false);
+        useModelStore.getState().setIsModelLoading(false);
       }, 5000);
       return () => clearTimeout(timer);
     }
@@ -246,6 +256,10 @@ export const Canvas3D: React.FC = React.memo(() => {
     if (e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
       const filePath = window.electronAPI?.getPathForFile(file);
+      if (filePath) {
+        // Grant the main process read access to the dropped asset's folder.
+        await window.electronAPI?.approveDroppedPath(filePath);
+      }
       if (filePath && (filePath.toLowerCase().endsWith('.glb') || filePath.toLowerCase().endsWith('.gltf'))) {
         const fileInfo = await window.electronAPI.getFileInfo(filePath);
         const activeSlug = useAppStore.getState().activeEntrySlug;
@@ -272,7 +286,7 @@ export const Canvas3D: React.FC = React.memo(() => {
         }
 
         const assetUrl = window.electronAPI.toAssetUrl(targetPath);
-        useWorkbenchStore.getState().setModel(targetPath, assetUrl, targetSize);
+        useModelStore.getState().setModel(targetPath, assetUrl, targetSize);
       }
     }
   };
@@ -314,6 +328,30 @@ export const Canvas3D: React.FC = React.memo(() => {
           toneMappingExposure: 1.0
         }}
         className="w-full h-full"
+        onCreated={({ gl }) => {
+          const canvas = gl.domElement;
+
+          const handleContextLost = (event: Event) => {
+            // Without preventDefault the context is never restorable and the
+            // viewport stays blank for the rest of the session.
+            event.preventDefault();
+            console.warn('[Canvas3D] WebGL context lost; awaiting restore.');
+            setIsContextLost(true);
+          };
+
+          const handleContextRestored = () => {
+            console.info('[Canvas3D] WebGL context restored.');
+            setIsContextLost(false);
+          };
+
+          canvas.addEventListener('webglcontextlost', handleContextLost);
+          canvas.addEventListener('webglcontextrestored', handleContextRestored);
+
+          contextCleanupRef.current = () => {
+            canvas.removeEventListener('webglcontextlost', handleContextLost);
+            canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+          };
+        }}
       >
         <ViewportBridgeSync />
         <ViewportResizeHandler />
@@ -343,6 +381,27 @@ export const Canvas3D: React.FC = React.memo(() => {
         />
       </Canvas>
 
+      {/* WebGL context loss: reported instead of leaving a silently blank viewport */}
+      {isContextLost && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-canvas/90 select-none">
+          <div className="p-6 rounded-xs bg-surface-lowest border border-rose-500/40 shadow-lg flex flex-col items-center gap-3 max-w-sm text-center">
+            <span className="text-xs font-primary font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+              Contexto WebGL perdido
+            </span>
+            <p className="text-xs text-ink-secondary font-body">
+              El controlador gráfico ha reiniciado el contexto de render. Se restaurará
+              automáticamente; si no ocurre, reinicia la aplicación.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-action hover:bg-action-hover text-white text-xs font-semibold uppercase tracking-wider transition-colors rounded-xs"
+            >
+              Reiniciar aplicación
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 3D Loading Spinner Overlay */}
       {isModelLoading && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-canvas/60 backdrop-blur-xs transition-opacity duration-200 select-none">
@@ -364,7 +423,7 @@ export const Canvas3D: React.FC = React.memo(() => {
             </div>
 
             <button
-              onClick={() => useWorkbenchStore.getState().setIsModelLoading(false)}
+              onClick={() => useModelStore.getState().setIsModelLoading(false)}
               className="mt-1 text-[10px] font-mono text-ink-tertiary hover:text-ink-primary underline underline-offset-2 transition-colors cursor-pointer"
             >
               Omitir espera

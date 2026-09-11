@@ -1,5 +1,23 @@
-import { useWorkbenchStore, SlotName } from '../store/workbenchStore';
+import {
+  PbrMaterialParameters,
+  defaultPbrParameters,
+  usePbrMaterialStore
+} from '../store/pbrMaterialStore';
+import { SlotName } from '../store/pbrMaterialStore';
 import { useViewportStore, EnvironmentPreset } from '../store/viewportStore';
+import { setMaterialProperty } from '../store/workbenchActions';
+
+/**
+ * The only properties a material command may touch.
+ *
+ * Derived from the canonical defaults object so the allowlist cannot drift from
+ * the real shape of `PbrMaterialParameters`.
+ */
+const MATERIAL_PARAMETER_KEYS = new Set<string>(Object.keys(defaultPbrParameters));
+
+export function isMaterialParameter(key: unknown): key is keyof PbrMaterialParameters {
+  return typeof key === 'string' && MATERIAL_PARAMETER_KEYS.has(key);
+}
 
 export interface Command {
   name: string;
@@ -33,34 +51,28 @@ export class TransactionCommand implements Command {
 export class SetPbrPropertyCommand implements Command {
   public name: string;
   private previousValue: number | string | undefined;
+  private readonly key: keyof PbrMaterialParameters;
 
-  constructor(
-    private property: string,
-    private nextValue: number | string
-  ) {
+  constructor(property: string, private nextValue: number | string) {
+    // Reject anything outside the known parameter set. Previously the setter
+    // name was built by string concatenation and fell back to a bare
+    // `setState({ [property]: value })`, so a model-supplied property name could
+    // write an arbitrary key into the store.
+    if (!isMaterialParameter(property)) {
+      throw new Error(`Unknown material property: ${String(property)}`);
+    }
+    this.key = property;
     this.name = `Ajustar ${property} a ${nextValue}`;
   }
 
   execute() {
-    const wb = useWorkbenchStore.getState();
-    this.previousValue = (wb as any)[this.property];
-    const setterName = `set${this.property.charAt(0).toUpperCase()}${this.property.slice(1)}`;
-    if (typeof (wb as any)[setterName] === 'function') {
-      (wb as any)[setterName](this.nextValue);
-    } else {
-      useWorkbenchStore.setState({ [this.property]: this.nextValue } as any);
-    }
+    this.previousValue = usePbrMaterialStore.getState()[this.key] as number | string;
+    setMaterialProperty(this.key, this.nextValue as never);
   }
 
   undo() {
     if (this.previousValue === undefined) return;
-    const wb = useWorkbenchStore.getState();
-    const setterName = `set${this.property.charAt(0).toUpperCase()}${this.property.slice(1)}`;
-    if (typeof (wb as any)[setterName] === 'function') {
-      (wb as any)[setterName](this.previousValue);
-    } else {
-      useWorkbenchStore.setState({ [this.property]: this.previousValue } as any);
-    }
+    setMaterialProperty(this.key, this.previousValue as never);
   }
 }
 
@@ -93,14 +105,14 @@ export class ToggleSlotEnabledCommand implements Command {
   }
 
   execute() {
-    const wb = useWorkbenchStore.getState();
-    this.previousEnabled = wb.slotEnabled[this.slot] ?? true;
-    wb.setSlotEnabled(this.slot, this.nextEnabled);
+    const pbr = usePbrMaterialStore.getState();
+    this.previousEnabled = pbr.slotEnabled[this.slot] ?? true;
+    pbr.setSlotEnabled(this.slot, this.nextEnabled);
   }
 
   undo() {
     if (this.previousEnabled === undefined) return;
-    useWorkbenchStore.getState().setSlotEnabled(this.slot, this.previousEnabled);
+    usePbrMaterialStore.getState().setSlotEnabled(this.slot, this.previousEnabled);
   }
 }
 

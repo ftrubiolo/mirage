@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { Image as ImageIcon, X, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Image as ImageIcon, FolderOpen } from 'lucide-react';
 import { SlotName } from '../../store/pbrMaterialStore';
 import { MapVariantItem, useVariantStore } from '../../store/variantStore';
 import { useAppStore } from '../../store/appStore';
 import { getNextSlotTargetType } from './MapSlotPicker';
 import { convertImageToWebpCanvas } from '../../utils/canvasTextureProcessor';
+import { Modal } from '../UI/Modal';
+import { Button } from '../UI/Button';
+import { TextInput } from '../UI/TextInput';
 
 export interface WebpConvertModalProps {
   isOpen: boolean;
@@ -30,8 +32,6 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
   const [customOutputPath, setCustomOutputPath] = useState<string>('');
   const [isConverting, setIsConverting] = useState<boolean>(false);
 
-  const modalRef = useRef<HTMLDivElement>(null);
-
   // Initialize new variant name and reset custom path when variant changes
   useEffect(() => {
     if (variant) {
@@ -42,20 +42,6 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
       setQuality(85);
     }
   }, [variant]);
-
-  // Handle ESC and outside click
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isConverting) {
-        onClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isConverting, onClose]);
 
   if (!isOpen || !variant) return null;
 
@@ -139,48 +125,50 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
     }
   };
 
-  return createPortal(
-    <div
-      onClick={() => {
-        if (!isConverting) onClose();
-      }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 select-none font-body animate-in fade-in duration-100 cursor-pointer"
-    >
-      <div
-        ref={modalRef}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[460px] bg-surface-lowest border border-hairline-strong rounded-xs shadow-2xl p-4 flex flex-col gap-3 font-body animate-in fade-in zoom-in-95 duration-150 cursor-default"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-xs bg-action/10 border border-action/30 flex items-center justify-center text-action shrink-0">
-              <ImageIcon className="w-3.5 h-3.5" />
-            </div>
-            <span className="font-primary font-bold text-xs text-ink-primary">
-              Redimensionar y Optimizar a WebP
-            </span>
-          </div>
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={() => !isConverting && onClose()}
+      title="Redimensionar y Optimizar a WebP"
+      icon={<ImageIcon className="w-4 h-4" />}
+      size="md"
+      footer={
+        <div className="flex items-center justify-between w-full">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleBrowseOutput}
+            disabled={isConverting}
+            icon={<FolderOpen className="w-3.5 h-3.5" />}
+          >
+            Examinar Ruta
+          </Button>
 
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] text-ink-tertiary">
-              Sharp WebP
-            </span>
-            <button
-              type="button"
-              disabled={isConverting}
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onClose}
-              className="text-ink-tertiary hover:text-ink-primary p-0.5 rounded-xs transition-colors cursor-pointer disabled:opacity-50"
-              title="Cerrar"
+              disabled={isConverting}
             >
-              <X className="w-3.5 h-3.5" />
-            </button>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleConvert}
+              isLoading={isConverting}
+              disabled={!newName.trim()}
+            >
+              Convertir
+            </Button>
           </div>
         </div>
-
+      }
+    >
+      <div className="space-y-4 font-body">
         {/* Row 1: Max Resolution dropdown & Quality Slider */}
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          {/* Max Resolution Select */}
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[11px] text-ink-secondary mb-1 font-primary">
               Resolución máxima:
@@ -189,7 +177,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
               value={resolution}
               disabled={isConverting}
               onChange={(e) => setResolution(parseInt(e.target.value))}
-              className="w-full h-7 bg-surface-lowest border border-hairline-strong rounded-xs px-2 text-xs font-mono tabular-nums text-ink-primary focus:outline-none focus:border-action cursor-pointer disabled:opacity-50"
+              className="w-full h-8 bg-surface-lowest border border-hairline-strong rounded-xs px-2 text-xs font-mono tabular-nums text-ink-primary focus:outline-none focus:border-action cursor-pointer disabled:opacity-50"
             >
               <option value={4096}>4096 × 4096 (4K)</option>
               <option value={2048}>2048 × 2048 (2K)</option>
@@ -199,12 +187,11 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
             </select>
           </div>
 
-          {/* WebP Quality Slider */}
           <div>
             <label className="block text-[11px] text-ink-secondary mb-1 font-primary">
               Calidad WebP ({quality}%):
             </label>
-            <div className="flex items-center h-7">
+            <div className="flex items-center h-8">
               <input
                 type="range"
                 min="10"
@@ -212,17 +199,18 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
                 value={quality}
                 disabled={isConverting}
                 onChange={(e) => setQuality(parseInt(e.target.value))}
-                className="w-full accent-action h-1 bg-surface-container rounded-none appearance-none cursor-pointer disabled:opacity-50"
+                className="w-full accent-action h-1.5 bg-surface-container rounded-none appearance-none cursor-pointer disabled:opacity-50"
               />
             </div>
           </div>
         </div>
 
-        {/* Row 2: Variant Name Input, EXAMINAR button, CONVERTIR button */}
-        <div className="flex items-center gap-2 pt-1">
-          {/* New Variant Name Input */}
-          <input
-            type="text"
+        {/* Row 2: Variant Name */}
+        <div>
+          <label className="block text-[11px] text-ink-secondary mb-1 font-primary">
+            Nombre de la variante WebP:
+          </label>
+          <TextInput
             value={newName}
             disabled={isConverting}
             onChange={(e) => setNewName(e.target.value)}
@@ -232,40 +220,17 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
               }
             }}
             placeholder="Nombre de la nueva variante..."
-            className="min-w-0 flex-1 h-7 px-2.5 rounded-xs bg-surface-lowest border border-hairline-strong text-xs font-mono tabular-nums text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-action disabled:opacity-50"
-            title="Nombre para la nueva variante WebP"
+            mono
           />
-
-          {/* EXAMINAR Button */}
-          <button
-            type="button"
-            disabled={isConverting}
-            onClick={handleBrowseOutput}
-            className="h-7 px-3 rounded-xs border border-hairline-strong bg-surface-low hover:bg-surface-high text-[11px] font-mono font-semibold uppercase tracking-wider text-ink-primary transition-colors cursor-pointer shrink-0 disabled:opacity-50"
-            title="Examinar y cambiar ruta o nombre de destino"
-          >
-            EXAMINAR
-          </button>
-
-          {/* CONVERTIR Button */}
-          <button
-            type="button"
-            disabled={isConverting || !newName.trim()}
-            onClick={handleConvert}
-            className="h-7 px-4 rounded-xs bg-action hover:bg-action-hover text-white text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
-          >
-            {isConverting ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>CONVIRTIENDO...</span>
-              </>
-            ) : (
-              <span>CONVERTIR</span>
-            )}
-          </button>
         </div>
+
+        {customOutputPath && (
+          <div className="p-2 bg-surface-low border border-hairline rounded-xs">
+            <span className="text-[10px] text-ink-tertiary font-mono block">Destino personalizado:</span>
+            <span className="text-xs font-mono text-ink-primary truncate block">{customOutputPath}</span>
+          </div>
+        )}
       </div>
-    </div>,
-    document.body
+    </Modal>
   );
 };

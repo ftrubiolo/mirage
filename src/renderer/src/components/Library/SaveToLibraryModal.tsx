@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-  X,
   BookmarkPlus,
-  Loader2,
   Layers,
   Box,
-  CheckCircle2,
-  AlertCircle
+  CheckCircle2
 } from 'lucide-react';
 import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
 import { useModelStore } from '../../store/modelStore';
 import { LibraryEntry } from '../../types/library';
 import { saveWorkbenchToLibrary } from '../../utils/libraryBridge';
+import { Modal, FormField, TextInput, TextArea, Button, AlertBanner } from '../UI';
 
 interface SaveToLibraryModalProps {
   isOpen: boolean;
@@ -39,7 +37,12 @@ export const SaveToLibraryModal: React.FC<SaveToLibraryModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setTitle(productName || '');
-      setSlug(productSlug || (productName ? productName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : ''));
+      setSlug(
+        productSlug ||
+          (productName
+            ? productName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+            : '')
+      );
       setErrorMsg(null);
       setIsDone(false);
     }
@@ -47,7 +50,10 @@ export const SaveToLibraryModal: React.FC<SaveToLibraryModalProps> = ({
 
   const handleTitleChange = (val: string) => {
     setTitle(val);
-    const autoSlug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const autoSlug = val
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
     setSlug(autoSlug);
   };
 
@@ -82,152 +88,103 @@ export const SaveToLibraryModal: React.FC<SaveToLibraryModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 cursor-pointer"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-surface-lowest border border-hairline-strong rounded-xs shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 cursor-default"
-      >
-        {/* Header */}
-        <div className="px-5 py-3.5 border-b border-hairline bg-surface-low flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookmarkPlus className="w-4 h-4 text-action" />
-            <h3 className="font-primary font-bold text-sm tracking-wide uppercase text-ink-primary">
-              Guardar en Biblioteca Local
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            disabled={isSaving}
-            className="p-1 rounded-xs text-ink-tertiary hover:text-ink-primary hover:bg-surface-container transition-colors cursor-pointer"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Guardar en Biblioteca Local"
+      icon={<BookmarkPlus className="w-4 h-4 text-action" />}
+      size="lg"
+      footer={
+        <div className="flex items-center justify-end gap-2 w-full">
+          <Button variant="secondary" onClick={onClose} disabled={isSaving}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSave(e);
+            }}
+            disabled={isSaving || !title.trim() || !slug.trim()}
+            isLoading={isSaving}
+            icon={isDone ? <CheckCircle2 className="w-4 h-4" /> : <BookmarkPlus className="w-4 h-4" />}
           >
-            <X className="w-4 h-4" />
-          </button>
+            {isDone ? 'Guardado' : 'Guardar en Biblioteca'}
+          </Button>
         </div>
+      }
+    >
+      <form onSubmit={handleSave} className="space-y-4">
+        {errorMsg && (
+          <AlertBanner
+            variant="error"
+            message={errorMsg}
+            onClose={() => setErrorMsg(null)}
+          />
+        )}
 
-        {/* Body Form */}
-        <form onSubmit={handleSave} className="p-5 space-y-4">
-          {errorMsg && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700/50 rounded-xs flex items-start gap-2 text-xs text-rose-800 dark:text-rose-200">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
+        {/* Title */}
+        <FormField label="Nombre de la Pieza / Modelo" required>
+          <TextInput
+            required
+            autoFocus
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            placeholder="Ej: Sillón Curvo Basalto"
+          />
+        </FormField>
 
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-primary font-semibold uppercase tracking-wider text-ink-primary mb-1">
-              Nombre de la Pieza / Modelo
-            </label>
-            <input
-              type="text"
-              required
-              autoFocus
-              value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              placeholder="Ej: Sillón Curvo Basalto"
-              className="w-full px-3 py-2 bg-surface-low border border-hairline text-xs font-body text-ink-primary focus:outline-none focus:border-action rounded-xs"
-            />
+        {/* Slug */}
+        <FormField label="Identificador Técnico (Slug de Carpeta)" required>
+          <TextInput
+            required
+            mono
+            prefix="library/"
+            value={slug}
+            onChange={(e) =>
+              setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))
+            }
+            placeholder="sillon-curvo-basalto"
+          />
+        </FormField>
+
+        {/* Description */}
+        <FormField label="Notas Técnicas o Acabados (Opcional)">
+          <TextArea
+            rows={2}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Ej: Estructura en roble macizo con terminación mate. Tapizado en lino crudo..."
+            className="resize-none"
+          />
+        </FormField>
+
+        {/* Asset Summary info */}
+        <div className="p-3 bg-surface-container/40 border border-hairline rounded-xs space-y-1 text-xs">
+          <div className="flex items-center justify-between text-ink-secondary">
+            <span className="flex items-center gap-1.5">
+              <Box className="w-3.5 h-3.5 text-action" />
+              Modelo 3D:
+            </span>
+            <span className="font-mono tabular-nums text-ink-primary truncate max-w-[200px]">
+              {modelFilePath ? modelFilePath.split(/[\\/]/).pop() : 'Ninguno (sólo ajustes)'}
+            </span>
           </div>
-
-          {/* Slug */}
-          <div>
-            <label className="block text-xs font-primary font-semibold uppercase tracking-wider text-ink-secondary mb-1">
-              Identificador Técnico (Slug de Carpeta)
-            </label>
-            <div className="flex items-center bg-surface-low border border-hairline rounded-xs px-3 py-2">
-              <span className="text-xs font-mono text-ink-tertiary mr-1 select-none">library/</span>
-              <input
-                type="text"
-                required
-                value={slug}
-                onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
-                placeholder="sillon-curvo-basalto"
-                className="w-full bg-transparent text-xs font-mono font-medium text-ink-primary focus:outline-none"
-              />
-            </div>
+          <div className="flex items-center justify-between text-ink-secondary">
+            <span className="flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-action" />
+              Mapas PBR cargados:
+            </span>
+            <span className="font-mono tabular-nums text-ink-primary font-bold">
+              {activeMapsCount} activos
+            </span>
           </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-xs font-primary font-semibold uppercase tracking-wider text-ink-secondary mb-1">
-              Notas Técnicas o Acabados (Opcional)
-            </label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ej: Estructura en roble macizo con terminación mate. Tapizado en lino crudo..."
-              className="w-full px-3 py-2 bg-surface-low border border-hairline text-xs font-body text-ink-primary focus:outline-none focus:border-action rounded-xs resize-none"
-            />
+          <div className="text-[11px] text-ink-tertiary pt-1 border-t border-hairline">
+            ✓ Se capturará automáticamente un póster renderizado en WebP del visor actual.
           </div>
-
-          {/* Asset Summary info */}
-          <div className="p-3 bg-surface-container/40 border border-hairline rounded-xs space-y-1 text-xs">
-            <div className="flex items-center justify-between text-ink-secondary">
-              <span className="flex items-center gap-1.5">
-                <Box className="w-3.5 h-3.5 text-action" />
-                Modelo 3D:
-              </span>
-              <span className="font-mono tabular-nums text-ink-primary truncate max-w-[200px]">
-                {modelFilePath ? modelFilePath.split(/[\\/]/).pop() : 'Ninguno (sólo ajustes)'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-ink-secondary">
-              <span className="flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-action" />
-                Mapas PBR cargados:
-              </span>
-              <span className="font-mono tabular-nums text-ink-primary font-bold">
-                {activeMapsCount} activos
-              </span>
-            </div>
-            <div className="text-[11px] text-ink-tertiary pt-1 border-t border-hairline">
-              ✓ Se capturará automáticamente un póster renderizado en WebP del visor actual.
-            </div>
-          </div>
-
-          {/* Footer Actions */}
-          <div className="pt-2 flex items-center justify-end gap-2 border-t border-hairline">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSaving}
-              className="px-3 py-2 border border-hairline rounded-xs text-xs font-medium uppercase tracking-wider text-ink-secondary hover:text-ink-primary hover:bg-surface-container transition-colors cursor-pointer"
-            >
-              Cancelar
-            </button>
-
-            <button
-              type="submit"
-              disabled={isSaving || !title.trim() || !slug.trim()}
-              className="px-4 py-2 bg-action hover:bg-action-hover text-white text-xs font-primary font-semibold uppercase tracking-wider rounded-xs shadow-xs transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>{isDone ? 'Guardado' : 'Guardando...'}</span>
-                </>
-              ) : isDone ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Guardado</span>
-                </>
-              ) : (
-                <>
-                  <BookmarkPlus className="w-4 h-4" />
-                  <span>Guardar en Biblioteca</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+    </Modal>
   );
 };

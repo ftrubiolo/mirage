@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
-import {
-  X,
-  Plus,
-  AlertCircle
-} from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { LibraryEntry, LibraryEntrySettings } from '../../types/library';
 import { loadEntryIntoWorkbench } from '../../utils/libraryBridge';
+import { Modal, FormField, TextInput, TextArea, Button, AlertBanner } from '../UI';
 
 interface NewPieceModalProps {
   isOpen: boolean;
@@ -24,11 +21,12 @@ export const NewPieceModal: React.FC<NewPieceModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
   const handleTitleChange = (val: string) => {
     setTitle(val);
-    const autoSlug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const autoSlug = val
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
     setSlug(autoSlug);
   };
 
@@ -100,110 +98,74 @@ export const NewPieceModal: React.FC<NewPieceModalProps> = ({
   };
 
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 cursor-pointer"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="bg-surface-lowest border border-hairline-strong rounded-xs shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 cursor-default"
-      >
-        {/* Modal Header */}
-        <div className="px-5 py-3.5 border-b border-hairline bg-surface-low flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Plus className="w-4 h-4 text-action" />
-            <h3 className="font-primary font-bold text-sm tracking-wide uppercase text-ink-primary">
-              Nueva Pieza en Biblioteca
-            </h3>
-          </div>
-          <button
-            onClick={onClose}
-            disabled={isProcessing}
-            className="p-1 rounded-xs text-ink-tertiary hover:text-ink-primary hover:bg-surface-container transition-colors cursor-pointer"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Nueva Pieza en Biblioteca"
+      icon={<Plus className="w-4 h-4 text-action" />}
+      size="md"
+      footer={
+        <div className="flex items-center justify-end gap-2 w-full">
+          <Button variant="secondary" onClick={onClose} disabled={isProcessing}>
+            Cancelar
+          </Button>
+          <Button
+            variant="primary"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSubmit(e);
+            }}
+            disabled={isProcessing || !title.trim() || !slug.trim()}
+            isLoading={isProcessing}
+            icon={<Plus className="w-4 h-4" />}
           >
-            <X className="w-4 h-4" />
-          </button>
+            Crear Pieza
+          </Button>
         </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {errorMsg && (
+          <AlertBanner
+            variant="error"
+            message={errorMsg}
+            onClose={() => setErrorMsg(null)}
+          />
+        )}
 
-        {/* Modal Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {errorMsg && (
-            <div className="p-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-700/50 rounded-xs flex items-start gap-2 text-xs text-rose-800 dark:text-rose-200">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
+        <FormField label="Nombre de la Pieza" required>
+          <TextInput
+            required
+            autoFocus
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            placeholder="Ej: Mesa de Comedor Rodas"
+          />
+        </FormField>
 
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-primary font-semibold uppercase tracking-wider text-ink-primary mb-1">
-              Nombre de la Pieza
-            </label>
-            <input
-              type="text"
-              required
-              autoFocus
-              value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              placeholder="Ej: Mesa de Comedor Rodas"
-              className="w-full px-3 py-2 bg-surface-low border border-hairline text-xs font-body text-ink-primary focus:outline-none focus:border-action rounded-xs"
-            />
-          </div>
+        <FormField label="Slug de Almacenamiento" required>
+          <TextInput
+            required
+            mono
+            prefix="library/"
+            value={slug}
+            onChange={(e) =>
+              setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))
+            }
+            placeholder="mesa-comedor-rodas"
+          />
+        </FormField>
 
-          {/* Slug */}
-          <div>
-            <label className="block text-xs font-primary font-semibold uppercase tracking-wider text-ink-secondary mb-1">
-              Slug de Almacenamiento
-            </label>
-            <div className="flex items-center bg-surface-low border border-hairline rounded-xs px-3 py-2">
-              <span className="text-xs font-mono text-ink-tertiary mr-1 select-none">library/</span>
-              <input
-                type="text"
-                required
-                value={slug}
-                onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
-                placeholder="mesa-comedor-rodas"
-                className="w-full bg-transparent text-xs font-mono font-medium text-ink-primary focus:outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-xs font-primary font-semibold uppercase tracking-wider text-ink-secondary mb-1">
-              Descripción o Especificación (Opcional)
-            </label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Notas del atelier, madera, herrajes o acabados previstos..."
-              className="w-full px-3 py-2 bg-surface-low border border-hairline text-xs font-body text-ink-primary focus:outline-none focus:border-action rounded-xs resize-none"
-            />
-          </div>
-
-          {/* Footer Actions */}
-          <div className="pt-3 flex items-center justify-end gap-2 border-t border-hairline">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isProcessing}
-              className="px-3 py-2 border border-hairline rounded-xs text-xs font-medium uppercase tracking-wider text-ink-secondary hover:text-ink-primary hover:bg-surface-container transition-colors cursor-pointer"
-            >
-              Cancelar
-            </button>
-
-            <button
-              type="submit"
-              disabled={isProcessing || !title.trim() || !slug.trim()}
-              className="px-4 py-2 bg-action hover:bg-action-hover text-white text-xs font-primary font-semibold uppercase tracking-wider rounded-xs shadow-xs transition-colors flex items-center gap-2 disabled:opacity-50 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Crear Pieza</span>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <FormField label="Descripción o Especificación (Opcional)">
+          <TextArea
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Notas del atelier, madera, herrajes o acabados previstos..."
+            className="resize-none"
+          />
+        </FormField>
+      </form>
+    </Modal>
   );
 };

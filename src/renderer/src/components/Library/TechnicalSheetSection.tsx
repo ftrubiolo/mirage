@@ -1,8 +1,7 @@
 import React from 'react';
 import { Box } from 'lucide-react';
 import { LibraryEntry } from '../../types/library';
-import { ResizeHandle } from '../UI/ResizeHandle';
-import { StatusBadge, StatusVariant } from '../UI/StatusBadge';
+import { ResizeHandle, StatusBadge, StatusVariant, Badge } from '../UI';
 
 export interface TechnicalSheetSectionProps {
   currentEntry: LibraryEntry;
@@ -73,9 +72,9 @@ export const TechnicalSheetSection: React.FC<TechnicalSheetSectionProps> = ({
         )}
 
         {isPieceInWorkbench && (
-          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 bg-action/90 text-white rounded-xs text-[10px] font-primary font-semibold uppercase tracking-wider shadow-xs">
+          <Badge variant="action" className="absolute top-2.5 left-2.5 shadow-xs">
             En Mesa 3D
-          </div>
+          </Badge>
         )}
       </div>
 

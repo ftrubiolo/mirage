@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Send, Square } from 'lucide-react';
+import { IconButton } from '../UI/IconButton';
 
 export interface ChatInputAreaProps {
   inputText: string;
@@ -57,24 +58,22 @@ export const ChatInputArea: React.FC<ChatInputAreaProps> = ({
       />
 
       {isStreaming && onStop ? (
-        <button
-          type="button"
+        <IconButton
+          size="md"
+          variant="secondary"
           onClick={onStop}
-          className="p-2.5 bg-surface-container hover:bg-surface-high text-ink-primary border border-hairline rounded-xs transition-colors shrink-0 cursor-pointer"
+          icon={<Square className="w-4 h-4" />}
           title="Detener la generación (Esc)"
-        >
-          <Square className="w-4 h-4" />
-        </button>
+        />
       ) : (
-        <button
-          type="button"
+        <IconButton
+          size="md"
+          variant="primary"
           onClick={onSend}
           disabled={!inputText.trim() || disabled}
-          className="p-2.5 bg-action hover:bg-action-hover text-white rounded-xs transition-colors disabled:opacity-40 shrink-0 cursor-pointer shadow-xs"
+          icon={<Send className="w-4 h-4" />}
           title="Enviar instrucción (Enter)"
-        >
-          <Send className="w-4 h-4" />
-        </button>
+        />
       )}
     </div>
   );

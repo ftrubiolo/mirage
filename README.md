@@ -96,6 +96,7 @@
 - **Resizable Sidebar System**: Drag-to-resize, auto-collapse, double-click reset, persisted widths, and `Ctrl+B` to toggle the studio panel.
 - **Light & Dark Theming**: `dark`, `light`, or `system`, driven by a single CSS-variable token layer, plus user-editable keybinds.
 - **Inline Feedback**: Long-running jobs disable their trigger, show a spinner, and report the result in a persistent in-panel banner.
+- **Unified Context Menu Engine**: Declarative, portal-rendered context menus with boundary collision detection, directional submenus, keyboard Escape handling, and clean outside-click dismissal across the 3D viewport and staging panels.
 
 ---
 
@@ -214,26 +215,24 @@ mirage/
 │   └── renderer/
 │       ├── index.html        # Shell (Montserrat / Manrope / JetBrains Mono)
 │       └── src/
-│           ├── agent/        # LLM tool registry, provider registry, scene serializer
+│           ├── views/        # Route views: Hub, Workbench, Library, EntryDetail, Settings, AgentStudio
+│           ├── layouts/      # Application chrome & navigation shell (TopNav)
 │           ├── components/
-│           │   ├── Agent/    # AI Agent Studio: chat, approvals, sessions, stats
-│           │   ├── Audit/    # Performance audit + physical scale/metrology
-│           │   ├── Catalog/  # Unmounted legacy entry-detail draft
+│           │   ├── UI/       # 19 Design-system primitives: Button, Modal, ContextMenu, StatusBadge…
+│           │   ├── Viewport/ # R3F canvas, camera, dimension lines, unified ContextMenu
+│           │   ├── Staging/  # PBR maps studio, ORM packer, drop zones, slot modals
+│           │   ├── Library/  # Catalogue: variants, modals, technical sheet
 │           │   ├── Export/   # Export studio: poster, GLB/USDZ, ZIP, texture pipeline
-│           │   ├── Hub/      # Landing view with recent pieces
-│           │   ├── Library/  # Catalogue: grid/table, detail, variants, technical sheet
-│           │   ├── Navigation/ # Top bar: view switcher, quick save
-│           │   ├── Settings/ # Appearance, viewport defaults, keybinds, storage, AI, system
-│           │   ├── Staging/  # PBR maps studio, ORM packer, drop zones, modals
-│           │   ├── UI/       # Primitives: Modal, StatusBadge, Switch, NumberInput…
-│           │   ├── Viewport/ # R3F canvas, camera, dimension lines, context menu
-│           │   └── Workbench/ # Viewport + resizable studio sidebar composition
+│           │   ├── Agent/    # AI Agent Studio: chat, approvals, sessions, stats
+│           │   ├── Audit/    # Performance audit + physical scale metrology
+│           │   └── Settings/ # Appearance, viewport defaults, keybinds, storage, AI, system
+│           ├── agent/        # LLM tool registry, provider registry, scene serializer
 │           ├── hooks/        # useResizableSidebar (pure resize math + hook)
 │           ├── store/        # Zustand: app, model, pbrMaterial, variant, viewport, agent
 │           ├── styles/       # globals.css — the design token layer
 │           ├── tests/        # Vitest suite (15 files, 345 tests)
 │           ├── types/        # Config, library, and agent contracts
-│           └── utils/        # GLB audit, PBR controller, ORM packing, export, keybinds
+│           └── utils/        # PBR controller, viewport bridge, mapSlotNaming, command manager
 ├── package.json
 └── electron.vite.config.ts
 ```

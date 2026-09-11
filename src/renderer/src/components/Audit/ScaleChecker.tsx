@@ -1,7 +1,7 @@
 import React from 'react';
 import { Ruler } from 'lucide-react';
 import { useModelStore } from '../../store/modelStore';
-import { NumberInput } from '../UI/NumberInput';
+import { NumberInput, SegmentedControl } from '../UI';
 
 export const ScaleChecker: React.FC = () => {
   const modelStats = useModelStore((state) => state.modelStats);
@@ -41,27 +41,25 @@ export const ScaleChecker: React.FC = () => {
         </h4>
       </div>
 
-      {/* Unit Selector Selector Pills */}
+      {/* Unit Selector Selector */}
       <div className="space-y-1.5">
         <span className="text-[10px] text-ink-secondary uppercase tracking-wider font-semibold block font-primary">
           Unidad de Exportación del Modelo
         </span>
-        <div className="grid grid-cols-4 gap-1.5">
-          {unitOptions.map((opt) => (
-            <button
-              key={opt.type}
-              onClick={() => setUnitScale(opt.scale, opt.type)}
-              className={`py-1.5 px-2 rounded-xs text-[11px] font-medium border transition-colors text-center ${
-                unitType === opt.type
-                  ? 'bg-action text-white border-action font-semibold shadow-xs'
-                  : 'bg-surface-low border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-container'
-              }`}
-              title={opt.hint}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          value={unitType}
+          onChange={(val) => {
+            const opt = unitOptions.find((o) => o.type === val);
+            if (opt) setUnitScale(opt.scale, opt.type);
+          }}
+          options={unitOptions.map((opt) => ({
+            value: opt.type,
+            label: opt.label,
+            title: opt.hint
+          }))}
+          size="sm"
+          className="w-full grid grid-cols-4"
+        />
       </div>
 
       {/* Dimensions Grid */}

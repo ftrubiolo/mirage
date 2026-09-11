@@ -8,6 +8,7 @@ import {
   Palette
 } from 'lucide-react';
 import { EntryVariant } from '../../types/library';
+import { Card, Button, IconButton, Badge } from '../UI';
 
 export interface VariantCardItemProps {
   variant: EntryVariant;
@@ -28,13 +29,16 @@ export const VariantCardItem: React.FC<VariantCardItemProps> = ({
   onSetDefault,
   onStartDelete
 }) => {
-  const mapsList = Object.entries(variant.maps || {}).filter(([_, m]) => Boolean(m?.fileName || m?.filePath));
+  const mapsList = Object.entries(variant.maps || {}).filter(([_, m]) =>
+    Boolean(m?.fileName || m?.filePath)
+  );
   const s = variant.settings || {};
 
   return (
-    <div
+    <Card
       key={variant.id}
-      className="bg-surface-lowest border border-hairline hover:border-hairline-strong rounded-xs shadow-xs p-4 flex flex-col justify-between space-y-3 transition-all"
+      hoverable
+      className="p-4 flex flex-col justify-between space-y-3 cursor-default"
     >
       {/* Card Header */}
       <div className="flex items-start justify-between gap-2 border-b border-hairline pb-2.5">
@@ -44,9 +48,13 @@ export const VariantCardItem: React.FC<VariantCardItemProps> = ({
               {variant.name}
             </h3>
             {variant.isDefault && (
-              <span className="text-[10px] font-mono px-1.5 py-0.5 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-xs font-bold shrink-0">
+              <Badge
+                variant="outline"
+                size="xs"
+                className="bg-amber-500/10 text-amber-600 border-amber-500/20"
+              >
                 ★ Default
-              </span>
+              </Badge>
             )}
           </div>
           <span className="text-[10px] font-mono text-ink-tertiary block">
@@ -56,40 +64,41 @@ export const VariantCardItem: React.FC<VariantCardItemProps> = ({
 
         {/* Quick Menu Actions */}
         <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={() => onStartRename(variant)}
+          <IconButton
+            icon={<Edit2 className="w-3.5 h-3.5" />}
+            size="xs"
+            variant="ghost"
             title="Renombrar perfil"
-            className="p-1 hover:bg-surface-container text-ink-tertiary hover:text-ink-primary rounded-xs border border-transparent hover:border-hairline transition-colors cursor-pointer"
-          >
-            <Edit2 className="w-3.5 h-3.5" />
-          </button>
+            onClick={() => onStartRename(variant)}
+          />
 
-          <button
-            onClick={() => onClone(variant)}
+          <IconButton
+            icon={<Copy className="w-3.5 h-3.5" />}
+            size="xs"
+            variant="ghost"
             title="Duplicar este perfil"
-            className="p-1 hover:bg-surface-container text-ink-tertiary hover:text-ink-primary rounded-xs border border-transparent hover:border-hairline transition-colors cursor-pointer"
-          >
-            <Copy className="w-3.5 h-3.5" />
-          </button>
+            onClick={() => onClone(variant)}
+          />
 
           {!variant.isDefault && (
-            <button
-              onClick={() => onSetDefault(variant.id)}
+            <IconButton
+              icon={<Star className="w-3.5 h-3.5" />}
+              size="xs"
+              variant="ghost"
               title="Establecer como variante por defecto"
-              className="p-1 hover:bg-amber-500/10 text-ink-tertiary hover:text-amber-600 rounded-xs border border-transparent hover:border-amber-500/30 transition-colors cursor-pointer"
-            >
-              <Star className="w-3.5 h-3.5" />
-            </button>
+              onClick={() => onSetDefault(variant.id)}
+              className="hover:text-amber-600 hover:bg-amber-500/10"
+            />
           )}
 
           {allVariantsCount > 1 && (
-            <button
-              onClick={() => onStartDelete(variant)}
+            <IconButton
+              icon={<Trash2 className="w-3.5 h-3.5" />}
+              size="xs"
+              variant="destructive"
               title="Eliminar perfil"
-              className="p-1 hover:bg-rose-500/10 text-ink-tertiary hover:text-rose-600 rounded-xs border border-transparent hover:border-rose-500/30 transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
+              onClick={() => onStartDelete(variant)}
+            />
           )}
         </div>
       </div>
@@ -139,13 +148,15 @@ export const VariantCardItem: React.FC<VariantCardItemProps> = ({
       </div>
 
       {/* Card Action Button */}
-      <button
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={() => onOpenIn3D(variant.id)}
-        className="w-full mt-2 py-1.5 bg-surface-container hover:bg-action hover:text-white text-ink-primary border border-hairline text-xs font-primary font-semibold uppercase tracking-wider rounded-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+        iconRight={<ArrowUpRight className="w-3.5 h-3.5" />}
+        className="w-full mt-2 hover:bg-action hover:text-white"
       >
-        <ArrowUpRight className="w-3.5 h-3.5" />
-        <span>Abrir en Taller 3D ({variant.name})</span>
-      </button>
-    </div>
+        Abrir en Taller 3D ({variant.name})
+      </Button>
+    </Card>
   );
 };

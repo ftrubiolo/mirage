@@ -14,6 +14,7 @@ import { useViewportStore } from '../../store/viewportStore';
 import { useAppStore } from '../../store/appStore';
 import { useKeybindsStore } from '../../utils/keybindsManager';
 import { viewportBridge } from '../../utils/viewportBridge';
+import { Spinner, Button } from '../UI';
 
 const ViewportBridgeSync: React.FC = () => {
   const { gl, scene, camera } = useThree();
@@ -392,12 +393,13 @@ export const Canvas3D: React.FC = React.memo(() => {
               El controlador gráfico ha reiniciado el contexto de render. Se restaurará
               automáticamente; si no ocurre, reinicia la aplicación.
             </p>
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-action hover:bg-action-hover text-white text-xs font-semibold uppercase tracking-wider transition-colors rounded-xs"
             >
               Reiniciar aplicación
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -406,12 +408,8 @@ export const Canvas3D: React.FC = React.memo(() => {
       {isModelLoading && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-canvas/60 backdrop-blur-xs transition-opacity duration-200 select-none">
           <div className="p-6 rounded-xs bg-surface-lowest/95 border border-hairline shadow-lg flex flex-col items-center gap-3 max-w-xs text-center animate-in fade-in zoom-in-95 duration-150">
-            {/* Architectural Dual Spinner */}
-            <div className="relative w-10 h-10 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full border-2 border-hairline" />
-              <div className="absolute inset-0 rounded-full border-2 border-action border-t-transparent animate-spin" />
-              <div className="w-2.5 h-2.5 rounded-full bg-action shadow-xs" />
-            </div>
+            {/* Architectural Spinner */}
+            <Spinner size="lg" />
 
             <div className="space-y-1">
               <span className="text-xs font-primary font-bold uppercase tracking-wider text-ink-primary block">

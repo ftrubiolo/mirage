@@ -14,6 +14,9 @@ import {
   flipNormalMapCanvas,
   invertRoughnessCanvas
 } from '../../utils/canvasTextureProcessor';
+import { Button } from '../UI/Button';
+import { TextInput } from '../UI/TextInput';
+import { AlertBanner } from '../UI/AlertBanner';
 
 export interface TexturePipelinePanelProps {
   initialNormalPath?: string;
@@ -174,19 +177,13 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
 
       {/* Texture message */}
       {textureMsg && (
-        <div
-          className={`px-3.5 py-2 text-[11px] flex items-center gap-2 ${
-            textureMsg.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-              : 'bg-rose-50 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
-          }`}
-        >
-          {textureMsg.type === 'success' ? (
-            <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-          ) : (
-            <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600 dark:text-rose-400" />
-          )}
-          <span className="truncate font-mono tabular-nums">{textureMsg.text}</span>
+        <div className="p-3">
+          <AlertBanner
+            variant={textureMsg.type === 'success' ? 'success' : 'error'}
+            title={textureMsg.type === 'success' ? 'Operación exitosa' : 'Error en pipeline'}
+            message={textureMsg.text}
+            onClose={() => setTextureMsg(null)}
+          />
         </div>
       )}
 
@@ -201,13 +198,14 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
             Combina AO (R) + Rugosidad (G) + Metálico (B) en un solo mapa WebP ultraligero.
           </span>
         </div>
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={openOrmPacker}
-          className="px-3 py-1.5 rounded-xs bg-action/10 hover:bg-action/20 text-action border border-action/30 text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-colors uppercase tracking-wider cursor-pointer"
+          icon={<Package className="w-3.5 h-3.5 text-action" />}
         >
-          <Package className="w-3 h-3" />
           Empaquetador ORM
-        </button>
+        </Button>
       </div>
 
       {/* Tool 2: Invert Normal Y */}
@@ -223,14 +221,17 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
           Invierte el canal verde para corregir mapas de relieve invertidos.
         </p>
         <div className="flex items-center gap-2 pt-1">
-          <input
-            type="text"
-            value={normalInputPath}
-            onChange={(e) => setNormalInputPath(e.target.value)}
-            placeholder="Ruta del Normal Map..."
-            className="flex-1 h-8 bg-surface-low border border-hairline-strong rounded-xs px-2.5 text-xs font-mono tabular-nums text-ink-primary placeholder:text-ink-tertiary leading-8 focus:outline-none focus:border-action"
-          />
-          <button
+          <div className="flex-1">
+            <TextInput
+              value={normalInputPath}
+              onChange={(e) => setNormalInputPath(e.target.value)}
+              placeholder="Ruta del Normal Map..."
+              mono
+            />
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={async () => {
               const path = await window.electronAPI.openFileDialog({
                 title: 'Seleccionar Mapa de Normales',
@@ -238,17 +239,17 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
               });
               if (path) setNormalInputPath(path);
             }}
-            className="h-8 px-2.5 bg-surface-container hover:bg-surface-high border border-hairline rounded-xs text-[11px] text-ink-primary font-medium transition-colors flex items-center justify-center shrink-0 uppercase tracking-wider cursor-pointer"
           >
             Examinar
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleFlipNormal}
-            disabled={isProcessingNormal}
-            className="h-8 px-3 bg-action hover:bg-action-hover text-white font-semibold rounded-xs text-[11px] transition-colors disabled:opacity-50 flex items-center justify-center shrink-0 uppercase tracking-wider shadow-xs cursor-pointer"
+            isLoading={isProcessingNormal}
           >
-            {isProcessingNormal ? 'Procesando...' : 'Invertir Y'}
-          </button>
+            Invertir Y
+          </Button>
         </div>
       </div>
 
@@ -265,14 +266,17 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
           Invierte la escala de grises para convertir entre aspereza y brillo superficial.
         </p>
         <div className="flex items-center gap-2 pt-1">
-          <input
-            type="text"
-            value={roughnessInputPath}
-            onChange={(e) => setRoughnessInputPath(e.target.value)}
-            placeholder="Ruta del mapa de rugosidad..."
-            className="flex-1 h-8 bg-surface-low border border-hairline-strong rounded-xs px-2.5 text-xs font-mono tabular-nums text-ink-primary placeholder:text-ink-tertiary leading-8 focus:outline-none focus:border-action"
-          />
-          <button
+          <div className="flex-1">
+            <TextInput
+              value={roughnessInputPath}
+              onChange={(e) => setRoughnessInputPath(e.target.value)}
+              placeholder="Ruta del mapa de rugosidad..."
+              mono
+            />
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={async () => {
               const path = await window.electronAPI.openFileDialog({
                 title: 'Seleccionar Textura de Rugosidad',
@@ -280,17 +284,17 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
               });
               if (path) setRoughnessInputPath(path);
             }}
-            className="h-8 px-2.5 bg-surface-container hover:bg-surface-high border border-hairline rounded-xs text-[11px] text-ink-primary font-medium transition-colors flex items-center justify-center shrink-0 uppercase tracking-wider cursor-pointer"
           >
             Examinar
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleInvertRoughness}
-            disabled={isProcessingRoughness}
-            className="h-8 px-3 bg-action hover:bg-action-hover text-white font-semibold rounded-xs text-[11px] transition-colors disabled:opacity-50 flex items-center justify-center shrink-0 uppercase tracking-wider shadow-xs cursor-pointer"
+            isLoading={isProcessingRoughness}
           >
-            {isProcessingRoughness ? 'Invirtiendo...' : 'Invertir'}
-          </button>
+            Invertir
+          </Button>
         </div>
       </div>
 
@@ -332,14 +336,17 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2 pt-1">
-          <input
-            type="text"
-            value={resizerInputPath}
-            onChange={(e) => setResizerInputPath(e.target.value)}
-            placeholder="Ruta de la textura a optimizar..."
-            className="flex-1 h-8 bg-surface-low border border-hairline-strong rounded-xs px-2.5 text-xs font-mono tabular-nums text-ink-primary placeholder:text-ink-tertiary leading-8 focus:outline-none focus:border-action"
-          />
-          <button
+          <div className="flex-1">
+            <TextInput
+              value={resizerInputPath}
+              onChange={(e) => setResizerInputPath(e.target.value)}
+              placeholder="Ruta de la textura a optimizar..."
+              mono
+            />
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={async () => {
               const path = await window.electronAPI.openFileDialog({
                 title: 'Seleccionar Textura',
@@ -347,17 +354,17 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
               });
               if (path) setResizerInputPath(path);
             }}
-            className="h-8 px-2.5 bg-surface-container hover:bg-surface-high border border-hairline rounded-xs text-[11px] text-ink-primary font-medium transition-colors flex items-center justify-center shrink-0 uppercase tracking-wider cursor-pointer"
           >
             Examinar
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleResizeConvert}
-            disabled={isProcessingResize}
-            className="h-8 px-3 bg-action hover:bg-action-hover text-white font-semibold rounded-xs text-[11px] transition-colors disabled:opacity-50 flex items-center justify-center shrink-0 uppercase tracking-wider shadow-xs cursor-pointer"
+            isLoading={isProcessingResize}
           >
-            {isProcessingResize ? 'Optimizando...' : 'Convertir'}
-          </button>
+            Convertir
+          </Button>
         </div>
       </div>
     </div>

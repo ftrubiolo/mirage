@@ -15,7 +15,7 @@ import {
 import { useVariantStore } from '../../store/variantStore';
 import { captureViewportSnapshot } from '../../utils/viewportBridge';
 import { useAppStore } from '../../store/appStore';
-import { Switch } from '../UI/Switch';
+import { Switch, Modal, FormField, TextInput, Button } from '../UI';
 
 export const VariantBottomToolbar: React.FC = () => {
   const variants = useVariantStore((state) => state.variants);
@@ -336,78 +336,54 @@ export const VariantBottomToolbar: React.FC = () => {
       )}
 
       {/* Modal: Crear Nueva Variante */}
-      {isCreateModalOpen && (
-        <div
-          onClick={() => setIsCreateModalOpen(false)}
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 cursor-pointer"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-surface-lowest border border-hairline-strong rounded-xs shadow-2xl w-full max-w-sm p-5 space-y-4 cursor-default animate-in fade-in zoom-in-95 duration-100"
-          >
-            <div className="flex items-center justify-between border-b border-hairline pb-2.5">
-              <div className="flex items-center gap-2">
-                <Layers className="w-4 h-4 text-action" />
-                <h3 className="font-primary font-bold text-xs uppercase tracking-wider text-ink-primary">
-                  Nuevo Perfil / Variante
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="p-1 rounded-xs text-ink-tertiary hover:text-ink-primary hover:bg-surface-container transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleConfirmCreate} className="space-y-3.5">
-              <div>
-                <label className="block text-[11px] font-primary font-semibold uppercase tracking-wider text-ink-secondary mb-1">
-                  Nombre de la Variante
-                </label>
-                <input
-                  type="text"
-                  required
-                  autoFocus
-                  value={newVariantName}
-                  onChange={(e) => setNewVariantName(e.target.value)}
-                  placeholder="Ej: Roble Claro & Lino Crudo"
-                  className="w-full px-3 py-2 bg-surface-low border border-hairline text-xs font-body text-ink-primary focus:outline-none focus:border-action rounded-xs"
-                />
-              </div>
-
-              <div className="p-3 bg-surface-low rounded-xs border border-hairline flex items-center justify-between gap-3">
-                <div>
-                  <span className="text-xs font-medium text-ink-primary block">
-                    Duplicar mapas actuales
-                  </span>
-                  <span className="text-[10px] text-ink-secondary block">
-                    Copia texturas y parámetros de la variante activa
-                  </span>
-                </div>
-                <Switch checked={cloneCurrent} onChange={setCloneCurrent} />
-              </div>
-
-              <div className="pt-2 flex items-center justify-end gap-2 border-t border-hairline">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-3 py-1.5 border border-hairline rounded-xs text-xs uppercase tracking-wider text-ink-secondary hover:text-ink-primary hover:bg-surface-container transition-colors cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={!newVariantName.trim()}
-                  className="px-4 py-1.5 bg-action hover:bg-action-hover text-white rounded-xs text-xs font-primary font-semibold uppercase tracking-wider shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-                >
-                  Crear Perfil
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Nuevo Perfil / Variante"
+        icon={<Layers className="w-4 h-4 text-action" />}
+        size="sm"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmCreate(e);
+              }}
+              disabled={!newVariantName.trim()}
+            >
+              Crear Perfil
+            </Button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form onSubmit={handleConfirmCreate} className="space-y-3.5">
+          <FormField label="Nombre de la Variante" required>
+            <TextInput
+              required
+              autoFocus
+              value={newVariantName}
+              onChange={(e) => setNewVariantName(e.target.value)}
+              placeholder="Ej: Roble Claro & Lino Crudo"
+            />
+          </FormField>
+
+          <div className="p-3 bg-surface-low rounded-xs border border-hairline flex items-center justify-between gap-3">
+            <div>
+              <span className="text-xs font-medium text-ink-primary block">
+                Duplicar mapas actuales
+              </span>
+              <span className="text-[10px] text-ink-secondary block">
+                Copia texturas y parámetros de la variante activa
+              </span>
+            </div>
+            <Switch checked={cloneCurrent} onChange={setCloneCurrent} />
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

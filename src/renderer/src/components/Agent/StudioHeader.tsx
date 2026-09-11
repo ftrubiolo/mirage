@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { RefreshCw, Zap, ShieldAlert, Check, X } from 'lucide-react';
 import { useAgentStore } from '../../store/agentStore';
+import { SegmentedControl } from '../UI/SegmentedControl';
+import { IconButton } from '../UI/IconButton';
 
 export const StudioHeader: React.FC = () => {
   const {
@@ -82,7 +84,9 @@ export const StudioHeader: React.FC = () => {
                   className="bg-transparent text-xs text-ink-primary font-mono w-[180px] focus:outline-none"
                   autoFocus
                 />
-                <button
+                <IconButton
+                  size="xs"
+                  variant="primary"
                   onClick={() => {
                     if (customModelText.trim()) {
                       const updated = Array.from(
@@ -96,18 +100,16 @@ export const StudioHeader: React.FC = () => {
                     }
                     setIsCustomModelInput(false);
                   }}
-                  className="text-action hover:text-action-hover px-1 font-bold text-xs cursor-pointer flex items-center"
+                  icon={<Check className="w-3.5 h-3.5" />}
                   title="Guardar modelo personalizado"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                </button>
-                <button
+                />
+                <IconButton
+                  size="xs"
+                  variant="ghost"
                   onClick={() => setIsCustomModelInput(false)}
-                  className="text-ink-tertiary hover:text-ink-primary px-1 text-xs cursor-pointer flex items-center"
+                  icon={<X className="w-3.5 h-3.5" />}
                   title="Cancelar"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                />
               </div>
             ) : (
               <div className="flex items-center gap-1">
@@ -131,16 +133,14 @@ export const StudioHeader: React.FC = () => {
                   <option value="__custom__">+ Escribir otro modelo...</option>
                 </select>
 
-                <button
+                <IconButton
+                  size="xs"
+                  variant="ghost"
                   onClick={handleRefreshModels}
-                  disabled={isRefreshingModels}
-                  className="p-1 hover:bg-surface-container rounded-xs text-ink-tertiary hover:text-action transition-colors cursor-pointer"
+                  isLoading={isRefreshingModels}
+                  icon={<RefreshCw className="w-3.5 h-3.5" />}
                   title="Auto-cargar modelos actualizados del endpoint"
-                >
-                  <RefreshCw
-                    className={`w-3.5 h-3.5 ${isRefreshingModels ? 'animate-spin text-action' : ''}`}
-                  />
-                </button>
+                />
               </div>
             )}
           </div>
@@ -150,33 +150,25 @@ export const StudioHeader: React.FC = () => {
       {/* Permission Mode Switcher: Auto-Apply vs Ask to Confirm */}
       <div className="flex items-center gap-2">
         <span className="text-[11px] text-ink-tertiary hidden md:inline">Modo de Ejecución:</span>
-        <div className="flex items-center bg-surface-container rounded-xs p-0.5 border border-hairline text-xs">
-          <button
-            onClick={() => setPermissionMode('auto-apply')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xs text-[11px] font-medium transition-colors cursor-pointer ${
-              permissionMode === 'auto-apply'
-                ? 'bg-action text-white shadow-xs'
-                : 'text-ink-secondary hover:text-ink-primary'
-            }`}
-            title="Aplica cambios al visor 3D en tiempo real con opción a deshacer con Ctrl+Z"
-          >
-            <Zap className="w-3 h-3" />
-            <span>Auto-aplicar</span>
-          </button>
-
-          <button
-            onClick={() => setPermissionMode('ask-to-confirm')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xs text-[11px] font-medium transition-colors cursor-pointer ${
-              permissionMode === 'ask-to-confirm'
-                ? 'bg-action text-white shadow-xs'
-                : 'text-ink-secondary hover:text-ink-primary'
-            }`}
-            title="Muestra una tarjeta de aprobación antes de modificar la escena 3D"
-          >
-            <ShieldAlert className="w-3 h-3" />
-            <span>Pedir confirmación</span>
-          </button>
-        </div>
+        <SegmentedControl
+          options={[
+            {
+              value: 'auto-apply',
+              label: 'Auto-aplicar',
+              icon: <Zap className="w-3 h-3" />,
+              title: 'Aplica cambios al visor 3D en tiempo real con opción a deshacer con Ctrl+Z'
+            },
+            {
+              value: 'ask-to-confirm',
+              label: 'Pedir confirmación',
+              icon: <ShieldAlert className="w-3 h-3" />,
+              title: 'Muestra una tarjeta de aprobación antes de modificar la escena 3D'
+            }
+          ]}
+          value={permissionMode}
+          onChange={(val) => setPermissionMode(val as any)}
+          size="xs"
+        />
       </div>
     </header>
   );

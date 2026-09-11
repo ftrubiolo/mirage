@@ -47,10 +47,13 @@ The defining architectural constraint is that **the renderer parses untrusted bi
 ┌───────────────────────────────────────────────────────────────────────────┐
 │ RENDERER  (Chromium, sandboxed, CSP in production)            ~24k LOC    │
 │                                                                           │
+│  views/      6 files · top-level route views (Hub, Workbench, Library, …) │
+│  layouts/    1 file  · application navigation chrome (TopNav)             │
 │  store/      8 files · one Zustand store per domain + orchestration       │
-│  utils/     11 files · pbrController, viewportBridge, libraryBridge, …    │
+│  utils/     12 files · pbrController, viewportBridge, mapSlotNaming, …    │
 │  agent/      3 files · tool registry, provider registry, scene serializer │
-│  components/63 files · views, viewport, staging, library, export, agent   │
+│  components/ 70+ files · domain components (Viewport, Staging, Export, …) │
+│  components/UI/ 19 files · design-system primitives (Button, Modal, …)    │
 │  tests/     15 files · 345 tests (vitest + happy-dom)                     │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
@@ -334,7 +337,7 @@ A desktop application has no address bar to recover from, which is why the bound
 ## 9. Layering rules
 
 ```
-types/  ←  store/  ←  utils/  ←  components/
+types/  ←  store/  ←  utils/  ←  components/UI/  ←  components/  ←  views/ & layouts/
                 ↑        ↑
               agent/  ───┘
 ```
@@ -342,10 +345,12 @@ types/  ←  store/  ←  utils/  ←  components/
 | Layer | May import | Must not import |
 | --- | --- | --- |
 | `types/` | nothing | anything |
-| `store/` | `types/` | `components/` |
-| `utils/` | `types/`, `store/` | `components/` |
-| `agent/` | `types/`, `store/`, `utils/` | `components/` |
-| `components/` | everything | — |
+| `store/` | `types/` | `components/`, `views/` |
+| `utils/` | `types/`, `store/` | `components/`, `views/` |
+| `agent/` | `types/`, `store/`, `utils/` | `components/`, `views/` |
+| `components/UI/` | `types/` | domain components (`Viewport/`, `Staging/`, …), `views/` |
+| `components/` | `types/`, `store/`, `utils/`, `components/UI/` | `views/` |
+| `views/` & `layouts/` | everything (`components/`, `components/UI/`, `store/`, `utils/`, `types/`) | — |
 
 Verified deviations, all pre-existing and all worth removing when the file is next touched:
 
@@ -353,6 +358,17 @@ Verified deviations, all pre-existing and all worth removing when the file is ne
 - `App.tsx` imports `getSharedGltfLoader` from `components/Viewport/PBRModelViewer.tsx` — a module-level singleton living in a component file.
 
 Everything else respects the table above: `grep -rn "from '.*components" src/renderer/src/{utils,agent,store}` returns the single `pbrController` line.
+
+### 9.1 Standard UI Primitive System & Context Menu Engine
+
+All visual presentation across the application is anchored in `src/renderer/src/components/UI/` (exported via `index.ts`), enforcing Sera Operations Design System tokens (hairlines, 0–2px radii, tabular numbers):
+
+- **19 Reusable Primitives:** `Button`, `IconButton`, `Card`, `PieceCard`, `TextInput`, `SearchInput`, `TextArea`, `FormField`, `SegmentedControl`, `Modal`, `ConfirmModal`, `Spinner`, `Badge`, `StatusBadge`, `AlertBanner`, `EmptyState`, `SectionHeader`, `Table`, and `ContextMenu`.
+- **Standard ContextMenu Engine (`components/UI/ContextMenu.tsx`):**
+  - Uses `createPortal(..., document.body)` so context menus and submenus escape parent containers and never suffer from `overflow-hidden` or stacking context clipping.
+  - Automatically calculates viewport edge distances and flips submenus horizontally (left vs. right) or vertically if close to boundaries.
+  - Centralizes global event coordination (`Escape` dismissal, outside `mousedown` detection, `contextmenu` default prevention).
+  - Employs compound components (`ContextMenu`, `ContextMenuHeader`, `ContextMenuItem`, `ContextMenuSub`, `ContextMenuCheckbox`, `ContextMenuSeparator`, `ContextMenuCustom`) with contextual auto-dismissal on click.
 
 Prefer named exports and narrow selectors:
 
@@ -393,7 +409,9 @@ Note that `vitest` runs with `happy-dom` project-wide, so main-process modules a
 | add a privileged capability | `ipcSchemas.ts` (schema) → `accessPolicy.ts` (reach) → `ipcHandlers.ts` → `preload/index.ts`; document it in §3 |
 | add an agent tool | `agent/toolRegistry.ts` only; validate arguments, and route mutations through `commandManager` so they are undoable |
 | add persisted state | decide the class from §4.4 first; settings go through `updateSettings(partial)` |
-| add a view | `components/` + a `currentView` value in `appStore`; wrap it in an `ErrorBoundary` in `App.tsx` |
+| add a top-level view | `views/` + a `currentView` value in `appStore`; wrap it in an `ErrorBoundary` in `App.tsx` |
+| add a reusable UI primitive | `components/UI/` + export from `components/UI/index.ts`; assert in `designSystemCompliance.test.ts` |
+| add a context menu | compose declarative items with `<ContextMenu>` from `components/UI` |
 | add a colour or surface token | `styles/globals.css` `:root` **and** `.dark`; never a `dark:bg-[#…]` override in a component |
 
 ---

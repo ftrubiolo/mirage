@@ -3,7 +3,6 @@ import {
   Keyboard,
   FolderOpen,
   RotateCcw,
-  Search,
   Check,
   Edit2,
   Camera,
@@ -12,6 +11,10 @@ import {
   X
 } from 'lucide-react';
 import { InfoTooltip } from '../UI/InfoTooltip';
+import { Button } from '../UI/Button';
+import { IconButton } from '../UI/IconButton';
+import { SegmentedControl } from '../UI/SegmentedControl';
+import { SearchInput } from '../UI/SearchInput';
 import {
   useKeybindsStore,
   KEYBIND_DEFINITIONS,
@@ -109,14 +112,15 @@ export const KeybindsSection: React.FC = () => {
           </p>
         </div>
 
-        <button
+        <Button
+          variant="outline"
+          size="xs"
           onClick={handleResetDefaults}
-          className="px-3 py-1.5 bg-surface-lowest hover:bg-surface-container text-ink-secondary hover:text-ink-primary border border-hairline rounded-xs text-xs font-medium transition-colors flex items-center gap-1.5 self-start shrink-0 cursor-pointer"
+          icon={<RotateCcw className="w-3.5 h-3.5" />}
           title="Restaurar configuración original"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
-          <span>Restaurar Predeterminados</span>
-        </button>
+          Restaurar Predeterminados
+        </Button>
       </div>
 
       {/* Storage Path Card */}
@@ -136,55 +140,40 @@ export const KeybindsSection: React.FC = () => {
             </div>
           </div>
 
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleOpenFolder}
-            className="px-3 py-2 bg-surface-container hover:bg-surface-high text-ink-primary border border-hairline rounded-xs text-xs font-medium uppercase tracking-wider transition-colors flex items-center gap-2 shrink-0 self-start sm:self-end cursor-pointer"
+            icon={<FolderOpen className="w-4 h-4 text-action" />}
           >
-            <FolderOpen className="w-4 h-4 text-action" />
-            <span>Revelar Archivo</span>
-          </button>
+            Revelar Archivo
+          </Button>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
         {/* Category Tabs */}
-        <div className="flex items-center gap-1 bg-surface-low p-1 border border-hairline rounded-xs">
-          {[
-            { id: 'all', label: 'Todos' },
-            { id: 'camera', label: 'Cámara', icon: Camera },
-            { id: 'view', label: 'Visor y Taller', icon: Compass },
-            { id: 'lighting', label: 'Iluminación', icon: Sun }
-          ].map((tab) => {
-            const isSelected = selectedCategory === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setSelectedCategory(tab.id as any)}
-                className={`px-3 py-1 text-xs font-medium rounded-xs transition-colors cursor-pointer flex items-center gap-1.5 ${
-                  isSelected
-                    ? 'bg-surface-container text-action font-semibold shadow-xs border border-hairline'
-                    : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-high/30'
-                }`}
-              >
-                {tab.icon && <tab.icon className="w-3 h-3" />}
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedControl
+          options={[
+            { value: 'all', label: 'Todos' },
+            { value: 'camera', label: 'Cámara', icon: <Camera className="w-3 h-3" /> },
+            { value: 'view', label: 'Visor y Taller', icon: <Compass className="w-3 h-3" /> },
+            { value: 'lighting', label: 'Iluminación', icon: <Sun className="w-3 h-3" /> }
+          ]}
+          value={selectedCategory}
+          onChange={(val) => setSelectedCategory(val as any)}
+          size="sm"
+        />
 
         {/* Search Input */}
-        <div className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 text-ink-tertiary absolute left-2.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Buscar atajo o acción..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface-lowest border border-hairline rounded-xs text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-action"
-          />
-        </div>
+        <SearchInput
+          placeholder="Buscar atajo o acción..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onClear={() => setSearchQuery('')}
+          className="w-full sm:w-64"
+        />
       </div>
 
       {feedbackMsg && (
@@ -237,21 +226,21 @@ export const KeybindsSection: React.FC = () => {
                         {recordedKeys || 'Presiona tecla...'}
                       </div>
 
-                      <button
+                      <IconButton
+                        size="xs"
+                        variant="primary"
                         onClick={() => handleSaveKeybind(meta.id)}
-                        className="p-1 rounded-xs bg-action text-white hover:bg-action-hover transition-colors cursor-pointer"
+                        icon={<Check className="w-3.5 h-3.5" />}
                         title="Guardar atajo"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
+                      />
 
-                      <button
+                      <IconButton
+                        size="xs"
+                        variant="secondary"
                         onClick={() => setEditingActionId(null)}
-                        className="p-1 rounded-xs bg-surface-container hover:bg-surface-high text-ink-secondary hover:text-ink-primary transition-colors cursor-pointer"
+                        icon={<X className="w-3.5 h-3.5" />}
                         title="Cancelar"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                      />
                     </div>
                   ) : (
                     <button

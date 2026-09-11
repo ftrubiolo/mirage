@@ -1,18 +1,18 @@
 import React from 'react';
 import {
-  Sliders,
   CheckCircle2,
   Clock,
   XCircle,
   Undo2,
   Check,
   X,
-  Layers,
   Wrench
 } from 'lucide-react';
 import { ProposedAction } from '../../types/agent';
 import { useAgentStore } from '../../store/agentStore';
 import { commandManager } from '../../utils/commandManager';
+import { StatusBadge } from '../UI/StatusBadge';
+import { Button } from '../UI/Button';
 
 interface ActionCardProps {
   action: ProposedAction;
@@ -38,24 +38,24 @@ export const ActionCard: React.FC<ActionCardProps> = ({ action }) => {
 
         {/* Status Badge */}
         {action.status === 'applied' && (
-          <span className="flex items-center gap-1 px-2 py-0.5 rounded-xs bg-emerald-50 text-emerald-800 border-emerald-300/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-500/30 text-[10px] font-medium border">
-            <CheckCircle2 className="w-3 h-3" />
-            <span>Aplicado</span>
-          </span>
+          <StatusBadge variant="active" size="sm">
+            <CheckCircle2 className="w-3 h-3 mr-1 inline" />
+            Aplicado
+          </StatusBadge>
         )}
 
         {action.status === 'pending' && (
-          <span className="flex items-center gap-1 px-2 py-0.5 rounded-xs bg-amber-50 text-amber-800 border-amber-300/60 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-500/30 text-[10px] font-medium border">
-            <Clock className="w-3 h-3" />
-            <span>Pendiente</span>
-          </span>
+          <StatusBadge variant="pending" size="sm">
+            <Clock className="w-3 h-3 mr-1 inline" />
+            Pendiente
+          </StatusBadge>
         )}
 
         {action.status === 'rejected' && (
-          <span className="flex items-center gap-1 px-2 py-0.5 rounded-xs bg-rose-50 text-rose-800 border-rose-300/60 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-500/30 text-[10px] font-medium border">
-            <XCircle className="w-3 h-3" />
-            <span>Descartado</span>
-          </span>
+          <StatusBadge variant="critical" size="sm">
+            <XCircle className="w-3 h-3 mr-1 inline" />
+            Descartado
+          </StatusBadge>
         )}
       </div>
 
@@ -80,34 +80,37 @@ export const ActionCard: React.FC<ActionCardProps> = ({ action }) => {
       {/* Action Buttons */}
       {action.status === 'pending' && (
         <div className="flex items-center justify-end gap-2 pt-1">
-          <button
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={() => rejectProposedAction(action.id)}
-            className="px-2.5 py-1 text-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-low rounded-xs transition-colors flex items-center gap-1 cursor-pointer"
+            icon={<X className="w-3 h-3" />}
           >
-            <X className="w-3 h-3" />
-            <span>Descartar</span>
-          </button>
-          <button
+            Descartar
+          </Button>
+          <Button
+            variant="primary"
+            size="xs"
             onClick={() => applyProposedAction(action.id)}
-            className="px-3 py-1 bg-action hover:bg-action-hover text-white text-xs font-semibold rounded-xs shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
+            icon={<Check className="w-3 h-3" />}
           >
-            <Check className="w-3 h-3" />
-            <span>Aplicar</span>
-          </button>
+            Aplicar
+          </Button>
         </div>
       )}
 
       {action.status === 'applied' && (
         <div className="flex items-center justify-between pt-1 text-[11px] text-ink-tertiary">
           <span>{action.appliedAt ? `Ejecutado a las ${action.appliedAt}` : 'Ejecutado'}</span>
-          <button
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={handleUndo}
-            className="hover:text-action flex items-center gap-1 transition-colors"
+            icon={<Undo2 className="w-3 h-3" />}
             title="Deshacer cambio en el taller"
           >
-            <Undo2 className="w-3 h-3" />
-            <span>Deshacer (Ctrl+Z)</span>
-          </button>
+            Deshacer (Ctrl+Z)
+          </Button>
         </div>
       )}
     </div>

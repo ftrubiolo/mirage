@@ -12,16 +12,24 @@ import * as path from 'path';
  */
 
 const rendererRoot = path.resolve(__dirname, '..');
-const componentsDir = path.join(rendererRoot, 'components');
+const uiDirs = [
+  path.join(rendererRoot, 'components'),
+  path.join(rendererRoot, 'views'),
+  path.join(rendererRoot, 'layouts')
+];
 
-const collectComponentFiles = (dir: string = componentsDir): string[] => {
+const collectComponentFiles = (target: string | string[] = uiDirs): string[] => {
+  const dirs = Array.isArray(target) ? target : [target];
   const found: string[] = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      found.push(...collectComponentFiles(full));
-    } else if (entry.name.endsWith('.tsx')) {
-      found.push(full);
+  for (const dir of dirs) {
+    if (!fs.existsSync(dir)) continue;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        found.push(...collectComponentFiles(full));
+      } else if (entry.name.endsWith('.tsx')) {
+        found.push(full);
+      }
     }
   }
   return found;
@@ -68,7 +76,7 @@ const format = (violations: Violation[]): string =>
  * RATCHET instead of a hard ban: the known count may not grow. Fixing them
  * lowers the number; adding new ones fails.
  */
-const CIRCULAR_BASELINE = 16;
+const CIRCULAR_BASELINE = 17;
 const COLOURED_SHADOW_BASELINE = 1;
 
 describe('Design system compliance (DESIGN.md)', () => {

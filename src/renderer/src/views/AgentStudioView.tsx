@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useAgentStore } from '../../store/agentStore';
-import { useAppStore } from '../../store/appStore';
-import { useResizableSidebar } from '../../hooks/useResizableSidebar';
-import { ResizeDragOverlay } from '../UI/ResizeHandle';
-import { StudioHeader } from './StudioHeader';
-import { StudioLeftSidebar } from './StudioLeftSidebar';
-import { StudioRightSidebar } from './StudioRightSidebar';
-import { ChatMessageList } from './ChatMessageList';
-import { ChatInputArea } from './ChatInputArea';
-import { SessionStatsFooter } from './SessionStatsFooter';
+import { useAgentStore } from '../store/agentStore';
+import { useAppStore } from '../store/appStore';
+import { useResizableSidebar } from '../hooks/useResizableSidebar';
+import { ResizeDragOverlay } from '../components/UI/ResizeHandle';
+import { StudioHeader } from '../components/Agent/StudioHeader';
+import { StudioLeftSidebar } from '../components/Agent/StudioLeftSidebar';
+import { StudioRightSidebar } from '../components/Agent/StudioRightSidebar';
+import { ChatMessageList } from '../components/Agent/ChatMessageList';
+import { ChatInputArea } from '../components/Agent/ChatInputArea';
+import { SessionStatsFooter } from '../components/Agent/SessionStatsFooter';
 
 export const AgentStudioView: React.FC = () => {
   const {

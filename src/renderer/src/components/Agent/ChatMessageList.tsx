@@ -3,6 +3,7 @@ import { Bot, MessageSquare } from 'lucide-react';
 import { ChatMessage } from '../../types/agent';
 import { UserMessageBubble } from './UserMessageBubble';
 import { AgentMessageView } from './AgentMessageView';
+import { EmptyState, Button } from '../UI';
 
 export interface ChatMessageListProps {
   messages: ChatMessage[];
@@ -29,26 +30,19 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
 }) => {
   if (!hasConfiguredProvider) {
     return (
-      <div className="my-auto flex flex-col items-center justify-center text-center max-w-md mx-auto space-y-4 py-12">
-        <div className="p-4 rounded-xs bg-surface-low border border-hairline text-action shadow-xs">
-          <Bot className="w-8 h-8" />
-        </div>
-        <div>
-          <h3 className="font-primary font-bold text-base uppercase tracking-tight text-ink-primary">
-            Estudio de Inteligencia Artificial
-          </h3>
-          <p className="text-xs text-ink-secondary mt-1.5 leading-relaxed">
-            Para interactuar con el agente y controlar el taller mediante lenguaje natural, configura tu primer proveedor.
-          </p>
-        </div>
-        {onOpenSettings && (
-          <button
-            onClick={onOpenSettings}
-            className="px-4 py-2 bg-action hover:bg-action-hover text-white text-xs font-semibold rounded-xs shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
-          >
-            <span>Abrir Configuración de Proveedores</span>
-          </button>
-        )}
+      <div className="my-auto py-12 max-w-md mx-auto w-full">
+        <EmptyState
+          icon={<Bot className="w-8 h-8 text-action" />}
+          title="Estudio de Inteligencia Artificial"
+          description="Para interactuar con el agente y controlar el taller mediante lenguaje natural, configura tu primer proveedor."
+          action={
+            onOpenSettings && (
+              <Button variant="primary" onClick={onOpenSettings}>
+                Abrir Configuración de Proveedores
+              </Button>
+            )
+          }
+        />
       </div>
     );
   }

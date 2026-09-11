@@ -1,5 +1,5 @@
-import { SlotName } from '../../store/pbrMaterialStore';
-import { MapVariantItem } from '../../store/variantStore';
+import { SlotName } from '../store/pbrMaterialStore';
+import { MapVariantItem } from '../store/variantStore';
 
 export const getNextSlotTargetType = (
   slot: SlotName,

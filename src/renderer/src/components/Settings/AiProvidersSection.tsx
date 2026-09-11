@@ -3,22 +3,23 @@ import {
   Sparkles,
   Plus,
   Key,
-  CheckCircle2,
-  AlertCircle,
   Trash2,
   Edit2,
   RefreshCw,
   Eye,
   EyeOff,
   Server,
-  Search,
   ExternalLink,
-  Check,
-  Loader2
+  Check
 } from 'lucide-react';
 import { useAgentStore } from '../../store/agentStore';
 import { AIProviderConfig } from '../../types/agent';
 import { Modal } from '../UI/Modal';
+import { Button } from '../UI/Button';
+import { IconButton } from '../UI/IconButton';
+import { TextInput } from '../UI/TextInput';
+import { EmptyState } from '../UI/EmptyState';
+import { AlertBanner } from '../UI/AlertBanner';
 import { STANDARD_PROVIDERS, ProviderDefinition } from '../../agent/providerRegistry';
 
 export const AiProvidersSection: React.FC = () => {
@@ -306,35 +307,31 @@ export const AiProvidersSection: React.FC = () => {
 
       {/* Clean Slate Empty State */}
       {providers.length === 0 ? (
-        <div className="p-8 rounded-xs bg-surface-lowest border border-hairline flex flex-col items-center justify-center text-center space-y-4 shadow-xs">
-          <div className="p-3.5 rounded-full bg-surface-low border border-hairline text-action shadow-xs">
-            <Sparkles className="w-6 h-6" />
-          </div>
-          <div className="max-w-md space-y-1">
-            <h3 className="font-primary font-bold text-sm text-ink-primary uppercase tracking-wide">
-              Sin proveedores de IA configurados
-            </h3>
-            <p className="text-xs text-ink-secondary leading-relaxed">
-              Conecta tu primer proveedor (OpenAI, Anthropic, OpenRouter, Google, DeepSeek o servidor local) para activar el agente inteligente en Mirage.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <button
-              onClick={handleOpenAddStandard}
-              className="px-4 py-2 bg-action hover:bg-action-hover text-white text-xs font-semibold rounded-xs shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Añadir Proveedor</span>
-            </button>
-            <button
-              onClick={handleOpenAddCustom}
-              className="px-4 py-2 bg-surface-low hover:bg-surface-high border border-hairline text-ink-primary text-xs font-medium rounded-xs shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
-            >
-              <Server className="w-4 h-4 text-action" />
-              <span>Añadir Servidor Local / Custom</span>
-            </button>
-          </div>
-        </div>
+        <EmptyState
+          icon={<Sparkles className="w-6 h-6" />}
+          title="Sin proveedores de IA configurados"
+          description="Conecta tu primer proveedor (OpenAI, Anthropic, OpenRouter, Google, DeepSeek o servidor local) para activar el agente inteligente en Mirage."
+          action={
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleOpenAddStandard}
+                icon={<Plus className="w-4 h-4" />}
+              >
+                Añadir Proveedor
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleOpenAddCustom}
+                icon={<Server className="w-4 h-4 text-action" />}
+              >
+                Añadir Servidor Local / Custom
+              </Button>
+            </div>
+          }
+        />
       ) : (
         /* Configured Providers List */
         <div className="space-y-2.5">
@@ -363,21 +360,22 @@ export const AiProvidersSection: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="xs"
                     onClick={() => handleOpenEdit(p)}
-                    className="px-3 py-1 bg-surface-low hover:bg-surface-high text-ink-primary text-xs font-medium rounded-md border border-hairline transition-colors flex items-center gap-1.5 cursor-pointer"
+                    icon={<Edit2 className="w-3 h-3 text-ink-secondary" />}
                   >
-                    <Edit2 className="w-3 h-3 text-ink-secondary" />
-                    <span>Editar</span>
-                  </button>
+                    Editar
+                  </Button>
 
-                  <button
+                  <IconButton
+                    variant="destructive"
+                    size="xs"
                     onClick={() => deleteProvider(p.id)}
-                    className="p-1.5 hover:bg-rose-500/10 text-ink-tertiary hover:text-rose-500 rounded-md transition-colors cursor-pointer"
+                    icon={<Trash2 className="w-3.5 h-3.5" />}
                     title="Eliminar proveedor"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  />
                 </div>
               </div>
             );
@@ -385,21 +383,25 @@ export const AiProvidersSection: React.FC = () => {
 
           {/* Add Buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            <button
+            <Button
+              variant="outline"
+              size="md"
               onClick={handleOpenAddStandard}
-              className="py-2.5 px-4 rounded-xs border border-dashed border-hairline-strong hover:border-action bg-surface-low/50 hover:bg-surface-low text-ink-secondary hover:text-ink-primary text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              icon={<Plus className="w-4 h-4 text-action" />}
+              className="border-dashed"
             >
-              <Plus className="w-4 h-4 text-action" />
-              <span>Añadir Proveedor</span>
-            </button>
+              Añadir Proveedor
+            </Button>
 
-            <button
+            <Button
+              variant="outline"
+              size="md"
               onClick={handleOpenAddCustom}
-              className="py-2.5 px-4 rounded-xs border border-dashed border-hairline-strong hover:border-action bg-surface-low/50 hover:bg-surface-low text-ink-secondary hover:text-ink-primary text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              icon={<Server className="w-4 h-4 text-action" />}
+              className="border-dashed"
             >
-              <Server className="w-4 h-4 text-action" />
-              <span>Añadir Servidor Local / Custom</span>
-            </button>
+              Añadir Servidor Local / Custom
+            </Button>
           </div>
         </div>
       )}
@@ -414,42 +416,34 @@ export const AiProvidersSection: React.FC = () => {
         icon={<Sparkles className="w-4 h-4 text-action" />}
         size="md"
         footer={
-          <>
-            <button
-              type="button"
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setIsAddStandardOpen(false)}
               disabled={isConnectingStandard}
-              className="px-3.5 py-1.5 text-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-high rounded-md transition-colors cursor-pointer disabled:opacity-50"
             >
               Cancelar
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
               onClick={handleConnectStandard}
               disabled={isConnectingStandard || !standardApiKey.trim()}
-              className="px-4 py-1.5 bg-action hover:bg-action-hover text-white text-xs font-semibold rounded-md shadow-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-40"
+              isLoading={isConnectingStandard}
+              icon={!isConnectingStandard ? <Check className="w-3.5 h-3.5" /> : undefined}
             >
-              {isConnectingStandard ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Verificando y conectando...</span>
-                </>
-              ) : (
-                <>
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Conectar Proveedor</span>
-                </>
-              )}
-            </button>
-          </>
+              Conectar Proveedor
+            </Button>
+          </div>
         }
       >
         <form onSubmit={handleConnectStandard} className="space-y-4 text-xs font-body">
           {standardError && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xs flex items-start gap-2 text-xs text-rose-400">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <div className="leading-snug">{standardError}</div>
-            </div>
+            <AlertBanner
+              variant="error"
+              message={standardError}
+            />
           )}
 
           {/* Provider Selector Dropdown */}
@@ -463,7 +457,7 @@ export const AiProvidersSection: React.FC = () => {
                 setSelectedProviderId(e.target.value);
                 setStandardError(null);
               }}
-              className="w-full bg-surface-low border border-hairline rounded-md px-3 py-2 text-xs text-ink-primary font-medium focus:outline-none focus:border-action cursor-pointer"
+              className="w-full bg-surface-low border border-hairline rounded-xs px-3 py-2 text-xs text-ink-primary font-medium focus:outline-none focus:border-action cursor-pointer"
             >
               {STANDARD_PROVIDERS.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -474,7 +468,7 @@ export const AiProvidersSection: React.FC = () => {
           </div>
 
           {/* Selected Provider Info Card */}
-          <div className="p-3 bg-surface-low/80 border border-hairline rounded-md space-y-1.5 text-ink-secondary">
+          <div className="p-3 bg-surface-low/80 border border-hairline rounded-xs space-y-1.5 text-ink-secondary">
             <div className="flex items-center justify-between text-[11px]">
               <span className="font-mono text-ink-tertiary">Endpoint:</span>
               <span className="font-mono text-ink-primary truncate max-w-[260px]" title={activeStandardDef.baseUrl}>
@@ -509,24 +503,24 @@ export const AiProvidersSection: React.FC = () => {
             <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
               Clave API (API Key)
             </label>
-            <div className="relative flex items-center">
-              <input
-                type={showStandardKey ? 'text' : 'password'}
-                autoFocus
-                value={standardApiKey}
-                onChange={(e) => setStandardApiKey(e.target.value)}
-                placeholder={activeStandardDef.placeholderKey || 'sk-...'}
-                className="w-full bg-surface-low border border-hairline rounded-md px-3 py-2 pr-10 text-xs text-ink-primary font-mono placeholder:text-ink-tertiary focus:outline-none focus:border-action"
-              />
-              <button
-                type="button"
-                onClick={() => setShowStandardKey(!showStandardKey)}
-                className="absolute right-2.5 p-1 text-ink-tertiary hover:text-ink-primary transition-colors cursor-pointer"
-                title={showStandardKey ? 'Ocultar clave' : 'Mostrar clave'}
-              >
-                {showStandardKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              </button>
-            </div>
+            <TextInput
+              type={showStandardKey ? 'text' : 'password'}
+              autoFocus
+              value={standardApiKey}
+              onChange={(e) => setStandardApiKey(e.target.value)}
+              placeholder={activeStandardDef.placeholderKey || 'sk-...'}
+              mono
+              suffix={
+                <button
+                  type="button"
+                  onClick={() => setShowStandardKey(!showStandardKey)}
+                  className="p-1 text-ink-tertiary hover:text-ink-primary transition-colors cursor-pointer"
+                  title={showStandardKey ? 'Ocultar clave' : 'Mostrar clave'}
+                >
+                  {showStandardKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              }
+            />
             <p className="text-[10px] text-ink-tertiary">
               La clave se cifrará con el almacén seguro del sistema operativo (Electron SafeStorage).
             </p>
@@ -544,42 +538,34 @@ export const AiProvidersSection: React.FC = () => {
         icon={<Server className="w-4 h-4 text-action" />}
         size="md"
         footer={
-          <>
-            <button
-              type="button"
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setIsAddCustomOpen(false)}
               disabled={isConnectingCustom}
-              className="px-3.5 py-1.5 text-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-high rounded-md transition-colors cursor-pointer disabled:opacity-50"
             >
               Cancelar
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
               onClick={handleConnectCustom}
               disabled={isConnectingCustom || !customName.trim() || !customBaseUrl.trim()}
-              className="px-4 py-1.5 bg-action hover:bg-action-hover text-white text-xs font-semibold rounded-md shadow-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-40"
+              isLoading={isConnectingCustom}
+              icon={!isConnectingCustom ? <Check className="w-3.5 h-3.5" /> : undefined}
             >
-              {isConnectingCustom ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Conectando...</span>
-                </>
-              ) : (
-                <>
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Conectar Servidor</span>
-                </>
-              )}
-            </button>
-          </>
+              Conectar Servidor
+            </Button>
+          </div>
         }
       >
         <form onSubmit={handleConnectCustom} className="space-y-4 text-xs font-body">
           {customError && (
-            <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xs flex items-start gap-2 text-xs text-rose-400">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <div className="leading-snug">{customError}</div>
-            </div>
+            <AlertBanner
+              variant="error"
+              message={customError}
+            />
           )}
 
           {/* Provider Name */}
@@ -587,13 +573,12 @@ export const AiProvidersSection: React.FC = () => {
             <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
               Nombre del Proveedor / Instancia
             </label>
-            <input
+            <TextInput
               type="text"
               autoFocus
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
               placeholder="Ej: Ollama Local, LM Studio, vLLM Studio"
-              className="w-full bg-surface-low border border-hairline rounded-md px-3 py-2 text-xs text-ink-primary focus:outline-none focus:border-action"
             />
           </div>
 
@@ -621,12 +606,12 @@ export const AiProvidersSection: React.FC = () => {
                 </button>
               </div>
             </div>
-            <input
+            <TextInput
               type="text"
               value={customBaseUrl}
               onChange={(e) => setCustomBaseUrl(e.target.value)}
               placeholder="http://localhost:11434/v1"
-              className="w-full bg-surface-low border border-hairline rounded-md px-3 py-2 text-xs text-ink-primary font-mono focus:outline-none focus:border-action"
+              mono
             />
           </div>
 
@@ -635,22 +620,22 @@ export const AiProvidersSection: React.FC = () => {
             <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
               Clave API (Opcional para servidores locales)
             </label>
-            <div className="relative flex items-center">
-              <input
-                type={showCustomKey ? 'text' : 'password'}
-                value={customKey}
-                onChange={(e) => setCustomKey(e.target.value)}
-                placeholder="Dejar vacío si no requiere autenticación..."
-                className="w-full bg-surface-low border border-hairline rounded-md px-3 py-2 pr-10 text-xs text-ink-primary font-mono focus:outline-none focus:border-action"
-              />
-              <button
-                type="button"
-                onClick={() => setShowCustomKey(!showCustomKey)}
-                className="absolute right-2.5 p-1 text-ink-tertiary hover:text-ink-primary transition-colors cursor-pointer"
-              >
-                {showCustomKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              </button>
-            </div>
+            <TextInput
+              type={showCustomKey ? 'text' : 'password'}
+              value={customKey}
+              onChange={(e) => setCustomKey(e.target.value)}
+              placeholder="Dejar vacío si no requiere autenticación..."
+              mono
+              suffix={
+                <button
+                  type="button"
+                  onClick={() => setShowCustomKey(!showCustomKey)}
+                  className="p-1 text-ink-tertiary hover:text-ink-primary transition-colors cursor-pointer"
+                >
+                  {showCustomKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              }
+            />
           </div>
 
           {/* Model ID */}
@@ -658,12 +643,12 @@ export const AiProvidersSection: React.FC = () => {
             <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
               Identificador del Modelo (Opcional, se auto-detecta)
             </label>
-            <input
+            <TextInput
               type="text"
               value={customModel}
               onChange={(e) => setCustomModel(e.target.value)}
               placeholder="Ej: llama3.3, qwen2.5-coder:14b, local-model"
-              className="w-full bg-surface-low border border-hairline rounded-md px-3 py-2 text-xs text-ink-primary font-mono focus:outline-none focus:border-action"
+              mono
             />
           </div>
         </form>
@@ -680,28 +665,28 @@ export const AiProvidersSection: React.FC = () => {
           icon={<Key className="w-4 h-4 text-action" />}
           size="lg"
           footer={
-            <>
-              <button
-                type="button"
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setEditingProvider(null)}
-                className="px-3.5 py-1.5 text-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-high rounded-md transition-colors cursor-pointer"
               >
                 Cancelar
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={handleSaveEdit}
-                className="px-4 py-1.5 bg-action hover:bg-action-hover text-white text-xs font-semibold rounded-md shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                icon={<Check className="w-3.5 h-3.5" />}
               >
-                <Check className="w-3.5 h-3.5" />
-                <span>Guardar Cambios</span>
-              </button>
-            </>
+                Guardar Cambios
+              </Button>
+            </div>
           }
         >
           <div className="space-y-4 text-xs font-body">
             {/* Base URL Glance */}
-            <div className="p-3 bg-surface-low rounded-md border border-hairline flex items-center justify-between text-ink-secondary">
+            <div className="p-3 bg-surface-low rounded-xs border border-hairline flex items-center justify-between text-ink-secondary">
               <span className="font-mono text-[11px] text-ink-tertiary">URL Base:</span>
               <span className="font-mono text-[11px] text-ink-primary truncate max-w-[320px]">
                 {editingProvider.baseUrl}
@@ -713,22 +698,22 @@ export const AiProvidersSection: React.FC = () => {
               <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
                 Clave API (Hardware Encrypted)
               </label>
-              <div className="relative flex items-center">
-                <input
-                  type={showEditKey ? 'text' : 'password'}
-                  value={editApiKey}
-                  onChange={(e) => setEditApiKey(e.target.value)}
-                  placeholder="Introduce o actualiza la clave API..."
-                  className="w-full bg-surface-low border border-hairline rounded-md px-3 py-2 pr-10 text-xs text-ink-primary font-mono focus:outline-none focus:border-action"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowEditKey(!showEditKey)}
-                  className="absolute right-2.5 p-1 text-ink-tertiary hover:text-ink-primary transition-colors cursor-pointer"
-                >
-                  {showEditKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
-              </div>
+              <TextInput
+                type={showEditKey ? 'text' : 'password'}
+                value={editApiKey}
+                onChange={(e) => setEditApiKey(e.target.value)}
+                placeholder="Introduce o actualiza la clave API..."
+                mono
+                suffix={
+                  <button
+                    type="button"
+                    onClick={() => setShowEditKey(!showEditKey)}
+                    className="p-1 text-ink-tertiary hover:text-ink-primary transition-colors cursor-pointer"
+                  >
+                    {showEditKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                }
+              />
             </div>
 
             {/* Model Selector & Filter */}
@@ -747,33 +732,29 @@ export const AiProvidersSection: React.FC = () => {
               </div>
 
               {isManualModel ? (
-                <input
+                <TextInput
                   type="text"
                   value={manualModelInput}
                   onChange={(e) => setManualModelInput(e.target.value)}
                   placeholder="Ej: openai/gpt-5.6-luna o deepseek/deepseek-r1"
-                  className="w-full bg-surface-low border border-hairline rounded-md px-3 py-2 text-xs text-ink-primary font-mono focus:outline-none focus:border-action"
+                  mono
                 />
               ) : (
                 <div className="space-y-1.5">
                   {/* Model Search Filter */}
                   {editingProvider.availableModels.length > 5 && (
-                    <div className="relative flex items-center">
-                      <Search className="w-3.5 h-3.5 absolute left-2.5 text-ink-tertiary" />
-                      <input
-                        type="text"
-                        value={modelSearch}
-                        onChange={(e) => setModelSearch(e.target.value)}
-                        placeholder="Buscar modelo disponible..."
-                        className="w-full bg-surface-low border border-hairline rounded-md pl-8 pr-3 py-1.5 text-xs text-ink-primary focus:outline-none focus:border-action font-mono"
-                      />
-                    </div>
+                    <TextInput
+                      value={modelSearch}
+                      onChange={(e) => setModelSearch(e.target.value)}
+                      placeholder="Buscar modelo disponible..."
+                      mono
+                    />
                   )}
 
                   <select
                     value={editModel}
                     onChange={(e) => setEditModel(e.target.value)}
-                    className="w-full bg-surface-low border border-hairline rounded-md px-3 py-2 text-xs text-ink-primary font-mono focus:outline-none focus:border-action cursor-pointer max-h-40"
+                    className="w-full bg-surface-low border border-hairline rounded-xs px-3 py-2 text-xs text-ink-primary font-mono focus:outline-none focus:border-action cursor-pointer max-h-40"
                   >
                     {filteredEditModels.map((m) => (
                       <option key={m} value={m}>
@@ -787,31 +768,23 @@ export const AiProvidersSection: React.FC = () => {
 
             {/* Test Connection Button & Status */}
             <div className="pt-2 border-t border-hairline flex flex-col gap-2">
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full"
                 onClick={handleTestEditConnection}
                 disabled={isTestingEdit}
-                className="w-full py-2 px-3 bg-surface-low hover:bg-surface-high border border-hairline text-ink-primary rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                isLoading={isTestingEdit}
+                icon={!isTestingEdit ? <RefreshCw className="w-3.5 h-3.5 text-action" /> : undefined}
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isTestingEdit ? 'animate-spin text-action' : ''}`} />
-                <span>{isTestingEdit ? 'Probando conexión...' : 'Probar Conexión y Actualizar Modelos'}</span>
-              </button>
+                {isTestingEdit ? 'Probando conexión...' : 'Probar Conexión y Actualizar Modelos'}
+              </Button>
 
               {editTestResult && (
-                <div
-                  className={`p-2.5 rounded-md border text-xs flex items-center gap-2 ${
-                    editTestResult.success
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                      : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-                  }`}
-                >
-                  {editTestResult.success ? (
-                    <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                  )}
-                  <span className="leading-snug">{editTestResult.message}</span>
-                </div>
+                <AlertBanner
+                  variant={editTestResult.success ? 'success' : 'error'}
+                  message={editTestResult.message}
+                />
               )}
             </div>
           </div>

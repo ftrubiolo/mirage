@@ -286,101 +286,121 @@ Strict Rule: **Serif typefaces (`Source Serif 4`) are prohibited in non-webfront
 
 ## 5. UI Component Catalog
 
-Use these modular primitives across any layout or screen structure. Every class string below is token-based and taken from — or assembled directly out of — the shipped implementation.
+All visual elements across the application are componentized into **19 reusable primitives** located in `src/renderer/src/components/UI/` and exported via `index.ts`. Every primitive strictly encapsulates Sera tokens, 0–2px border radii (`rounded-none` or `rounded-xs`), crisp hairlines, and accessible keyboard interactions.
 
-### 5.1 Buttons & Action Controls
+### 5.1 Buttons & Action Controls (`UI/Button.tsx`, `UI/IconButton.tsx`, `UI/SegmentedControl.tsx`)
 
 ```tsx
-// Primary Action (Carmín Ladrillo)
-// Used by GlbExportPanel, PosterCapturePanel, OrmPackerModal, TexturePipelinePanel…
-<button className="px-4 py-2 bg-action hover:bg-action-hover text-white text-xs font-semibold uppercase tracking-wider transition-colors rounded-xs shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer">
-  <Save className="w-4 h-4" />
-  <span>Guardar</span>
-</button>
+// Primary Committing Action (Carmín Ladrillo)
+<Button variant="primary" icon={<Save className="w-4 h-4" />}>
+  Guardar
+</Button>
 
 // Secondary Action (Recessed Surface)
-<button className="h-7 px-3 rounded-xs border border-hairline-strong bg-surface-low hover:bg-surface-high text-[11px] font-mono font-semibold uppercase tracking-wider text-ink-primary transition-colors cursor-pointer disabled:opacity-50">
-  <span>Cancelar</span>
-</button>
+<Button variant="secondary" size="sm">
+  Cancelar
+</Button>
 
 // Destructive Action (Rose)
-<button className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xs text-xs font-primary font-semibold uppercase tracking-wider shadow-xs transition-colors cursor-pointer">
-  <Trash2 className="w-4 h-4" />
-  <span>Eliminar</span>
-</button>
+<Button variant="destructive" icon={<Trash2 className="w-4 h-4" />}>
+  Eliminar
+</Button>
 
-// Icon Toggle (Top navigation)
-<button className={`p-1.5 rounded-xs transition-colors cursor-pointer ${
-  isActive
-    ? 'bg-surface-lowest text-action shadow-xs border border-hairline'
-    : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-container'
-}`}>
-  <Box className="w-4 h-4" />
-</button>
+// Loading State (Replaces any manual Loader2)
+<Button variant="primary" isLoading={isSubmitting}>
+  Procesar
+</Button>
 
-// Segmented Control (permission mode, units, export options)
-<div className="flex items-center bg-surface-container rounded-xs p-0.5 border border-hairline text-xs">
-  <button className={`px-2.5 py-1 rounded-xs text-[11px] font-medium transition-colors cursor-pointer ${
-    isActive ? 'bg-action text-white shadow-xs' : 'text-ink-secondary hover:text-ink-primary'
-  }`}>Auto-aplicar</button>
-</div>
+// Standard Icon Trigger (Top nav, HUD overlays, card action headers)
+<IconButton
+  icon={<Box className="w-4 h-4" />}
+  variant="ghost"
+  size="sm"
+  title="Alternar vista 3D"
+  onClick={handleToggle}
+/>
+
+// Segmented Control (Pill switcher for modes, units, resolution)
+<SegmentedControl
+  value={mode}
+  onChange={setMode}
+  options={[
+    { value: 'auto', label: 'Auto-aplicar' },
+    { value: 'confirm', label: 'Pedir confirmación' }
+  ]}
+  variant="action"
+  size="sm"
+/>
 ```
 
-### 5.2 Status Badges & Pills (`UI/StatusBadge.tsx`)
+### 5.2 Badges & Status Chips (`UI/StatusBadge.tsx`, `UI/Badge.tsx`)
 
-Universal status chip supporting dual-mode. It carries the nine §3 variants, a `size` (`sm` | `md`) and sensible Spanish defaults (`En Stock`, `En Taller`, `En Camino`, …):
+- **`<StatusBadge>`**: Universal lifecycle chip supporting dual-mode. It carries the nine §3 variants (`active`, `pending`, `workshop`, `dispatched`, `delivered`, `madeToOrder`, `preorder`, `critical`, `neutral`), a `size` (`sm` | `md`) and sensible Spanish defaults (`En Stock`, `En Taller`, `En Camino`, …):
+  ```tsx
+  <StatusBadge variant="active" size="md">En Stock</StatusBadge>
+  ```
+- **`<Badge>`**: Neutral/action metadata pills for finish labels, categories, and counts:
+  ```tsx
+  <Badge variant="neutral">Madera Maciza</Badge>
+  <Badge variant="action">En Mesa 3D</Badge>
+  ```
 
+### 5.3 Data Tables (`UI/Table.tsx`)
+
+Composable table primitives for technical catalogs and metrology grids:
 ```tsx
-<span className="inline-flex items-center font-body font-medium uppercase tracking-wider border rounded-xs select-none px-2 py-0.5 text-[10px] bg-emerald-50 text-emerald-800 border-emerald-300/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-500/30">
-  En Stock
-</span>
+<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Pieza</TableHead>
+      <TableHead align="right">Dimensiones</TableHead>
+      <TableHead align="right">Polígonos</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow onClick={() => openEntry(slug)}>
+      <TableCell className="font-semibold">{entry.title}</TableCell>
+      <TableCell align="right" mono>{dimText}</TableCell>
+      <TableCell align="right" mono>{triangles.toLocaleString()} △</TableCell>
+    </TableRow>
+  </TableBody>
+</Table>
 ```
 
-### 5.3 Data Tables (`Library/LibraryView.tsx`)
+### 5.4 Form Fields & Inputs (`UI/FormField.tsx`, `UI/TextInput.tsx`, `UI/SearchInput.tsx`, `UI/TextArea.tsx`)
 
-The technical library table is the reference grid: a `surface-lowest` wrapper with a `surface-low` header strip, hairline row dividers, and monospace numeric cells.
+- **`<FormField>`**: Container managing label overlines, required asterisks, helper text, and validation error messages.
+- **`<TextInput>`**: Clean inputs with `mono`, `hasError`, left/right icon addons (`iconLeft`, `iconRight`), and token focus rings.
+- **`<SearchInput>`**: Dedicated search input with search icon and 1-click clear button.
+- **`<TextArea>`**: Consistent multiline input for descriptions, release notes, and finishing specifications.
+- **`<NumberInput>`**: Fixed unit affix + tabular figures for metrology and financial units (`$`, `m`, `cm`, `mm`, `°`).
+- **`<Switch>`**: Real `<button role="switch" aria-checked>` with a `rounded-xs` track (`bg-surface-container border-hairline-strong` off, `bg-action border-action` on).
+- **`<Checkbox>`**: Native `sr-only peer` input with a `w-4 h-4 rounded-xs` box painted from tokens with `peer-focus-visible:ring-action`.
 
-- **Wrapper:** `bg-surface-lowest border border-hairline rounded-xs shadow-xs overflow-hidden`
-- **Header Row:** `bg-surface-low border-b border-hairline text-[11px] font-primary font-semibold uppercase tracking-wider text-ink-secondary`
-- **Header Cells:** `px-4 py-3`
-- **Body:** `divide-y divide-hairline font-body`
-- **Rows:** `hover:bg-surface-container/40 transition-colors cursor-pointer`
-- **Selected Row:** `bg-action-subtle/30`
-- **Cells:** `px-4 py-3 text-xs text-ink-primary`
-- **Numeric / Identifier Cells:** `px-4 py-3 font-mono tabular-nums text-ink-primary`
+### 5.5 Modals & Dialogs (`UI/Modal.tsx`, `UI/ConfirmModal.tsx`)
 
-### 5.4 Form Cards & Input Controls
+- **`<Modal>`**: Screen scrim (`fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4`), container surface (`bg-surface-lowest border border-hairline-strong rounded-xs shadow-2xl`), header, scrollable body, and action footer. Dismisses on `Escape` and backdrop clicks.
+- **`<ConfirmModal>`**: Pre-configured confirmation dialog with `action` and `destructive` color schemes, custom confirm/cancel text, and auto-loading states.
 
-- **Card Container:** `bg-surface-lowest border border-hairline rounded-xs shadow-xs`
-- **Card Header:** `p-3.5 border-b border-hairline bg-surface-low flex items-center justify-between`
-- **Field Labels:** `text-[10px] font-semibold uppercase tracking-wider font-primary text-ink-secondary`
-- **Text & Numeric Inputs:** `w-full h-7 px-2.5 rounded-xs bg-surface-lowest border border-hairline-strong text-xs font-mono tabular-nums text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-action disabled:opacity-50`
-- **Selects:** `w-full px-3 py-2 bg-surface-low border border-hairline text-xs font-body text-ink-primary focus:outline-none focus:border-action rounded-xs`
-- **Currency & Metric Inputs:** fixed unit affix + tabular figure (`UI/NumberInput.tsx`):
+### 5.5.1 Standard Context Menu System (`UI/ContextMenu.tsx`)
+
+Unified, portaled context menu engine replacing all ad-hoc right-click menus:
+- **Portaled to `document.body`**: Immune to parent overflow clipping or container stacking contexts.
+- **Boundary Collision & Auto-Flip**: Clamps coordinates to the viewport; automatically detects window boundaries and flips submenus to open leftward or upward when near screen edges.
+- **Hover-Delay Submenus**: 150ms hover-leave grace period prevents accidental submenu dismissal when moving diagonally.
+- **Centralized Event Handling**: `Escape` dismissal and outside `mousedown` detection.
+- **Compound Components**:
   ```tsx
-  <div className="flex items-center h-7 bg-surface-lowest border border-hairline-strong rounded-xs overflow-hidden">
-    <span className="w-5 text-center text-[10px] font-mono font-bold text-ink-tertiary border-r border-hairline bg-surface-low/60 h-full flex items-center justify-center">$</span>
-    <input type="number" className="w-full bg-transparent px-2 py-0.5 text-right font-mono tabular-nums text-xs text-ink-primary focus:outline-none" />
-  </div>
+  <ContextMenu isOpen={isOpen} position={{ x, y }} onClose={onClose}>
+    <ContextMenuHeader>Taller 3D Mirage</ContextMenuHeader>
+    <ContextMenuSub label="Vistas de Cámara" icon={<Camera className="w-3.5 h-3.5" />}>
+      <ContextMenuItem shortcut="Ctrl+1" onClick={setIso}>Isométrica</ContextMenuItem>
+    </ContextMenuSub>
+    <ContextMenuSeparator />
+    <ContextMenuCheckbox label="Grilla" checked={showGrid} onChange={toggleGrid} />
+    <ContextMenuItem danger onClick={handleDelete}>Eliminar</ContextMenuItem>
+  </ContextMenu>
   ```
-- **Switches / Checkboxes:** `UI/Switch.tsx` is a real `<button role="switch" aria-checked>` with a `rounded-xs` track that reads `bg-surface-container border-hairline-strong` off and `bg-action border-action` on. `UI/Checkbox.tsx` keeps a native `sr-only peer` input and paints a `w-4 h-4 rounded-xs` box from the same tokens, with `peer-focus-visible:ring-action`. Never replace either with a bare coloured div.
-- **Helper Callouts:** framed information banners:
-  ```tsx
-  <div className="p-3 rounded-xs bg-action-subtle border border-action/20 flex items-start gap-2.5 text-xs text-ink-secondary">
-    <Info className="w-4 h-4 text-action shrink-0 mt-0.5" />
-    <p>Nota técnica o regla operativa.</p>
-  </div>
-  ```
-
-### 5.5 Modals, Menus & Overlays (`UI/Modal.tsx`)
-
-- **Scrim:** `fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 select-none`
-- **Surface:** `bg-surface-lowest border border-hairline-strong rounded-xs shadow-2xl w-full overflow-hidden flex flex-col`
-- **Sizes:** `max-w-sm` | `max-w-md` | `max-w-lg` | `max-w-xl`
-- **Header:** `px-5 py-3.5 border-b border-hairline bg-surface-low flex items-center justify-between`
-- **Title:** `font-primary font-bold text-sm tracking-wide uppercase text-ink-primary`
-- **Footer:** `px-5 py-3 border-t border-hairline bg-surface-low flex items-center justify-end gap-2`
-- **Behaviour:** `Escape` closes (`onClose`), backdrop click closes unless `closeOnBackdrop={false}`, body scrolls inside a `max-h-[75vh]` container. Context menus, tooltips, and the image lightbox reuse the same surface recipe with `shadow-2xl`.
 
 ### 5.6 KPI & Metric Tiles (`Audit/PerformanceAudit.tsx`)
 
@@ -388,24 +408,12 @@ The technical library table is the reference grid: a `surface-lowest` wrapper wi
 - **Label:** `text-[10px] font-semibold uppercase tracking-wider font-primary text-ink-secondary block`
 - **Value:** `font-mono tabular-nums font-semibold text-ink-primary`
 - **Verdict:** `text-[9px] font-mono tabular-nums text-ink-tertiary block`, with the semantic icon (`CheckCircle2` emerald / `AlertTriangle` amber / rose) carrying the pass-warn-fail state.
-- **Section Card:** `p-3.5 rounded-xs bg-surface-lowest border border-hairline space-y-3.5 shadow-xs`
 
-### 5.7 Inline Status Banners (no toast layer)
+### 5.7 Status Feedback & Empty States (`UI/AlertBanner.tsx`, `UI/EmptyState.tsx`, `UI/Spinner.tsx`)
 
-Feedback is **in-panel and persistent**, not a floating toast stack — an operator must still see the outcome of a long Sharp or export job after looking away.
-
-```tsx
-<div className={`p-3 rounded-xs text-xs flex items-center gap-2 border ${
-  isSuccess
-    ? 'bg-emerald-50 text-emerald-800 border-emerald-300/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-500/30'
-    : 'bg-rose-50 text-rose-800 border-rose-300/60 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-500/30'
-}`}>
-  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-  <span className="truncate font-mono tabular-nums">{message}</span>
-</div>
-```
-
-Long operations show a spinner and disable their trigger (`disabled:opacity-50`) until the promise settles. Empty states are a single quiet line: `p-4 rounded-xs bg-surface-lowest border border-hairline text-center text-xs text-ink-tertiary`.
+- **`<AlertBanner>`**: Persistent in-panel notifications for `info`, `warning`, `error`, and `success` with optional dismiss button and action triggers. (No floating toasts).
+- **`<EmptyState>`**: Framed dashed containers with centered icon, title, description, and action button for zero-data views.
+- **`<Spinner>`**: Unified CSS loader (`xs`, `sm`, `md`, `lg`) with `action`, `white`, and `neutral` colorways. `Loader2` is prohibited.
 
 ### 5.8 Resizable Sidebars (`hooks/useResizableSidebar.ts`)
 

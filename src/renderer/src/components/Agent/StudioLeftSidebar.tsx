@@ -3,7 +3,7 @@ import { Box, Layers } from 'lucide-react';
 import { ALL_SLOT_NAMES, PbrSlotMap, SlotName, usePbrMaterialStore } from '../../store/pbrMaterialStore';
 import { useModelStore } from '../../store/modelStore';
 import { EmbeddedViewport } from '../Viewport/EmbeddedViewport';
-import { ResizeHandle } from '../UI/ResizeHandle';
+import { ResizeHandle, StatusBadge } from '../UI';
 
 export interface StudioLeftSidebarProps {
   width?: number;
@@ -153,17 +153,12 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
                   className="flex items-center justify-between px-2 py-1 bg-surface-low/60 rounded-xs border border-hairline text-[11px]"
                 >
                   <span className="capitalize text-ink-secondary">{slot}</span>
-                  <span
-                    className={`text-[10px] font-mono px-1.5 py-0.2 rounded-xs ${
-                      hasMap
-                        ? isEnabled
-                          ? 'bg-emerald-500/10 text-emerald-400'
-                          : 'bg-amber-500/10 text-amber-400'
-                        : 'text-ink-tertiary'
-                    }`}
+                  <StatusBadge
+                    variant={hasMap ? (isEnabled ? 'active' : 'pending') : 'neutral'}
+                    size="sm"
                   >
                     {hasMap ? (isEnabled ? 'Asignado' : 'Inactivo') : 'Vacío'}
-                  </span>
+                  </StatusBadge>
                 </div>
               );
             })}

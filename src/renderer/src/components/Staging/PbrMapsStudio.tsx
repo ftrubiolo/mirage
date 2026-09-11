@@ -14,10 +14,14 @@ import {
 import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
 import { useAppStore } from '../../store/appStore';
 import { setMaterialProperty } from '../../store/workbenchActions';
-import { Checkbox } from '../UI/Checkbox';
-import { Switch } from '../UI/Switch';
-import { SliderControl } from '../UI/SliderControl';
-import { ColorPickerControl } from '../UI/ColorPickerControl';
+import {
+  Checkbox,
+  Switch,
+  SliderControl,
+  ColorPickerControl,
+  Button,
+  SegmentedControl
+} from '../UI';
 import { MapSlotPicker, getNextBaseColorTargetType, getNextSlotTargetType } from './MapSlotPicker';
 
 export { getNextBaseColorTargetType, getNextSlotTargetType };
@@ -140,28 +144,15 @@ export const PbrMapsStudio: React.FC = React.memo(() => {
             </h3>
           </div>
           {/* Mode Switcher */}
-          <div className="flex rounded-xs bg-surface-low p-0.5 border border-hairline text-[10px] shrink-0">
-            <button
-              onClick={() => setUseOrmPack(true)}
-              className={`px-2 py-0.5 rounded-xs font-medium transition-colors cursor-pointer ${
-                useOrmPack
-                  ? 'bg-action text-white font-semibold shadow-xs'
-                  : 'text-ink-secondary hover:text-ink-primary'
-              }`}
-            >
-              ORM Único
-            </button>
-            <button
-              onClick={() => setUseOrmPack(false)}
-              className={`px-2 py-0.5 rounded-xs font-medium transition-colors cursor-pointer ${
-                !useOrmPack
-                  ? 'bg-action text-white font-semibold shadow-xs'
-                  : 'text-ink-secondary hover:text-ink-primary'
-              }`}
-            >
-              3 Mapas Separados
-            </button>
-          </div>
+          <SegmentedControl
+            value={useOrmPack ? 'orm' : 'separate'}
+            onChange={(val) => setUseOrmPack(val === 'orm')}
+            options={[
+              { value: 'orm', label: 'ORM Único' },
+              { value: 'separate', label: '3 Mapas Separados' }
+            ]}
+            size="xs"
+          />
         </div>
 
         {useOrmPack ? (
@@ -177,13 +168,14 @@ export const PbrMapsStudio: React.FC = React.memo(() => {
               addVariantLabel="Añadir Variante ORM (Arrastra imagen aquí)"
               pickTitle="Seleccionar Mapa ORM"
             />
-            <button
+            <Button
+              variant="secondary"
+              icon={<Package className="w-3.5 h-3.5" />}
+              className="w-full"
               onClick={openOrmPacker}
-              className="w-full py-2 px-3 rounded-xs border border-action/30 bg-action/10 hover:bg-action/20 text-action text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors uppercase tracking-wider cursor-pointer"
             >
-              <Package className="w-3.5 h-3.5" />
               Abrir Empaquetador ORM con Sharp
-            </button>
+            </Button>
           </div>
         ) : (
           /* Mode B: 3 Separate Maps */
@@ -225,13 +217,14 @@ export const PbrMapsStudio: React.FC = React.memo(() => {
             />
 
             {/* Action to pack these 3 */}
-            <button
+            <Button
+              variant="secondary"
+              icon={<Package className="w-3.5 h-3.5" />}
+              className="w-full"
               onClick={openOrmPacker}
-              className="w-full py-2 px-3 rounded-xs border border-action/30 bg-action/10 hover:bg-action/20 text-action text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors uppercase tracking-wider cursor-pointer"
             >
-              <Package className="w-3.5 h-3.5" />
               Empaquetar estos canales en ORM.webp con Sharp
-            </button>
+            </Button>
           </div>
         )}
 

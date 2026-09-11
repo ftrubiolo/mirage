@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PackageCheck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { PackageCheck } from 'lucide-react';
 import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
 import { useModelStore } from '../../store/modelStore';
 import { useAppStore } from '../../store/appStore';
@@ -11,6 +11,7 @@ import { PerformanceAudit } from '../Audit/PerformanceAudit';
 import { PosterCapturePanel } from './PosterCapturePanel';
 import { GlbExportPanel } from './GlbExportPanel';
 import { TexturePipelinePanel } from './TexturePipelinePanel';
+import { AlertBanner } from '../UI';
 
 export { PosterCapturePanel, GlbExportPanel, TexturePipelinePanel };
 
@@ -47,20 +48,11 @@ export const ExportStudio: React.FC = () => {
 
       {/* Global Status Message */}
       {exportMessage && (
-        <div
-          className={`p-3 rounded-xs text-xs flex items-center gap-2 border ${
-            exportMessage.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-300/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-500/30'
-              : 'bg-rose-50 text-rose-800 border-rose-300/60 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-500/30'
-          }`}
-        >
-          {exportMessage.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-          ) : (
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
-          )}
-          <span className="truncate font-mono tabular-nums">{exportMessage.text}</span>
-        </div>
+        <AlertBanner
+          variant={exportMessage.type}
+          message={exportMessage.text}
+          onClose={() => setExportMessage(null)}
+        />
       )}
 
       {/* PANEL 1: Poster & Snapshot Generator */}

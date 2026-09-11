@@ -2,7 +2,7 @@ import React from 'react';
 import { MessageSquare, Plus, Trash2, RefreshCw, Wrench } from 'lucide-react';
 import { useAgentStore } from '../../store/agentStore';
 import { MIRAGE_INTERNAL_TOOLS } from '../../agent/toolRegistry';
-import { ResizeHandle } from '../UI/ResizeHandle';
+import { ResizeHandle, IconButton, Button } from '../UI';
 
 export interface StudioRightSidebarProps {
   onInsertPrompt?: (prompt: string) => void;
@@ -51,13 +51,13 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
           <MessageSquare className="w-3.5 h-3.5 text-action" />
           Historial de Sesiones
         </span>
-        <button
+        <IconButton
+          icon={<Plus className="w-4 h-4" />}
+          size="xs"
+          variant="ghost"
           onClick={() => createSession()}
-          className="p-1 hover:bg-surface-high rounded-xs text-ink-secondary hover:text-ink-primary transition-colors cursor-pointer"
           title="Crear nueva sesión de chat"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
+        />
       </div>
 
       {/* Sessions List */}
@@ -90,16 +90,17 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
               </div>
 
               {sessions.length > 1 && (
-                <button
+                <IconButton
+                  icon={<Trash2 className="w-3.5 h-3.5" />}
+                  size="xs"
+                  variant="ghost"
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteSession(s.id);
                   }}
-                  className="opacity-0 group-hover:opacity-100 p-1 hover:text-rose-500 text-ink-tertiary transition-opacity cursor-pointer"
                   title="Eliminar sesión"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                  className="opacity-0 group-hover:opacity-100 hover:text-rose-500"
+                />
               )}
             </div>
           );
@@ -108,13 +109,15 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
 
       {/* Clear Current Session Button */}
       <div className="p-2.5 border-b border-hairline shrink-0">
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={<RefreshCw className="w-3 h-3" />}
+          className="w-full"
           onClick={clearCurrentSession}
-          className="w-full py-1.5 px-3 bg-surface-low hover:bg-surface-high text-ink-secondary hover:text-ink-primary rounded-xs text-[11px] font-medium border border-hairline transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
         >
-          <RefreshCw className="w-3 h-3" />
-          <span>Limpiar Chat Actual</span>
-        </button>
+          Limpiar Chat Actual
+        </Button>
       </div>
 
       {/* Action & Tools Catalog Header */}

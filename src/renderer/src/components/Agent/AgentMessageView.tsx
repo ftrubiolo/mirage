@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ChatMessage, AgentStepItem } from '../../types/agent';
 import { AgentStepRow } from './AgentStepRow';
 import { ActionCard } from './ActionCard';
+import { IconButton } from '../UI';
 import {
   Copy,
   Check,
@@ -162,30 +163,26 @@ export const AgentMessageView: React.FC<AgentMessageViewProps> = ({ message }) =
 
       {/* 6. Message Footer Actions & Metrics (dsh style) */}
       {!message.isStreaming && (
-        <div className="flex items-center gap-2.5 pt-1.5 text-[11px] font-mono text-ink-tertiary select-none">
-          <button
+        <div className="flex items-center gap-1 pt-1.5 text-[11px] font-mono text-ink-tertiary select-none">
+          <IconButton
+            icon={copiedMsg ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            size="xs"
+            variant="ghost"
             onClick={handleCopyMessage}
-            className="hover:text-ink-primary p-1 rounded-xs hover:bg-surface-low transition-colors cursor-pointer"
             title="Copiar respuesta"
-          >
-            {copiedMsg ? (
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
-            ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
-          </button>
-          <button
-            className="hover:text-ink-primary p-1 rounded-xs hover:bg-surface-low transition-colors cursor-pointer"
+          />
+          <IconButton
+            icon={<ThumbsUp className="w-3.5 h-3.5" />}
+            size="xs"
+            variant="ghost"
             title="Útil"
-          >
-            <ThumbsUp className="w-3.5 h-3.5" />
-          </button>
-          <button
-            className="hover:text-ink-primary p-1 rounded-xs hover:bg-surface-low transition-colors cursor-pointer"
+          />
+          <IconButton
+            icon={<ThumbsDown className="w-3.5 h-3.5" />}
+            size="xs"
+            variant="ghost"
             title="No útil"
-          >
-            <ThumbsDown className="w-3.5 h-3.5" />
-          </button>
+          />
 
           {/* Token Usage Badge */}
           {message.usage && message.usage.totalTokens > 0 && (

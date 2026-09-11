@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useViewportStore, EnvironmentPreset } from '../../store/viewportStore';
 import { usePbrMaterialStore, DebugChannel } from '../../store/pbrMaterialStore';
+import { Switch } from '../UI';
 
 export const ViewportToolbar: React.FC = () => {
   const {
@@ -228,23 +229,11 @@ export const ViewportToolbar: React.FC = () => {
             {/* Toggle 360° Scene Background */}
             <div className="px-2 py-1.5 border-b border-hairline mb-1 flex items-center justify-between">
               <span className="text-xs text-ink-primary font-medium">Fondo 360°</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleEnvironmentBackground();
-                }}
-                className={`w-7 h-4 rounded-full transition-colors relative cursor-pointer ${
-                  showEnvironmentBackground ? 'bg-action' : 'bg-surface-container border border-hairline'
-                }`}
+              <Switch
+                checked={showEnvironmentBackground}
+                onChange={toggleEnvironmentBackground}
                 title={showEnvironmentBackground ? 'Ocultar fondo 360° de la escena' : 'Mostrar entorno HDRI como fondo 360° en la escena'}
-              >
-                <div
-                  className={`w-3 h-3 rounded-full bg-white transition-transform duration-150 absolute top-0.5 ${
-                    showEnvironmentBackground ? 'left-3.5' : 'left-0.5'
-                  }`}
-                />
-              </button>
+              />
             </div>
 
             {environmentPresets.map((preset) => {

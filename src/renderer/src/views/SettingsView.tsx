@@ -11,11 +11,13 @@ import {
   Laptop,
   FolderOpen
 } from 'lucide-react';
-import { useAppStore, ThemeMode, FontDensity } from '../../store/appStore';
-import { Switch } from '../UI/Switch';
-import { InfoTooltip } from '../UI/InfoTooltip';
-import { AiProvidersSection } from './AiProvidersSection';
-import { KeybindsSection } from './KeybindsSection';
+import { useAppStore, ThemeMode, FontDensity } from '../store/appStore';
+import { Switch } from '../components/UI/Switch';
+import { InfoTooltip } from '../components/UI/InfoTooltip';
+import { Button } from '../components/UI/Button';
+import { SegmentedControl } from '../components/UI/SegmentedControl';
+import { AiProvidersSection } from '../components/Settings/AiProvidersSection';
+import { KeybindsSection } from '../components/Settings/KeybindsSection';
 
 type SettingsTab = 'appearance' | 'viewport' | 'keybinds' | 'storage' | 'ai' | 'system';
 
@@ -264,28 +266,15 @@ export const SettingsView: React.FC = () => {
                     </span>
                     <InfoTooltip content="Formato predeterminado para pósters y capturas descargadas." />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => updateSettings({ defaultExportFormat: 'webp' })}
-                      className={`px-3 py-1 text-xs font-mono font-bold rounded-xs border transition-colors cursor-pointer ${
-                        settings.defaultExportFormat === 'webp'
-                          ? 'bg-action text-white border-action'
-                          : 'bg-surface-low text-ink-secondary border-hairline'
-                      }`}
-                    >
-                      WebP
-                    </button>
-                    <button
-                      onClick={() => updateSettings({ defaultExportFormat: 'png' })}
-                      className={`px-3 py-1 text-xs font-mono font-bold rounded-xs border transition-colors cursor-pointer ${
-                        settings.defaultExportFormat === 'png'
-                          ? 'bg-action text-white border-action'
-                          : 'bg-surface-low text-ink-secondary border-hairline'
-                      }`}
-                    >
-                      PNG
-                    </button>
-                  </div>
+                  <SegmentedControl
+                    options={[
+                      { value: 'webp', label: 'WebP' },
+                      { value: 'png', label: 'PNG' }
+                    ]}
+                    value={settings.defaultExportFormat}
+                    onChange={(val) => updateSettings({ defaultExportFormat: val as any })}
+                    size="xs"
+                  />
                 </div>
               </div>
             </div>
@@ -337,13 +326,14 @@ export const SettingsView: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={handleOpenFolder}
-                    className="px-4 py-2 bg-surface-container hover:bg-surface-high text-ink-primary border border-hairline rounded-xs text-xs font-medium uppercase tracking-wider transition-colors flex items-center gap-2 shrink-0 self-start sm:self-end cursor-pointer"
+                    icon={<FolderOpen className="w-4 h-4 text-action" />}
                   >
-                    <FolderOpen className="w-4 h-4 text-action" />
-                    <span>Revelar en Explorador</span>
-                  </button>
+                    Revelar en Explorador
+                  </Button>
                 </div>
               </div>
             </div>

@@ -7,9 +7,10 @@ import {
   Save,
   Sparkles
 } from 'lucide-react';
-import { useAppStore, AppView } from '../../store/appStore';
-import { useModelStore } from '../../store/modelStore';
-import { flushAutoSave } from '../../utils/libraryBridge';
+import { useAppStore, AppView } from '../store/appStore';
+import { useModelStore } from '../store/modelStore';
+import { flushAutoSave } from '../utils/libraryBridge';
+import { IconButton } from '../components/UI/IconButton';
 
 interface TopNavProps {
   onOpenSaveModal?: () => void;
@@ -130,13 +131,13 @@ export const TopNav: React.FC<TopNavProps> = React.memo(({ onOpenSaveModal }) =>
         ) : (
           /* NOT working on a library item: Save button as ICON ONLY */
           currentView === 'workbench' && onOpenSaveModal && (
-            <button
+            <IconButton
+              variant="primary"
+              size="sm"
               onClick={onOpenSaveModal}
+              icon={<BookmarkPlus className="w-4 h-4" />}
               title="Guardar en Biblioteca"
-              className="p-1.5 bg-action hover:bg-action-hover text-white rounded-xs shadow-xs transition-colors flex items-center justify-center cursor-pointer"
-            >
-              <BookmarkPlus className="w-4 h-4" />
-            </button>
+            />
           )
         )}
 
@@ -149,18 +150,15 @@ export const TopNav: React.FC<TopNavProps> = React.memo(({ onOpenSaveModal }) =>
             const isActive = currentView === btn.id || (btn.id === 'library' && currentView === 'entryDetail');
 
             return (
-              <button
+              <IconButton
                 key={btn.id}
+                variant={isActive ? 'secondary' : 'ghost'}
+                size="sm"
                 onClick={() => setView(btn.id)}
+                icon={<Icon className={`w-4 h-4 ${isActive ? 'text-action' : ''}`} />}
                 title={btn.label}
-                className={`p-1.5 rounded-xs transition-colors flex items-center justify-center cursor-pointer ${
-                  isActive
-                    ? 'bg-surface-lowest text-action shadow-xs border border-hairline'
-                    : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-container'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-              </button>
+                className={isActive ? '!bg-surface-lowest !border-hairline shadow-xs' : ''}
+              />
             );
           })}
         </div>

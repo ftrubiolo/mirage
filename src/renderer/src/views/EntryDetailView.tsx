@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Layers, Plus } from 'lucide-react';
-import { LibraryEntry, EntryVariant } from '../../types/library';
-import { useAppStore } from '../../store/appStore';
-import { loadEntryIntoWorkbench } from '../../utils/libraryBridge';
-import { useResizableSidebar } from '../../hooks/useResizableSidebar';
-import { ResizeDragOverlay } from '../UI/ResizeHandle';
-import { EntryDetailHeader } from './EntryDetailHeader';
-import { TechnicalSheetSection } from './TechnicalSheetSection';
-import { VariantCardItem } from './VariantCardItem';
+import { LibraryEntry, EntryVariant } from '../types/library';
+import { useAppStore } from '../store/appStore';
+import { loadEntryIntoWorkbench } from '../utils/libraryBridge';
+import { useResizableSidebar } from '../hooks/useResizableSidebar';
+import { ResizeDragOverlay } from '../components/UI/ResizeHandle';
+import { EntryDetailHeader } from '../components/Library/EntryDetailHeader';
+import { TechnicalSheetSection } from '../components/Library/TechnicalSheetSection';
+import { VariantCardItem } from '../components/Library/VariantCardItem';
 import {
   CreateVariantModal,
   RenameVariantModal,
   DeleteVariantModal
-} from './EntryDetailModals';
+} from '../components/Library/EntryDetailModals';
 
 export interface EntryDetailViewProps {
   entry: LibraryEntry | null;

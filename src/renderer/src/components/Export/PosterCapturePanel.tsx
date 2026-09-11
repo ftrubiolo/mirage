@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Camera, Download } from 'lucide-react';
 import { captureViewportSnapshot } from '../../utils/viewportBridge';
 import { Checkbox } from '../UI/Checkbox';
+import { Button } from '../UI/Button';
+import { SegmentedControl } from '../UI/SegmentedControl';
 
 export interface PosterCapturePanelProps {
   productId: string;
@@ -82,25 +84,17 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
           <span className="text-[10px] text-ink-secondary font-primary font-semibold uppercase tracking-wider block">
             Resolución
           </span>
-          <div className="grid grid-cols-3 gap-1">
-            {[
-              { id: '1024', label: '1024²' },
-              { id: '512', label: '512²' },
-              { id: '1080', label: '1080p' }
-            ].map((r) => (
-              <button
-                key={r.id}
-                onClick={() => setPosterRes(r.id as any)}
-                className={`py-1 rounded-xs text-[11px] font-mono tabular-nums font-medium border transition-colors ${
-                  posterRes === r.id
-                    ? 'bg-action text-white border-action font-semibold shadow-xs'
-                    : 'bg-surface-low border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-container'
-                }`}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            options={[
+              { value: '1024', label: '1024²' },
+              { value: '512', label: '512²' },
+              { value: '1080', label: '1080p' }
+            ]}
+            value={posterRes}
+            onChange={(v) => setPosterRes(v as any)}
+            size="xs"
+            className="w-full justify-between"
+          />
         </div>
 
         {/* Format Selection */}
@@ -108,21 +102,16 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
           <span className="text-[10px] text-ink-secondary font-primary font-semibold uppercase tracking-wider block">
             Formato
           </span>
-          <div className="grid grid-cols-2 gap-1">
-            {(['webp', 'png'] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setPosterFormat(f)}
-                className={`py-1 rounded-xs text-[11px] font-medium border uppercase transition-colors ${
-                  posterFormat === f
-                    ? 'bg-action text-white border-action font-semibold shadow-xs'
-                    : 'bg-surface-low border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-container'
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            options={[
+              { value: 'webp', label: 'WEBP' },
+              { value: 'png', label: 'PNG' }
+            ]}
+            value={posterFormat}
+            onChange={(v) => setPosterFormat(v as any)}
+            size="xs"
+            className="w-full justify-between"
+          />
         </div>
       </div>
 
@@ -137,23 +126,27 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
 
       {/* Action Buttons & Preview */}
       <div className="flex items-center gap-2 pt-1">
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
+          className="flex-1"
           onClick={handleCapturePoster}
           disabled={isCapturing}
-          className="flex-1 py-2 px-3 rounded-xs bg-surface-container hover:bg-surface-high text-ink-primary font-medium text-xs flex items-center justify-center gap-1.5 border border-hairline transition-colors disabled:opacity-50 shadow-xs uppercase tracking-wider"
+          isLoading={isCapturing}
+          icon={!isCapturing ? <Camera className="w-3.5 h-3.5 text-action" /> : undefined}
         >
-          <Camera className="w-3.5 h-3.5 text-action" />
           {isCapturing ? 'Capturando...' : 'Capturar Vista Actual'}
-        </button>
+        </Button>
 
         {capturedPosterUrl && (
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleSavePoster}
-            className="py-2 px-3 rounded-xs bg-action hover:bg-action-hover text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs uppercase tracking-wider"
+            icon={<Download className="w-3.5 h-3.5" />}
           >
-            <Download className="w-3.5 h-3.5" />
             Guardar {posterFormat.toUpperCase()}
-          </button>
+          </Button>
         )}
       </div>
 

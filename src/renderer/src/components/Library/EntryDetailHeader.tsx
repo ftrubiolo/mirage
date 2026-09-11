@@ -1,5 +1,6 @@
 import React from 'react';
 import { ArrowLeft, ArrowUpRight, FolderOpen } from 'lucide-react';
+import { Button } from '../UI';
 
 export interface EntryDetailHeaderProps {
   title: string;
@@ -21,14 +22,15 @@ export const EntryDetailHeader: React.FC<EntryDetailHeaderProps> = ({
   return (
     <div className="border-b border-hairline bg-surface-low px-6 py-3 shrink-0 flex flex-row items-center justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={onBack}
-          className="p-1.5 hover:bg-surface-container text-ink-secondary hover:text-ink-primary rounded-xs border border-hairline transition-colors flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider cursor-pointer"
+          icon={<ArrowLeft className="w-3.5 h-3.5" />}
           title="Volver a la vista general de la biblioteca"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Biblioteca</span>
-        </button>
+        </Button>
 
         <div className="h-4 w-px bg-hairline" />
 
@@ -44,27 +46,25 @@ export const EntryDetailHeader: React.FC<EntryDetailHeaderProps> = ({
 
       {/* Right Actions */}
       <div className="flex items-center gap-2 shrink-0">
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={onOpenFolder}
+          icon={<FolderOpen className="w-3.5 h-3.5 text-action" />}
           title="Abrir carpeta en el explorador"
-          className="px-2.5 py-1.5 border border-hairline hover:bg-surface-container rounded-xs text-xs font-medium text-ink-secondary hover:text-ink-primary transition-colors flex items-center gap-1.5 cursor-pointer"
         >
-          <FolderOpen className="w-3.5 h-3.5 text-action" />
           <span className="hidden sm:inline">Carpeta</span>
-        </button>
+        </Button>
 
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           onClick={onOpenIn3D}
-          disabled={isLoading}
-          className="px-3.5 py-1.5 bg-action hover:bg-action-hover text-white rounded-xs shadow-xs text-xs font-primary font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+          isLoading={isLoading}
+          iconRight={<ArrowUpRight className="w-3.5 h-3.5" />}
         >
-          {isLoading ? (
-            <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-          ) : (
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          )}
-          <span>Abrir en Taller 3D</span>
-        </button>
+          Abrir en Taller 3D
+        </Button>
       </div>
     </div>
   );

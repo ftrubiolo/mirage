@@ -4,6 +4,7 @@ import { useModelStore } from '../../store/modelStore';
 import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
 import { useAppStore } from '../../store/appStore';
 import { viewportBridge } from '../../utils/viewportBridge';
+import { EmptyState, IconButton, Button } from '../UI';
 
 export const EmbeddedViewport: React.FC = () => {
   const modelUrl = useModelStore((state) => state.modelUrl);
@@ -165,60 +166,56 @@ export const EmbeddedViewport: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center text-ink-tertiary p-4 text-center">
-          <Box className="w-8 h-8 text-ink-tertiary/40 mb-2" />
-          <span className="text-xs font-medium">Sin modelo en la mesa de trabajo</span>
-          <button
-            onClick={() => setView('workbench')}
-            className="mt-2 px-2.5 py-1 text-[11px] bg-surface-low hover:bg-surface-high text-action rounded-xs border border-hairline transition-colors"
-          >
-            Ir a cargar modelo
-          </button>
+        <div className="w-full h-full flex items-center justify-center p-4">
+          <EmptyState
+            icon={<Box className="w-7 h-7" />}
+            title="Sin modelo en la mesa de trabajo"
+            description="Carga un modelo 3D desde la pestaña de Geometría."
+            action={
+              <Button variant="secondary" size="sm" onClick={() => setView('workbench')}>
+                Ir a cargar modelo
+              </Button>
+            }
+          />
         </div>
       )}
 
       {/* Floating Mini Controls */}
       {modelUrl && (
         <div className="absolute top-2 right-2 flex items-center gap-1 bg-surface-lowest/90 backdrop-blur-xs p-1 rounded-xs border border-hairline opacity-80 group-hover:opacity-100 transition-opacity z-10">
-          <button
+          <IconButton
+            icon={<RotateCw className="w-3.5 h-3.5" />}
+            size="xs"
+            variant={autoRotate ? 'primary' : 'ghost'}
             onClick={() => setAutoRotate(!autoRotate)}
-            className={`p-1 rounded-xs transition-colors ${
-              autoRotate ? 'text-action bg-surface-container' : 'text-ink-secondary hover:text-ink-primary'
-            }`}
             title="Alternar rotación automática"
-          >
-            <RotateCw className="w-3.5 h-3.5" />
-          </button>
+          />
 
-          <button
+          <IconButton
+            icon={<RefreshCw className="w-3.5 h-3.5" />}
+            size="xs"
+            variant="ghost"
             onClick={handleResetCamera}
-            className="p-1 rounded-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-low transition-colors"
             title="Resetear encuadre de cámara"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
+          />
 
-          <button
+          <IconButton
+            icon={<Layers className="w-3.5 h-3.5" />}
+            size="xs"
+            variant={debugChannel === 'wireframe' ? 'primary' : 'ghost'}
             onClick={() =>
               setDebugChannel(debugChannel === 'wireframe' ? 'lit' : 'wireframe')
             }
-            className={`p-1 rounded-xs transition-colors ${
-              debugChannel === 'wireframe'
-                ? 'text-action bg-surface-container'
-                : 'text-ink-secondary hover:text-ink-primary'
-            }`}
             title="Alternar modo alambre / iluminado"
-          >
-            <Layers className="w-3.5 h-3.5" />
-          </button>
+          />
 
-          <button
+          <IconButton
+            icon={<Maximize2 className="w-3.5 h-3.5" />}
+            size="xs"
+            variant="ghost"
             onClick={() => setView('workbench')}
-            className="p-1 rounded-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-low transition-colors"
             title="Abrir mesa de trabajo completa"
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-          </button>
+          />
         </div>
       )}
     </div>

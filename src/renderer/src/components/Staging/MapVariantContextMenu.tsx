@@ -1,5 +1,4 @@
-import React, { useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import React from 'react';
 import {
   Maximize2,
   FolderOpen,
@@ -8,6 +7,12 @@ import {
   Trash2
 } from 'lucide-react';
 import { MapVariantItem } from '../../store/variantStore';
+import {
+  ContextMenu,
+  ContextMenuHeader,
+  ContextMenuItem,
+  ContextMenuSeparator
+} from '../UI';
 
 export interface MapVariantContextMenuProps {
   x: number;
@@ -29,132 +34,60 @@ export const MapVariantContextMenu: React.FC<MapVariantContextMenuProps> = ({
   isOpen,
   onClose,
   variant,
-  isActive: _isActive,
   onOpenLightbox,
   onPickReplace,
   onConvertToWebp,
   onStartRename,
   onDelete
 }) => {
-  const menuRef = useRef<HTMLDivElement>(null);
   const isWebp = (variant.fileName || variant.filePath || '').toLowerCase().endsWith('.webp');
 
-  useEffect(() => {
-    if (!isOpen) return;
+  return (
+    <ContextMenu isOpen={isOpen} position={{ x, y }} onClose={onClose}>
+      <ContextMenuHeader>
+        {variant.name || variant.fileName || 'Variante de textura'}
+      </ContextMenuHeader>
 
-    const handleMouseDown = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const menuWidth = 230;
-  const menuHeight = isWebp ? 160 : 195;
-  const clampedX = Math.max(8, Math.min(window.innerWidth - menuWidth - 8, x));
-  const clampedY = Math.max(8, Math.min(window.innerHeight - menuHeight - 8, y));
-
-  return createPortal(
-    <div
-      ref={menuRef}
-      onContextMenu={(e) => e.preventDefault()}
-      onClick={(e) => e.stopPropagation()}
-      style={{
-        position: 'fixed',
-        top: `${clampedY}px`,
-        left: `${clampedX}px`
-      }}
-      className="w-56 rounded-xs bg-surface-lowest border border-hairline shadow-2xl p-1 z-50 flex flex-col gap-0.5 text-xs text-ink-primary select-none animate-in fade-in zoom-in-95 duration-75 font-body"
-    >
-      {/* Header with Variant Name */}
-      <div className="px-2 py-1 border-b border-hairline mb-0.5">
-        <p className="font-mono text-[10px] font-semibold text-ink-tertiary truncate uppercase tracking-wider">
-          {variant.name || variant.fileName || 'Variante de textura'}
-        </p>
-      </div>
-
-      {/* Action: Open Lightbox / Inspect Texture */}
-      <button
-        onClick={() => {
-          onClose();
-          onOpenLightbox();
-        }}
-        className="w-full px-2 py-1.5 rounded-xs hover:bg-surface-container flex items-center justify-between text-left cursor-pointer transition-colors"
+      <ContextMenuItem
+        icon={<Maximize2 className="w-3.5 h-3.5 text-action" />}
+        shortcut="Zoom"
+        onClick={onOpenLightbox}
       >
-        <div className="flex items-center gap-2">
-          <Maximize2 className="w-3.5 h-3.5 text-action" />
-          <span>Inspeccionar textura</span>
-        </div>
-        <span className="text-[10px] font-mono text-ink-tertiary">Zoom</span>
-      </button>
+        Inspeccionar textura
+      </ContextMenuItem>
 
-      {/* Action: Replace Texture */}
-      <button
-        onClick={() => {
-          onClose();
-          onPickReplace();
-        }}
-        className="w-full px-2 py-1.5 rounded-xs hover:bg-surface-container flex items-center gap-2 text-left cursor-pointer transition-colors"
+      <ContextMenuItem
+        icon={<FolderOpen className="w-3.5 h-3.5 text-ink-secondary" />}
+        onClick={onPickReplace}
       >
-        <FolderOpen className="w-3.5 h-3.5 text-ink-secondary" />
-        <span>Reemplazar archivo...</span>
-      </button>
+        Reemplazar archivo...
+      </ContextMenuItem>
 
-      {/* Action: Convert to WebP (if not already WebP) */}
       {!isWebp && onConvertToWebp && (
-        <button
-          onClick={() => {
-            onClose();
-            onConvertToWebp();
-          }}
-          className="w-full px-2 py-1.5 rounded-xs hover:bg-surface-container flex items-center gap-2 text-left cursor-pointer transition-colors"
+        <ContextMenuItem
+          icon={<ImageIcon className="w-3.5 h-3.5 text-action" />}
+          onClick={onConvertToWebp}
         >
-          <ImageIcon className="w-3.5 h-3.5 text-action" />
-          <span>Optimizar a WebP...</span>
-        </button>
+          Optimizar a WebP...
+        </ContextMenuItem>
       )}
 
-      {/* Action: Rename */}
-      <button
-        onClick={() => {
-          onClose();
-          onStartRename();
-        }}
-        className="w-full px-2 py-1.5 rounded-xs hover:bg-surface-container flex items-center gap-2 text-left cursor-pointer transition-colors"
+      <ContextMenuItem
+        icon={<Edit2 className="w-3.5 h-3.5 text-ink-secondary" />}
+        onClick={onStartRename}
       >
-        <Edit2 className="w-3.5 h-3.5 text-ink-secondary" />
-        <span>Renombrar</span>
-      </button>
+        Renombrar
+      </ContextMenuItem>
 
-      <div className="my-1 border-t border-hairline" />
+      <ContextMenuSeparator />
 
-      {/* Action: Delete Variant */}
-      <button
-        onClick={() => {
-          onClose();
-          onDelete();
-        }}
-        className="w-full px-2 py-1.5 rounded-xs hover:bg-rose-500/10 flex items-center gap-2 text-left cursor-pointer transition-colors text-rose-600 dark:text-rose-400"
+      <ContextMenuItem
+        icon={<Trash2 className="w-3.5 h-3.5" />}
+        danger
+        onClick={onDelete}
       >
-        <Trash2 className="w-3.5 h-3.5" />
-        <span>Eliminar variante</span>
-      </button>
-    </div>,
-    document.body
+        Eliminar variante
+      </ContextMenuItem>
+    </ContextMenu>
   );
 };

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Download, FileArchive, Smartphone, Loader2 } from 'lucide-react';
+import { Download, FileArchive, Smartphone } from 'lucide-react';
 import { exportModelToGLB, exportModelToUSDZ } from '../../utils/viewportBridge';
 import { createSeraPackageZip } from '../../utils/seraPackageExporter';
+import { Button } from '../UI/Button';
 
 export interface GlbExportPanelProps {
   productId: string;
@@ -137,23 +138,17 @@ export const GlbExportPanel: React.FC<GlbExportPanelProps> = ({
           </label>
         </div>
 
-        <button
+        <Button
+          variant="primary"
+          size="md"
+          className="w-full"
           onClick={handleExportSeraZip}
           disabled={isBusy}
-          className="w-full py-2.5 px-3 rounded-xs bg-action hover:bg-action-hover text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors disabled:opacity-50 shadow-xs uppercase tracking-wider cursor-pointer"
+          isLoading={isExportingZip}
+          icon={!isExportingZip ? <FileArchive className="w-3.5 h-3.5" /> : undefined}
         >
-          {isExportingZip ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>{progressStatus || 'Empaquetando...'}</span>
-            </>
-          ) : (
-            <>
-              <FileArchive className="w-3.5 h-3.5" />
-              <span>Exportar Paquete Sera (.ZIP)</span>
-            </>
-          )}
-        </button>
+          {isExportingZip ? (progressStatus || 'Empaquetando...') : 'Exportar Paquete Sera (.ZIP)'}
+        </Button>
 
         <div className="text-[10px] text-ink-tertiary font-mono leading-normal">
           Estructura: <code className="text-action font-semibold">geometry.glb</code> (limpio 1:1) + <code className="text-action font-semibold">model-3d.json</code> + <code className="text-action font-semibold">maps/</code> (fidelidad intacta) {includeUsdz && '+ model.usdz'}
@@ -166,33 +161,31 @@ export const GlbExportPanel: React.FC<GlbExportPanelProps> = ({
           Exportaciones Individuales (Standalone)
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
+            className="w-full"
             onClick={handleExportGLB}
             disabled={isBusy}
-            className="py-2 px-2.5 rounded-xs bg-surface-container hover:bg-surface-high border border-hairline text-ink-primary font-medium text-xs flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shadow-xs uppercase tracking-wider cursor-pointer"
+            isLoading={isExportingGlb}
+            icon={!isExportingGlb ? <Download className="w-3.5 h-3.5 text-action" /> : undefined}
             title="Hornea geometrías con texturas embebidas para Three.js o Blender"
           >
-            {isExportingGlb ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-action" />
-            ) : (
-              <Download className="w-3.5 h-3.5 text-action" />
-            )}
-            <span>{isExportingGlb ? 'Horneando...' : 'Hornear .GLB'}</span>
-          </button>
+            {isExportingGlb ? 'Horneando...' : 'Hornear .GLB'}
+          </Button>
 
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
+            className="w-full"
             onClick={handleExportUSDZ}
             disabled={isBusy}
-            className="py-2 px-2.5 rounded-xs bg-surface-container hover:bg-surface-high border border-hairline text-ink-primary font-medium text-xs flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 shadow-xs uppercase tracking-wider cursor-pointer"
+            isLoading={isExportingUsdz}
+            icon={!isExportingUsdz ? <Smartphone className="w-3.5 h-3.5 text-action" /> : undefined}
             title="Modelo para Realidad Aumentada en iPhone / iPad (Apple Quick Look)"
           >
-            {isExportingUsdz ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-action" />
-            ) : (
-              <Smartphone className="w-3.5 h-3.5 text-action" />
-            )}
-            <span>{isExportingUsdz ? 'Generando...' : 'Exportar .USDZ'}</span>
-          </button>
+            {isExportingUsdz ? 'Generando...' : 'Exportar .USDZ'}
+          </Button>
         </div>
       </div>
     </div>

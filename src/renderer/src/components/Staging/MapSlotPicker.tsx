@@ -6,7 +6,7 @@ import { WebpConvertModal } from './WebpConvertModal';
 import { ImageLightboxModal } from '../UI/ImageLightboxModal';
 import { autoSaveActiveEntry } from '../../utils/libraryBridge';
 import { invalidateTexture } from '../../utils/pbrController';
-import { getNextSlotTargetType, getNextBaseColorTargetType } from './mapSlotNaming';
+import { getNextSlotTargetType, getNextBaseColorTargetType } from '../../utils/mapSlotNaming';
 import { MapVariantRowItem, MapVariantRowItemProps } from './MapVariantRowItem';
 import { MapSlotDropZone } from './MapSlotDropZone';
 import { MapSlotDeleteModal, MapSlotDeleteCandidate } from './MapSlotDeleteModal';

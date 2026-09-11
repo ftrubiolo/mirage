@@ -1,6 +1,7 @@
 import React from 'react';
 import { Cpu, CheckCircle2, AlertTriangle, Layers, ShieldCheck } from 'lucide-react';
 import { useModelStore } from '../../store/modelStore';
+import { EmptyState, Badge } from '../UI';
 
 export const PerformanceAudit: React.FC = () => {
   const modelStats = useModelStore((state) => state.modelStats);
@@ -8,9 +9,11 @@ export const PerformanceAudit: React.FC = () => {
 
   if (!modelStats) {
     return (
-      <div className="p-4 rounded-xs bg-surface-lowest border border-hairline text-center text-xs text-ink-tertiary">
-        Carga un modelo .glb para auditar el rendimiento y carga poligonal.
-      </div>
+      <EmptyState
+        icon={<Cpu className="w-6 h-6" />}
+        title="Auditoría de Rendimiento"
+        description="Carga un modelo .glb para auditar el rendimiento y carga poligonal."
+      />
     );
   }
 
@@ -108,12 +111,12 @@ export const PerformanceAudit: React.FC = () => {
         </span>
         <div className="flex flex-wrap gap-1">
           {materials.map((m, idx) => (
-            <span
+            <Badge
               key={idx}
-              className="text-[10px] font-mono tabular-nums px-2 py-0.5 rounded-xs bg-surface-low text-ink-secondary border border-hairline"
+              variant="neutral"
             >
               {m}
-            </span>
+            </Badge>
           ))}
         </div>
       </div>

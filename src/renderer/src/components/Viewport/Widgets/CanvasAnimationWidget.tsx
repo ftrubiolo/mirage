@@ -102,9 +102,14 @@ export const CanvasAnimationWidget: React.FC = () => {
           max={duration || 1}
           step={0.01}
           value={currentTime}
-          onMouseDown={() => setIsScrubbing(true)}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            setIsScrubbing(true);
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
           onMouseUp={() => setIsScrubbing(false)}
           onChange={handleSliderChange}
+          data-interactive="true"
           className="w-full h-1.5 bg-surface-high rounded-none appearance-none cursor-pointer accent-action"
         />
       </div>

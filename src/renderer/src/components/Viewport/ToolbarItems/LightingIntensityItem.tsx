@@ -18,7 +18,10 @@ export const LightingIntensityItem: React.FC = () => {
         max="2.5"
         step="0.1"
         value={environmentIntensity}
+        onMouseDown={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
         onChange={(e) => setEnvironmentIntensity(parseFloat(e.target.value))}
+        data-interactive="true"
         className="w-14 sm:w-16 h-1 bg-surface-container rounded-none appearance-none cursor-pointer accent-action"
       />
       <span className="font-mono text-[10px] tabular-nums text-ink-tertiary w-7 shrink-0 text-right">

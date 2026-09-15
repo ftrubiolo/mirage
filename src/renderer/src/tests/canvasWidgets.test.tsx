@@ -8,6 +8,11 @@ import { Canvas3D } from '../components/Viewport/Canvas3D';
 import { CanvasAnimationWidget } from '../components/Viewport/Widgets/CanvasAnimationWidget';
 import { CanvasMetrologyWidget } from '../components/Viewport/Widgets/CanvasMetrologyWidget';
 import { CanvasVariantWidget } from '../components/Viewport/Widgets/CanvasVariantWidget';
+import { CanvasTransformWidget } from '../components/Viewport/Widgets/CanvasTransformWidget';
+import { CanvasLightingWidget } from '../components/Viewport/Widgets/CanvasLightingWidget';
+import { CanvasEnvironmentWidget } from '../components/Viewport/Widgets/CanvasEnvironmentWidget';
+import { CanvasCameraWidget } from '../components/Viewport/Widgets/CanvasCameraWidget';
+import { CanvasChannelWidget } from '../components/Viewport/Widgets/CanvasChannelWidget';
 import { CanvasWidgetContainer } from '../components/Viewport/Widgets/CanvasWidgetContainer';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -191,7 +196,6 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         triangleCount: 14200,
         vertexCount: 8500,
         meshCount: 4,
-        materialCount: 2,
         dimensions: { width: 1.5, height: 2.0, depth: 0.8 },
         materials: ['Wood', 'Metal']
       });
@@ -252,6 +256,213 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
 
       expect(useViewportStore.getState().canvasWidgets).toEqual([]);
       expect(useViewportStore.getState().statusBarItems).toContain('model-stats');
+    });
+
+    it('renders CanvasTransformWidget with gizmo mode buttons and coordinate display', () => {
+      act(() => {
+        root.render(
+          <CanvasWidgetContainer id="transform-gizmo" title="Manipulación 3D" x={50} y={50}>
+            <CanvasTransformWidget />
+          </CanvasWidgetContainer>
+        );
+      });
+
+      expect(container.textContent).toContain('Cursor');
+      expect(container.textContent).toContain('Mover');
+      expect(container.textContent).toContain('Rotar');
+      expect(container.textContent).toContain('Posición (X, Y, Z)');
+      expect(container.textContent).toContain('Alinear base al piso');
+    });
+
+    it('renders CanvasLightingWidget with presets and intensity slider', () => {
+      act(() => {
+        root.render(
+          <CanvasWidgetContainer id="lighting-intensity" title="Estudio de Iluminación" x={50} y={50}>
+            <CanvasLightingWidget />
+          </CanvasWidgetContainer>
+        );
+      });
+
+      expect(container.textContent).toContain('Estudio');
+      expect(container.textContent).toContain('Natural');
+      expect(container.textContent).toContain('Dramático');
+      expect(container.textContent).toContain('Intensidad de Entorno');
+      expect(container.textContent).toContain('Sombras de Contacto');
+    });
+
+    it('renders CanvasEnvironmentWidget with presets and background toggle', () => {
+      act(() => {
+        root.render(
+          <CanvasWidgetContainer id="environment-hdri" title="Entornos HDRI" x={50} y={50}>
+            <CanvasEnvironmentWidget />
+          </CanvasWidgetContainer>
+        );
+      });
+
+      expect(container.textContent).toContain('Mostrar cielo/fondo 3D');
+      expect(container.textContent).toContain('Ciudad');
+      expect(container.textContent).toContain('Almacén');
+    });
+
+    it('renders CanvasCameraWidget with CAD orientation buttons and FOV', () => {
+      act(() => {
+        root.render(
+          <CanvasWidgetContainer id="camera-orientation" title="Cámara & Vistas CAD" x={50} y={50}>
+            <CanvasCameraWidget />
+          </CanvasWidgetContainer>
+        );
+      });
+
+      expect(container.textContent).toContain('Perspectiva');
+      expect(container.textContent).toContain('Encuadrar');
+      expect(container.textContent).toContain('Orientaciones Estándar CAD');
+      expect(container.textContent).toContain('ISO');
+    });
+
+    it('renders CanvasChannelWidget with PBR diagnostic channel buttons', () => {
+      act(() => {
+        root.render(
+          <CanvasWidgetContainer id="channel-dropdown" title="Diagnóstico de Canales PBR" x={50} y={50}>
+            <CanvasChannelWidget />
+          </CanvasWidgetContainer>
+        );
+      });
+
+      expect(container.textContent).toContain('PBR Completo');
+      expect(container.textContent).toContain('Albedo (Color)');
+      expect(container.textContent).toContain('Normales');
+      expect(container.textContent).toContain('Malla Alámbrica');
+    });
+  });
+
+  describe('Edge Snapping and Docking Mechanics', () => {
+    it('snaps to edge when pointer drag is within threshold and allows edge sliding', () => {
+      useViewportStore.getState().addCanvasWidget('model-stats', 100, 100);
+
+      act(() => {
+        root.render(
+          <CanvasWidgetContainer
+            id="model-stats"
+            title="Metrología Geométrica"
+            x={100}
+            y={100}
+            containerBounds={{ width: 800, height: 600 }}
+          >
+            <CanvasMetrologyWidget />
+          </CanvasWidgetContainer>
+        );
+      });
+
+      const handle = container.querySelector('.cursor-grab') as HTMLDivElement;
+      expect(handle).toBeTruthy();
+
+      // Start drag at x: 100, y: 100
+      act(() => {
+        handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100 }));
+      });
+
+      // Move within snap threshold of left edge (x=10, which is < 20px threshold)
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointermove', { clientX: 10, clientY: 250 }));
+      });
+
+      // Should snap flush to x=0, while y slides to 250
+      const card = container.querySelector('[data-canvas-widget="model-stats"]') as HTMLDivElement;
+      expect(card.style.transform).toBe('translate3d(0px, 250px, 0)');
+
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointerup', { clientX: 10, clientY: 250 }));
+      });
+
+      expect(useViewportStore.getState().canvasWidgets[0]).toEqual({
+        id: 'model-stats',
+        x: 0,
+        y: 250
+      });
+    });
+
+    it('docks to top toolbar when pointer is dragged to screen top (y <= 52)', () => {
+      useViewportStore.getState().addCanvasWidget('model-stats', 200, 200);
+
+      act(() => {
+        root.render(
+          <CanvasWidgetContainer
+            id="model-stats"
+            title="Metrología Geométrica"
+            x={200}
+            y={200}
+            containerBounds={{ width: 800, height: 600 }}
+          >
+            <CanvasMetrologyWidget />
+          </CanvasWidgetContainer>
+        );
+      });
+
+      const handle = container.querySelector('.cursor-grab') as HTMLDivElement;
+
+      // Start drag
+      act(() => {
+        handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 200, clientY: 200 }));
+      });
+
+      // Drag up to top toolbar zone (clientY = 30 <= 52)
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointermove', { clientX: 200, clientY: 30 }));
+      });
+
+      // Banner should show docking feedback
+      expect(container.textContent).toContain('Soltar para anclar a la barra superior');
+
+      // Release pointer
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointerup', { clientX: 200, clientY: 30 }));
+      });
+
+      // Widget should be docked into toolbar and removed from canvasWidgets
+      expect(useViewportStore.getState().canvasWidgets).toEqual([]);
+      expect(useViewportStore.getState().toolbarItems).toContain('model-stats');
+    });
+
+    it('docks to bottom statusbar when pointer is dragged to bottom screen area', () => {
+      useViewportStore.getState().addCanvasWidget('animation-controls', 200, 200);
+
+      act(() => {
+        root.render(
+          <CanvasWidgetContainer
+            id="animation-controls"
+            title="Estudio de Animación"
+            x={200}
+            y={200}
+            containerBounds={{ width: 800, height: 600 }}
+          >
+            <CanvasAnimationWidget />
+          </CanvasWidgetContainer>
+        );
+      });
+
+      const handle = container.querySelector('.cursor-grab') as HTMLDivElement;
+
+      // Start drag
+      act(() => {
+        handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 200, clientY: 200 }));
+      });
+
+      // Drag to bottom statusbar zone (rawY > maxH + 15)
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointermove', { clientX: 200, clientY: window.innerHeight - 30 }));
+      });
+
+      // Banner should show docking feedback
+      expect(container.textContent).toContain('Soltar para anclar a la barra de estado');
+
+      // Release pointer
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointerup', { clientX: 200, clientY: window.innerHeight - 30 }));
+      });
+
+      // Widget should be docked into statusbar and removed from canvasWidgets
+      expect(useViewportStore.getState().canvasWidgets).toEqual([]);
+      expect(useViewportStore.getState().statusBarItems).toContain('animation-controls');
     });
   });
 });

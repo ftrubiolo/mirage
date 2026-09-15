@@ -3,6 +3,11 @@ import { CanvasWidgetContainer } from './CanvasWidgetContainer';
 import { CanvasAnimationWidget } from './CanvasAnimationWidget';
 import { CanvasMetrologyWidget } from './CanvasMetrologyWidget';
 import { CanvasVariantWidget } from './CanvasVariantWidget';
+import { CanvasTransformWidget } from './CanvasTransformWidget';
+import { CanvasLightingWidget } from './CanvasLightingWidget';
+import { CanvasEnvironmentWidget } from './CanvasEnvironmentWidget';
+import { CanvasCameraWidget } from './CanvasCameraWidget';
+import { CanvasChannelWidget } from './CanvasChannelWidget';
 import { TOOLBAR_ITEM_NAMES, StandardToolbarItemId } from '../ToolbarItems/types';
 
 interface CanvasWidgetRendererProps {
@@ -57,6 +62,71 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
           containerBounds={containerBounds}
         >
           <CanvasVariantWidget />
+        </CanvasWidgetContainer>
+      );
+
+    case 'transform-gizmo':
+      return (
+        <CanvasWidgetContainer
+          id={id}
+          title="Manipulación 3D"
+          x={x}
+          y={y}
+          containerBounds={containerBounds}
+        >
+          <CanvasTransformWidget />
+        </CanvasWidgetContainer>
+      );
+
+    case 'lighting-intensity':
+      return (
+        <CanvasWidgetContainer
+          id={id}
+          title="Estudio de Iluminación"
+          x={x}
+          y={y}
+          containerBounds={containerBounds}
+        >
+          <CanvasLightingWidget />
+        </CanvasWidgetContainer>
+      );
+
+    case 'environment-hdri':
+      return (
+        <CanvasWidgetContainer
+          id={id}
+          title="Entornos HDRI"
+          x={x}
+          y={y}
+          containerBounds={containerBounds}
+        >
+          <CanvasEnvironmentWidget />
+        </CanvasWidgetContainer>
+      );
+
+    case 'camera-orientation':
+      return (
+        <CanvasWidgetContainer
+          id={id}
+          title="Cámara & Vistas CAD"
+          x={x}
+          y={y}
+          containerBounds={containerBounds}
+        >
+          <CanvasCameraWidget />
+        </CanvasWidgetContainer>
+      );
+
+    case 'channel-dropdown':
+      return (
+        <CanvasWidgetContainer
+          id={id}
+          title="Diagnóstico de Canales PBR"
+          x={x}
+          y={y}
+          containerBounds={containerBounds}
+        >
+          <CanvasChannelWidget />
         </CanvasWidgetContainer>
       );
 

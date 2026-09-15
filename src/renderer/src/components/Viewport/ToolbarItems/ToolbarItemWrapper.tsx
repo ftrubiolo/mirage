@@ -20,15 +20,30 @@ export const ToolbarItemWrapper: React.FC<ToolbarItemWrapperProps> = ({
   const moveBarItem = useViewportStore((s) => s.moveBarItem);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [canDrag, setCanDrag] = useState(true);
   const [dropIndicator, setDropIndicator] = useState<'before' | 'after' | null>(null);
   const dropPositionRef = useRef<'before' | 'after'>('before');
 
   const isSpacer = isToolbarSpacer(itemId);
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    // Prevent dragging if interactive input is being manipulated
+  const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.tagName === 'INPUT' || target.tagName === 'SELECT') {
+    // Don't drag if clicking interactive inputs, sliders, selects, or interactive controls
+    if (target.closest('input, button, select, [data-interactive="true"]')) {
+      setCanDrag(false);
+    } else {
+      setCanDrag(true);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setCanDrag(true);
+  };
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    // Extra safety guard: never drag if target is an interactive input
+    const target = e.target as HTMLElement;
+    if (target.closest('input, button, select, [data-interactive="true"]')) {
       e.preventDefault();
       return;
     }
@@ -37,32 +52,29 @@ export const ToolbarItemWrapper: React.FC<ToolbarItemWrapperProps> = ({
     e.dataTransfer.setData('application/x-mirage-bar', bar);
     e.dataTransfer.effectAllowed = 'move';
 
-    // Custom high-fidelity drag badge (avoids ugly browser OS snapshots)
+    // High-fidelity drag preview: clone the actual component element so the user sees the real widget
     try {
-      if (typeof document !== 'undefined' && e.dataTransfer.setDragImage) {
-        const itemName = (TOOLBAR_ITEM_NAMES as any)[itemId] || itemId;
-        const badge = document.createElement('div');
-        badge.style.position = 'fixed';
-        badge.style.top = '-1000px';
-        badge.style.left = '-1000px';
-        badge.style.pointerEvents = 'none';
-        badge.style.padding = '4px 10px';
-        badge.style.borderRadius = '2px';
-        badge.style.backgroundColor = '#181816';
-        badge.style.border = '1px solid #d94e34';
-        badge.style.color = '#ffffff';
-        badge.style.fontFamily = 'monospace';
-        badge.style.fontSize = '11px';
-        badge.style.fontWeight = 'bold';
-        badge.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.5)';
-        badge.style.display = 'flex';
-        badge.style.alignItems = 'center';
-        badge.style.gap = '6px';
-        badge.style.zIndex = '9999';
-        badge.innerText = `⋮⋮ ${itemName}`;
-        document.body.appendChild(badge);
-        e.dataTransfer.setDragImage(badge, 40, 12);
-        setTimeout(() => badge.remove(), 0);
+      if (typeof document !== 'undefined' && e.dataTransfer.setDragImage && e.currentTarget) {
+        const clone = e.currentTarget.cloneNode(true) as HTMLElement;
+        clone.querySelectorAll('[data-drop-indicator]').forEach((el) => el.remove());
+        clone.style.position = 'fixed';
+        clone.style.top = '-9999px';
+        clone.style.left = '-9999px';
+        clone.style.pointerEvents = 'none';
+        clone.style.zIndex = '999999';
+        clone.style.opacity = '0.94';
+        clone.style.transform = 'none';
+        clone.style.transition = 'none';
+        clone.style.boxShadow = '0 10px 30px rgba(0,0,0,0.6), 0 0 0 1px #d94e34';
+        clone.style.borderRadius = '2px';
+        clone.style.backgroundColor = '#181816';
+        document.body.appendChild(clone);
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        const offsetX = Math.max(12, Math.min(rect.width - 12, e.clientX - rect.left));
+        const offsetY = Math.max(8, Math.min(rect.height - 8, e.clientY - rect.top));
+        e.dataTransfer.setDragImage(clone, offsetX, offsetY);
+        setTimeout(() => clone.remove(), 0);
       }
     } catch {
       // Ignore if setDragImage is unsupported or running in headless test
@@ -113,7 +125,9 @@ export const ToolbarItemWrapper: React.FC<ToolbarItemWrapperProps> = ({
 
   return (
     <div
-      draggable
+      draggable={canDrag}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -129,10 +143,10 @@ export const ToolbarItemWrapper: React.FC<ToolbarItemWrapperProps> = ({
     >
       {/* Visual Drop Indicators */}
       {dropIndicator === 'before' && (
-        <div className="absolute -left-0.5 top-1 bottom-1 w-0.5 bg-action rounded-xs z-40 pointer-events-none animate-in fade-in duration-75" />
+        <div data-drop-indicator="before" className="absolute -left-0.5 top-1 bottom-1 w-0.5 bg-action rounded-xs z-40 pointer-events-none animate-in fade-in duration-75" />
       )}
       {dropIndicator === 'after' && (
-        <div className="absolute -right-0.5 top-1 bottom-1 w-0.5 bg-action rounded-xs z-40 pointer-events-none animate-in fade-in duration-75" />
+        <div data-drop-indicator="after" className="absolute -right-0.5 top-1 bottom-1 w-0.5 bg-action rounded-xs z-40 pointer-events-none animate-in fade-in duration-75" />
       )}
 
       {children}

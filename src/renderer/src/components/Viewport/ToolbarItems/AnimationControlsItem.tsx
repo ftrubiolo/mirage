@@ -135,9 +135,14 @@ export const AnimationControlsItem: React.FC<AnimationControlsItemProps> = ({
               max={duration || 1}
               step={0.01}
               value={currentTime}
-              onMouseDown={() => setIsScrubbing(true)}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                setIsScrubbing(true);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
               onMouseUp={() => setIsScrubbing(false)}
               onChange={handleSliderChange}
+              data-interactive="true"
               className="w-20 md:w-28 h-1 bg-surface-high rounded-none appearance-none cursor-pointer accent-action"
             />
             <span className="font-mono text-[11px] tabular-nums text-ink-secondary whitespace-nowrap min-w-[72px]">

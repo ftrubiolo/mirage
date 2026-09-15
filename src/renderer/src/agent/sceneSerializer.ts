@@ -15,6 +15,7 @@ export interface SceneContextSnapshot {
   meshCount: number;
   dimensions: { width: number; height: number; depth: number } | null;
   unitType: string;
+  modelRotation: { x: number; y: number; z: number };
   activeVariantName: string;
   activeColorwayName: string | null;
   debugChannel: string;
@@ -50,6 +51,7 @@ export function extractSceneSnapshot(): SceneContextSnapshot {
     meshCount: model.modelStats?.meshCount ?? 0,
     dimensions: model.modelStats?.dimensions ?? null,
     unitType: model.unitType,
+    modelRotation: model.modelRotation,
     activeVariantName: activeVariant?.name || 'Default',
     activeColorwayName: activeColorway?.name || null,
     debugChannel: pbr.debugChannel,
@@ -86,6 +88,7 @@ export function serializeSceneForPrompt(): string {
   return `
 [ESTADO ACTUAL DEL TALLER 3D (MIRAGE ATELIER)]
 - Pieza Activa: "${s.modelName}" | Variante Activa: "${s.activeVariantName}"
+- Orientación 3D: [X: ${s.modelRotation.x}°, Y: ${s.modelRotation.y}°, Z: ${s.modelRotation.z}°]
 - Metrología: ${s.triangleCount.toLocaleString()} triángulos, ${s.vertexCount.toLocaleString()} vértices, ${s.meshCount} mallas.
 - Dimensiones Reales: ${dimStr}
 - Pase de Render / Depuración: ${s.debugChannel.toUpperCase()} | Entorno HDR: ${s.environmentPreset}

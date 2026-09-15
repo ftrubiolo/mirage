@@ -11,6 +11,7 @@ import {
   isMaterialParameter,
   SetPbrPropertyCommand,
   SetEnvironmentPresetCommand,
+  SetModelRotationCommand,
   ToggleSlotEnabledCommand,
   TransactionCommand
 } from '../utils/commandManager';
@@ -230,6 +231,48 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
       return {
         summary: `Preset "${preset.name}" aplicado correctamente.`,
         diff
+      };
+    }
+  },
+  {
+    name: 'rotate_model',
+    description: 'Rota el modelo 3D en el visor sobre uno o más ejes (X, Y, Z) en grados para corregir su orientación o encarar el frente. Ejemplo: 90° en X para modelos Z-Up invertidos.',
+    parameters: {
+      type: 'object',
+      properties: {
+        axis: {
+          type: 'string',
+          enum: ['x', 'y', 'z'],
+          description: 'Eje sobre el cual rotar el modelo'
+        },
+        degrees: {
+          type: 'number',
+          description: 'Ángulo en grados a incrementar (ej: 90, -90, 180)'
+        }
+      },
+      required: ['axis', 'degrees']
+    },
+    execute: async ({ axis, degrees }: { axis: string; degrees: number }) => {
+      const current = useModelStore.getState().modelRotation;
+      const normalizedAxis = (axis || 'x').toLowerCase() as 'x' | 'y' | 'z';
+      const delta = Number(degrees) || 0;
+      const nextRotation = {
+        ...current,
+        [normalizedAxis]: ((current[normalizedAxis] + delta) % 360 + 360) % 360
+      };
+
+      const cmd = new SetModelRotationCommand(nextRotation);
+      await commandManager.execute(cmd);
+
+      return {
+        summary: `Rotado el modelo ${delta}° en el eje ${normalizedAxis.toUpperCase()} (Orientación: [${nextRotation.x}°, ${nextRotation.y}°, ${nextRotation.z}°]).`,
+        diff: [
+          {
+            property: `rotation.${normalizedAxis}`,
+            before: `${current[normalizedAxis]}°`,
+            after: `${nextRotation[normalizedAxis]}°`
+          }
+        ]
       };
     }
   }

@@ -86,7 +86,7 @@
 - **High-Res Poster Capture**: Generate preview images and thumbnails at preset or square resolutions, with optional transparent background, saved as WebP or PNG.
 - **Standalone GLB Export**: Bake geometry and textures into a single `.glb` for Three.js, Blender, or any glTF viewer.
 - **USDZ Export**: Generate Apple AR Quick Look models for iPhone and iPad.
-- **Web Export Package**: A single ZIP built with JSZip containing `geometry.glb` (clean 1:1 geometry), `maps/` (per-variant textures), `model-3d.json` (variant/material manifest), and optionally `model.usdz`.
+- **Web Export Package**: A single ZIP built with JSZip containing `geometry.glb` (clean 1:1 geometry), `maps/` (per-variant textures), `model-3d.json` (variant/material manifest), and `ar/` (per-variant baked GLB and USDZ models for mobile AR).
 
 ### 📐 Audits & Metrology
 - **Performance Audit**: Triangle, vertex, mesh, material, and file-size thresholds with pass/warn/fail verdicts for web delivery.

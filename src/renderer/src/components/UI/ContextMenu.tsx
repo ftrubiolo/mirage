@@ -2,6 +2,7 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useCallback
@@ -35,10 +36,15 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
   className = ''
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
+  const lastHeightRef = useRef<number>(240);
+  const [coords, setCoords] = useState<{ x: number; y: number } | null>(null);
 
   // Close on outside click or Escape
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      setCoords(null);
+      return;
+    }
 
     const handleMouseDown = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -60,11 +66,57 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     };
   }, [isOpen, onClose]);
 
+  // Dynamically compute exact position based on measured DOM dimensions before paint
+  useLayoutEffect(() => {
+    if (!isOpen || !position || !menuRef.current) return;
+
+    const rect = menuRef.current.getBoundingClientRect();
+    const menuWidth = rect.width || width;
+    const menuHeight = rect.height || lastHeightRef.current;
+    lastHeightRef.current = menuHeight;
+
+    // Horizontal: keep menu within window bounds
+    let x = position.x;
+    if (x + menuWidth > window.innerWidth - 8) {
+      x = Math.max(8, window.innerWidth - menuWidth - 8);
+    } else {
+      x = Math.max(8, x);
+    }
+
+    // Vertical: if opening downwards would overflow the screen (e.g. status bar at bottom),
+    // spawn UPWARDS so the bottom of the menu aligns right above the cursor/trigger.
+    let y = position.y;
+    if (y + menuHeight > window.innerHeight - 8) {
+      y = Math.max(8, position.y - menuHeight - 2);
+    } else {
+      y = Math.max(8, y);
+    }
+
+    if (menuRef.current) {
+      menuRef.current.style.left = `${x}px`;
+      menuRef.current.style.top = `${y}px`;
+    }
+
+    setCoords((prev) => {
+      if (prev && prev.x === x && prev.y === y) return prev;
+      return { x, y };
+    });
+  }, [isOpen, position, width, children]);
+
   if (!isOpen || !position) return null;
 
-  const estimatedHeight = 320;
-  const clampedX = Math.max(8, Math.min(window.innerWidth - width - 8, position.x));
-  const clampedY = Math.max(8, Math.min(window.innerHeight - estimatedHeight - 8, position.y));
+  // Immediate initial coords while measuring on first tick:
+  // Use identical overflow threshold (position.y + estimatedHeight > window.innerHeight - 8)
+  // so frame 0 and layout measurement never disagree on upward vs downward direction!
+  const estimatedHeight = menuRef.current?.offsetHeight || lastHeightRef.current || 240;
+  const initialX = Math.max(8, Math.min(window.innerWidth - width - 8, position.x));
+  const initialY =
+    position.y + estimatedHeight > window.innerHeight - 8
+      ? Math.max(8, position.y - estimatedHeight - 2)
+      : Math.max(8, position.y);
+
+  const clampedX = coords?.x ?? initialX;
+  const clampedY = coords?.y ?? initialY;
 
   return createPortal(
     <ContextMenuContext.Provider value={{ onClose, rootX: clampedX, rootY: clampedY }}>
@@ -78,7 +130,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
           top: `${clampedY}px`,
           width: `${width}px`
         }}
-        className={`z-50 rounded-xs bg-surface-lowest border border-hairline-strong shadow-2xl py-1 text-xs select-none animate-in fade-in zoom-in-95 duration-75 font-body text-ink-primary ${className}`}
+        className={`z-50 rounded-xs bg-surface-lowest border border-hairline-strong shadow-2xl py-1 text-xs select-none font-body text-ink-primary ${className}`}
       >
         {children}
       </div>
@@ -208,20 +260,38 @@ export const ContextMenuSub: React.FC<ContextMenuSubProps> = ({
   className = ''
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpwards, setOpenUpwards] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
+  const subMenuRef = useRef<HTMLDivElement>(null);
   const ctx = useContext(ContextMenuContext);
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (triggerRef.current) {
+      const triggerRect = triggerRef.current.getBoundingClientRect();
+      const estimatedSubHeight = 220;
+      setOpenUpwards(triggerRect.top + estimatedSubHeight > window.innerHeight - 8);
+    }
     setIsOpen(true);
   };
 
   const handleMouseLeave = () => {
     timeoutRef.current = setTimeout(() => {
       setIsOpen(false);
-    }, 150);
+    }, 10);
   };
+
+  useLayoutEffect(() => {
+    if (!isOpen || !subMenuRef.current || !triggerRef.current) return;
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const subRect = subMenuRef.current.getBoundingClientRect();
+    if (triggerRect.top + subRect.height > window.innerHeight - 8) {
+      setOpenUpwards(true);
+    } else {
+      setOpenUpwards(false);
+    }
+  }, [isOpen]);
 
   // Determine whether to open left or right based on window boundary
   const openLeft = useCallback(() => {
@@ -249,13 +319,16 @@ export const ContextMenuSub: React.FC<ContextMenuSubProps> = ({
 
       {isOpen && (
         <div
+          ref={subMenuRef}
           style={{
             position: 'absolute',
-            top: '-4px',
+            ...(openUpwards ? { bottom: '-4px' } : { top: '-4px' }),
             [openLeft() ? 'right' : 'left']: '100%',
-            width: `${width}px`
+            width: `${width}px`,
+            maxHeight: 'calc(100vh - 16px)',
+            overflowY: 'auto'
           }}
-          className="z-50 rounded-xs bg-surface-lowest border border-hairline-strong shadow-2xl py-1 text-xs select-none animate-in fade-in zoom-in-95 duration-75 font-body text-ink-primary"
+          className="z-50 rounded-xs bg-surface-lowest border border-hairline-strong shadow-2xl py-1 text-xs select-none font-body text-ink-primary"
         >
           {children}
         </div>

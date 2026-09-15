@@ -9,15 +9,28 @@ import {
   Copy,
   Trash2,
   Star,
-  Camera,
-  X
+  Camera
 } from 'lucide-react';
-import { useVariantStore } from '../../store/variantStore';
-import { captureViewportSnapshot } from '../../utils/viewportBridge';
-import { useAppStore } from '../../store/appStore';
-import { Switch, Modal, FormField, TextInput, Button } from '../UI';
+import { useVariantStore } from '../../../store/variantStore';
+import { useAppStore } from '../../../store/appStore';
+import { captureViewportSnapshot } from '../../../utils/viewportBridge';
+import {
+  Switch,
+  Modal,
+  FormField,
+  TextInput,
+  Button,
+  IconButton,
+  Badge
+} from '../../UI';
+import { useDropdownPlacement, getDropdownPlacementClass } from './useDropdownPlacement';
 
-export const VariantBottomToolbar: React.FC = () => {
+interface VariantPickerItemProps {
+  compact?: boolean;
+  iconOnly?: boolean;
+}
+
+export const VariantPickerItem: React.FC<VariantPickerItemProps> = ({ compact, iconOnly }) => {
   const variants = useVariantStore((state) => state.variants);
   const activeVariantId = useVariantStore((state) => state.activeVariantId);
   const selectVariant = useVariantStore((state) => state.selectVariant);
@@ -48,6 +61,7 @@ export const VariantBottomToolbar: React.FC = () => {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const activeVariant = variants.find((v) => v.id === activeVariantId) || variants[0];
+  const placement = useDropdownPlacement(containerRef, isDropdownOpen, 240);
 
   // Close dropdown and context menu on outside click
   useEffect(() => {
@@ -118,46 +132,42 @@ export const VariantBottomToolbar: React.FC = () => {
   };
 
   return (
-    <div ref={containerRef} className="absolute bottom-4 left-4 z-20 flex flex-col items-stretch select-none">
-      {/* Floating Main Pill */}
-      <div className="flex items-center justify-between gap-1 p-1 rounded-xs bg-surface-lowest border border-hairline shadow-lg backdrop-blur-xs min-w-[200px]">
-        {/* Variant Dropdown Toggle Button */}
-        <button
-          onClick={() => {
-            setIsDropdownOpen((prev) => !prev);
-            setMenuAnchor(null);
-          }}
-          className="flex-1 px-2.5 py-1.5 rounded-xs hover:bg-surface-container flex items-center justify-between gap-2 text-xs transition-colors cursor-pointer group min-w-0"
-          title="Seleccionar perfil de acabado"
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            <Layers className="w-3.5 h-3.5 text-action shrink-0" />
-            <span className="font-primary font-bold uppercase tracking-wider text-ink-primary truncate">
-              {activeVariant?.name || 'Default'}
-            </span>
-          </div>
-          <ChevronDown
-            className={`w-3 h-3 text-ink-tertiary transition-transform duration-150 group-hover:text-ink-primary shrink-0 ml-1.5 ${
-              isDropdownOpen ? 'rotate-180 text-action' : ''
-            }`}
-          />
-        </button>
+    <div className="relative inline-flex items-center gap-1" ref={containerRef}>
+      {/* Variant Dropdown Toggle Button */}
+      <button
+        onClick={() => {
+          setIsDropdownOpen((prev) => !prev);
+          setMenuAnchor(null);
+        }}
+        className="px-2 py-1 rounded-xs hover:bg-surface-container flex items-center gap-1.5 transition-colors cursor-pointer group min-w-0 border border-transparent hover:border-hairline"
+        title={`Seleccionar perfil de acabado: ${activeVariant?.name || 'Default'}`}
+      >
+        <Layers className="w-3.5 h-3.5 text-action shrink-0" />
+        {!compact && !iconOnly && (
+          <span className="font-primary font-bold uppercase tracking-wider text-ink-primary text-xs truncate max-w-[140px]">
+            {activeVariant?.name || 'Default'}
+          </span>
+        )}
+        <ChevronDown
+          className={`w-3 h-3 text-ink-tertiary transition-transform duration-150 group-hover:text-ink-primary shrink-0 ${
+            isDropdownOpen ? 'rotate-180 text-action' : ''
+          }`}
+        />
+      </button>
 
-        <div className="w-px h-4 bg-hairline mx-0.5 shrink-0" />
+      {/* Quick Add Variant Button (+) using IconButton UI */}
+      <IconButton
+        variant="ghost"
+        size="xs"
+        onClick={handleOpenCreateModal}
+        icon={<Plus className="w-3.5 h-3.5 stroke-[2.5]" />}
+        title="Crear nuevo perfil de acabado"
+        className="text-action hover:bg-action/10"
+      />
 
-        {/* Quick Add Variant Button (+) */}
-        <button
-          onClick={handleOpenCreateModal}
-          title="Crear nuevo perfil de acabado"
-          className="p-1.5 rounded-xs bg-action/10 hover:bg-action text-action hover:text-white transition-colors flex items-center justify-center cursor-pointer shadow-2xs shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-        </button>
-      </div>
-
-      {/* Variants Dropdown Menu (Matches Selector Width) */}
+      {/* Variants Dropdown Menu (Adaptive UP / DOWN via useDropdownPlacement) */}
       {isDropdownOpen && (
-        <div className="absolute bottom-full left-0 right-0 mb-1.5 rounded-xs bg-surface-lowest border border-hairline shadow-2xl p-1 z-30 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100">
+        <div className={`absolute ${getDropdownPlacementClass(placement)} w-60 rounded-xs bg-surface-lowest border border-hairline shadow-xl p-1 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100`}>
           <div className="px-2.5 py-1.5 text-[10px] font-primary font-bold text-ink-tertiary uppercase tracking-wider border-b border-hairline flex items-center justify-between">
             <span>Perfiles ({variants.length})</span>
           </div>
@@ -207,14 +217,14 @@ export const VariantBottomToolbar: React.FC = () => {
                           <Check className="w-3.5 h-3.5 text-action shrink-0" />
                         ) : (
                           <div className="w-3.5 h-3.5 shrink-0 flex items-center justify-center">
-                            <div className="w-1.5 h-1.5 rounded-full bg-ink-tertiary/40 group-hover:bg-ink-tertiary" />
+                            <div className="w-1.5 h-1.5 rounded-xs bg-ink-tertiary/40 group-hover:bg-ink-tertiary" />
                           </div>
                         )}
                         <span className="truncate font-medium">{v.name}</span>
                         {v.isDefault && (
-                          <span className="text-[9px] font-mono px-1 py-0.2 bg-amber-500/10 text-amber-600 border border-amber-500/20 rounded-xs shrink-0 font-bold">
+                          <Badge variant="neutral" size="xs" mono className="text-amber-600 bg-amber-500/10 border-amber-500/20">
                             ★
-                          </span>
+                          </Badge>
                         )}
                       </div>
                     </button>
@@ -335,7 +345,7 @@ export const VariantBottomToolbar: React.FC = () => {
         </div>
       )}
 
-      {/* Modal: Crear Nueva Variante */}
+      {/* Modal: Crear Nueva Variante (Using existing Modal UI) */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}

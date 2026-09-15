@@ -10,6 +10,9 @@ export type KeybindAction =
   | 'camera.back'
   | 'camera.reset'
   | 'camera.toggleOrthographic'
+  | 'gizmo.select'
+  | 'gizmo.translate'
+  | 'gizmo.rotate'
   | 'view.toggleGrid'
   | 'view.toggleDimensions'
   | 'view.toggleAutoRotate'
@@ -42,6 +45,9 @@ export const KEYBIND_DEFINITIONS: KeybindMeta[] = [
   { id: 'camera.toggleOrthographic', label: 'Proyección Ortográfica / Perspectiva', category: 'camera', desc: 'Alternar entre perspectiva y vista ortogonal' },
 
   // Visor y Taller
+  { id: 'gizmo.select', label: 'Modo Selección / Cursor', category: 'view', desc: 'Desactiva los controles de transformación 3D' },
+  { id: 'gizmo.translate', label: 'Desplazamiento 3D (Flechas)', category: 'view', desc: 'Activa las 3 flechas para mover la pieza en el visor' },
+  { id: 'gizmo.rotate', label: 'Rotación 3D (Aros)', category: 'view', desc: 'Activa los 3 aros para girar la orientación del modelo' },
   { id: 'view.toggleGrid', label: 'Grilla Milimétrica', category: 'view', desc: 'Alternar la cuadrícula de piso de referencia' },
   { id: 'view.toggleDimensions', label: 'Cotas y Dimensiones', category: 'view', desc: 'Mostrar cotas volumétricas en tiempo real' },
   { id: 'view.toggleAutoRotate', label: 'Rotación Automática', category: 'view', desc: 'Giro continuo suave del modelo' },
@@ -67,6 +73,9 @@ export const DEFAULT_KEYBINDS: Record<KeybindAction, string> = {
   'camera.back': 'Ctrl+1',
   'camera.reset': 'F',
   'camera.toggleOrthographic': '5',
+  'gizmo.select': 'Q',
+  'gizmo.translate': 'W',
+  'gizmo.rotate': 'E',
   'view.toggleGrid': 'G',
   'view.toggleDimensions': 'D',
   'view.toggleAutoRotate': 'Space',

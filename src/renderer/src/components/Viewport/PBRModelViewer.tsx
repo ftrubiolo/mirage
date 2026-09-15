@@ -1,14 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { useThree } from '@react-three/fiber';
-import { useModelStore } from '../../store/modelStore';
+import { TransformControls } from '@react-three/drei';
+import { useModelStore, normalizeDegrees } from '../../store/modelStore';
 import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
 import { useViewportStore } from '../../store/viewportStore';
 import { applyPbrTextures, applyPbrUniforms, captureOriginalMaterials, clearTextureCache } from '../../utils/pbrController';
-import { analyzeGlbHierarchy } from '../../utils/glbValidator';
+import { analyzeGlbHierarchy, extractGlbManifest } from '../../utils/glbValidator';
 import { viewportBridge } from '../../utils/viewportBridge';
+import { commandManager, SetModelPositionCommand, SetModelRotationCommand } from '../../utils/commandManager';
 
 // Shared singleton loaders to avoid repeatedly spawning workers and compiling WASM
 let sharedGltfLoader: GLTFLoader | null = null;
@@ -51,12 +53,59 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const rawSceneRef = useRef<THREE.Group | null>(null);
+  const pivotRef = useRef<THREE.Group>(null);
+  const modelGroupRef = useRef<THREE.Group>(null);
+  const [groundOffsetY, setGroundOffsetY] = useState(0);
+  const transformControlsRef = useRef<any>(null);
+  const dragStartPosition = useRef({ x: 0, y: 0, z: 0 });
+  const dragStartRotation = useRef({ x: 0, y: 0, z: 0 });
+  const isDraggingRef = useRef(false);
 
   const setModelStats = useModelStore((state) => state.setModelStats);
   const unitScale = useModelStore((state) => state.unitScale);
+  const modelPosition = useModelStore((state) => state.modelPosition);
+  const setPosition = useModelStore((state) => state.setPosition);
+  const modelRotation = useModelStore((state) => state.modelRotation);
+  const setRotation = useModelStore((state) => state.setRotation);
+  const updateOrientedDimensions = useModelStore((state) => state.updateOrientedDimensions);
   const setIsModelLoading = useModelStore((state) => state.setIsModelLoading);
 
-  const { showWireframe, resetCameraCounter } = useViewportStore();
+  const { showWireframe, resetCameraCounter, transformGizmoMode } = useViewportStore();
+
+  const updateGroundAndDimensions = useCallback(
+    (rot: { x: number; y: number; z: number }, scale: number) => {
+      const mg = modelGroupRef.current;
+      if (!mg) return;
+
+      // Position temporarily at 0 to measure pure rotated/scaled bounds around geometric center
+      mg.position.set(0, 0, 0);
+      mg.rotation.set(
+        THREE.MathUtils.degToRad(rot.x),
+        THREE.MathUtils.degToRad(rot.y),
+        THREE.MathUtils.degToRad(rot.z)
+      );
+      mg.scale.set(scale, scale, scale);
+      mg.updateMatrixWorld(true);
+
+      const box = new THREE.Box3().setFromObject(mg);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+
+      // Lift model so its lowest vertex rests on Y=0 (the floor)
+      const newGroundOffsetY = -box.min.y;
+      mg.position.set(0, newGroundOffsetY, 0);
+      mg.updateMatrixWorld(true);
+
+      setGroundOffsetY(newGroundOffsetY);
+
+      updateOrientedDimensions({
+        width: Number(size.x.toFixed(3)),
+        height: Number(size.y.toFixed(3)),
+        depth: Number(size.z.toFixed(3))
+      });
+    },
+    [updateOrientedDimensions]
+  );
 
   // Load Model
   useEffect(() => {
@@ -133,21 +182,38 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
             setModelStats(stats);
             console.log(`[PERF: 3D VIEWER] Model stats: ${stats.triangleCount.toLocaleString()} polys, ${stats.vertexCount.toLocaleString()} verts, ${stats.meshCount} meshes`);
 
-            // 2. Apply initial unit scale
-            scene.scale.set(unitScale, unitScale, unitScale);
-            scene.updateMatrixWorld(true);
+            // Extract non-geometry GLB manifest (embedded textures, materials, extensions)
+            try {
+              const manifest = extractGlbManifest((gltf as any).parser?.json || gltf);
+              useModelStore.getState().setGlbManifest(manifest);
+            } catch (manifestErr) {
+              console.warn('[PBRModelViewer] Could not extract GLB manifest:', manifestErr);
+            }
 
-            // 3. Ground Placement (lowest point at Y=0, centered on X/Z)
+            // 2. Center raw geometry permanently around its exact geometric center (0, 0, 0)
             const box = new THREE.Box3().setFromObject(scene);
             const center = new THREE.Vector3();
             box.getCenter(center);
             const size = new THREE.Vector3();
             box.getSize(size);
 
-            scene.position.set(-center.x, -box.min.y, -center.z);
+            // Shift raw scene so its exact geometric center is at (0, 0, 0)
+            scene.position.set(-center.x, -center.y, -center.z);
+            scene.rotation.set(0, 0, 0);
+            scene.scale.set(1, 1, 1);
             scene.updateMatrixWorld(true);
 
-            // 4. Enable shadow casting & receiving
+            // Ground base on floor (Y=0)
+            const initialGroundY = size.y / 2;
+            setGroundOffsetY(initialGroundY);
+
+            updateOrientedDimensions({
+              width: Number(size.x.toFixed(3)),
+              height: Number(size.y.toFixed(3)),
+              depth: Number(size.z.toFixed(3))
+            });
+
+            // 3. Enable shadow casting & receiving
             scene.traverse((child) => {
               if ((child as THREE.Mesh).isMesh) {
                 child.castShadow = true;
@@ -155,7 +221,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
               }
             });
 
-            // 5. Dynamic Camera Auto-Framing (Architectural 3/4 view)
+            // 4. Dynamic Camera Auto-Framing (Architectural 3/4 view)
             const maxDim = Math.max(size.x, size.y, size.z, 0.2);
             const persCam = camera as THREE.PerspectiveCamera;
             const fovRad = (persCam.fov || 50) * (Math.PI / 180);
@@ -173,9 +239,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
             }
 
             setModelGroup(scene);
-                        viewportBridge.registerModel(scene);
             setIsModelLoading(false);
-          
             setLoading(false);
             console.log(`[PERF: 3D VIEWER] Model placed in scene in ${(performance.now() - tModelStart).toFixed(1)}ms`);
           },
@@ -186,8 +250,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
             console.error(`[PERF: 3D VIEWER] Error loading model after ${(performance.now() - tModelStart).toFixed(1)}ms:`, err);
             setError('No se pudo cargar el modelo 3D. Verifica el archivo.');
             setLoading(false);
-                        setIsModelLoading(false);
-          
+            setIsModelLoading(false);
           }
         );
       } catch (err) {
@@ -196,8 +259,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
         console.error(`[PERF: 3D VIEWER] Loader init error after ${(performance.now() - tModelStart).toFixed(1)}ms:`, err);
         setError('Error al inicializar el visor 3D.');
         setLoading(false);
-                setIsModelLoading(false);
-      
+        setIsModelLoading(false);
       }
     }
 
@@ -206,56 +268,35 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     return () => {
       clearTimeout(watchdog);
       isCancelled = true;
-            viewportBridge.registerModel(null);
+      viewportBridge.registerModel(null);
       useModelStore.getState().setIsModelLoading(false);
-    
     };
   }, [modelUrl]);
 
-  // Handle dynamic unit scale change (e.g. mm -> m or cm -> m)
+  // Register the interactive pivot group with viewportBridge for exports and staging
   useEffect(() => {
-    const scene = rawSceneRef.current;
-    if (!scene || !modelGroup) return;
-
-    scene.scale.set(unitScale, unitScale, unitScale);
-    scene.updateMatrixWorld(true);
-
-    // Compute bounding box and re-center on floor.
-    //
-    // These must be ABSOLUTE assignments. The loader path sets the same values
-    // with `.set()`; using `+=` here made each unit-scale change re-apply the
-    // previous offset on top of the current one, so the model drifted further
-    // off-centre every time.
-    const box = new THREE.Box3().setFromObject(scene);
-    const center = new THREE.Vector3();
-    box.getCenter(center);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-
-    scene.position.set(-center.x, -box.min.y, -center.z);
-    scene.updateMatrixWorld(true);
-
-    // Re-frame camera
-    const maxDim = Math.max(size.x, size.y, size.z, 0.2);
-    const persCam = camera as THREE.PerspectiveCamera;
-    const fovRad = (persCam.fov || 50) * (Math.PI / 180);
-    const fitDistance = ((maxDim / 2) / Math.tan(fovRad / 2)) * 1.35;
-    const centerY = size.y / 2;
-
-    camera.position.set(fitDistance * 0.75, centerY + fitDistance * 0.4, fitDistance * 0.75);
-    camera.lookAt(0, centerY, 0);
-
-    if (orbitControlsRef.current) {
-      orbitControlsRef.current.target.set(0, centerY, 0);
-      orbitControlsRef.current.minDistance = maxDim * 0.3;
-      orbitControlsRef.current.maxDistance = maxDim * 4.0;
-      orbitControlsRef.current.update();
+    if (pivotRef.current) {
+      viewportBridge.registerModel(pivotRef.current);
     }
-  }, [unitScale]);
+  }, [modelGroup]);
+
+  // Synchronize transforms from store to groups when not actively dragging
+  useEffect(() => {
+    if (pivotRef.current && !isDraggingRef.current) {
+      pivotRef.current.position.set(modelPosition.x, modelPosition.y, modelPosition.z);
+    }
+  }, [modelPosition.x, modelPosition.y, modelPosition.z]);
+
+  useEffect(() => {
+    if (modelGroupRef.current && !isDraggingRef.current && modelGroup) {
+      updateGroundAndDimensions(modelRotation, unitScale);
+    }
+  }, [modelRotation.x, modelRotation.y, modelRotation.z, unitScale, modelGroup, updateGroundAndDimensions]);
 
   const baseColorMap = usePbrMaterialStore((state) => state.baseColorMap);
   const normalMap = usePbrMaterialStore((state) => state.normalMap);
   const ormMap = usePbrMaterialStore((state) => state.ormMap);
+  const metalRoughnessMap = usePbrMaterialStore((state) => state.metalRoughnessMap);
   const aoMap = usePbrMaterialStore((state) => state.aoMap);
   const roughnessMap = usePbrMaterialStore((state) => state.roughnessMap);
   const metalnessMap = usePbrMaterialStore((state) => state.metalnessMap);
@@ -266,6 +307,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
   const alphaMap = usePbrMaterialStore((state) => state.alphaMap);
   const displacementMap = usePbrMaterialStore((state) => state.displacementMap);
   const useOrmPack = usePbrMaterialStore((state) => state.useOrmPack);
+  const materialPackingMode = usePbrMaterialStore((state) => state.materialPackingMode);
   const normalScale = usePbrMaterialStore((state) => state.normalScale);
   const normalInvertY = usePbrMaterialStore((state) => state.normalInvertY);
   const roughnessFactor = usePbrMaterialStore((state) => state.roughnessFactor);
@@ -284,6 +326,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
   const loadFromCache = usePbrMaterialStore((state) => state.loadFromCache);
   const slotEnabled = usePbrMaterialStore((state) => state.slotEnabled);
   const debugChannel = usePbrMaterialStore((state) => state.debugChannel);
+  const activeMaterialName = usePbrMaterialStore((state) => state.activeMaterialName);
 
   // Dynamic PBR uniform updates: synchronous, zero recompilation, 60 FPS slider response
   useEffect(() => {
@@ -294,6 +337,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
       .map(([slot]) => slot);
 
     applyPbrUniforms(modelGroup, {
+      targetMaterialName: activeMaterialName,
       roughness: roughnessFactor,
       metalness: metalnessFactor,
       normalScale,
@@ -314,6 +358,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     });
   }, [
     modelGroup,
+    activeMaterialName,
     roughnessFactor,
     metalnessFactor,
     normalScale,
@@ -342,9 +387,11 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
 
     applyPbrTextures({
       model: modelGroup,
+      targetMaterialName: activeMaterialName,
       baseColorUrl: baseColorMap.url,
       normalUrl: normalMap.url,
       ormUrl: ormMap.url,
+      metalRoughnessUrl: metalRoughnessMap.url,
       aoUrl: aoMap.url,
       roughnessUrl: roughnessMap.url,
       metalnessUrl: metalnessMap.url,
@@ -355,6 +402,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
       alphaUrl: alphaMap.url,
       displacementUrl: displacementMap.url,
       useOrmPack,
+      materialPackingMode,
       normalScale,
       normalInvertY,
       roughnessFactor,
@@ -377,9 +425,11 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     });
   }, [
     modelGroup,
+    activeMaterialName,
     baseColorMap.url,
     normalMap.url,
     ormMap.url,
+    metalRoughnessMap.url,
     aoMap.url,
     roughnessMap.url,
     metalnessMap.url,
@@ -390,6 +440,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     alphaMap.url,
     displacementMap.url,
     useOrmPack,
+    materialPackingMode,
     loadFromCache,
     slotEnabled,
     emissiveFullGlow,
@@ -419,7 +470,134 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     }
   }, [resetCameraCounter]);
 
+  // Synchronize pivot group position from store when not actively dragging
+  useEffect(() => {
+    if (pivotRef.current && !isDraggingRef.current) {
+      pivotRef.current.position.set(modelPosition.x, modelPosition.y, modelPosition.z);
+    }
+  }, [modelPosition.x, modelPosition.y, modelPosition.z]);
+
+  // OrbitControls arbitration: disable OrbitControls when user drags the TransformControls gizmo
+  useEffect(() => {
+    const controls = transformControlsRef.current;
+    if (!controls) return;
+
+    const handleDraggingChanged = (event: any) => {
+      const isDragging = Boolean(event.value);
+      isDraggingRef.current = isDragging;
+      if (orbitControlsRef.current) {
+        orbitControlsRef.current.enabled = !isDragging;
+      }
+      if (isDragging) {
+        dragStartPosition.current = { ...useModelStore.getState().modelPosition };
+        dragStartRotation.current = { ...useModelStore.getState().modelRotation };
+      }
+    };
+
+    controls.addEventListener('dragging-changed', handleDraggingChanged);
+    return () => {
+      controls.removeEventListener('dragging-changed', handleDraggingChanged);
+      if (orbitControlsRef.current) {
+        orbitControlsRef.current.enabled = true;
+      }
+    };
+  }, [transformGizmoMode]);
+
+  const handleMouseDown = () => {
+    isDraggingRef.current = true;
+    if (orbitControlsRef.current) {
+      orbitControlsRef.current.enabled = false;
+    }
+    dragStartPosition.current = { ...useModelStore.getState().modelPosition };
+    dragStartRotation.current = { ...useModelStore.getState().modelRotation };
+  };
+
+  const handleMouseUp = () => {
+    isDraggingRef.current = false;
+    if (orbitControlsRef.current) {
+      orbitControlsRef.current.enabled = true;
+    }
+
+    if (transformGizmoMode === 'translate' && pivotRef.current) {
+      const finalPos = {
+        x: Number(pivotRef.current.position.x.toFixed(4)),
+        y: Number(pivotRef.current.position.y.toFixed(4)),
+        z: Number(pivotRef.current.position.z.toFixed(4))
+      };
+      if (
+        Math.abs(finalPos.x - dragStartPosition.current.x) > 0.0001 ||
+        Math.abs(finalPos.y - dragStartPosition.current.y) > 0.0001 ||
+        Math.abs(finalPos.z - dragStartPosition.current.z) > 0.0001
+      ) {
+        commandManager.execute(new SetModelPositionCommand(finalPos, dragStartPosition.current));
+      }
+    } else if (transformGizmoMode === 'rotate' && modelGroupRef.current) {
+      const rotEuler = new THREE.Euler().setFromQuaternion(modelGroupRef.current.quaternion, 'XYZ');
+      const finalRot = {
+        x: normalizeDegrees(THREE.MathUtils.radToDeg(rotEuler.x)),
+        y: normalizeDegrees(THREE.MathUtils.radToDeg(rotEuler.y)),
+        z: normalizeDegrees(THREE.MathUtils.radToDeg(rotEuler.z))
+      };
+
+      if (
+        Math.abs(finalRot.x - dragStartRotation.current.x) > 0.05 ||
+        Math.abs(finalRot.y - dragStartRotation.current.y) > 0.05 ||
+        Math.abs(finalRot.z - dragStartRotation.current.z) > 0.05
+      ) {
+        commandManager.execute(new SetModelRotationCommand(finalRot, dragStartRotation.current));
+      }
+
+      updateGroundAndDimensions(finalRot, unitScale);
+    }
+  };
+
+  const handleObjectChange = () => {
+    if (transformGizmoMode === 'translate' && pivotRef.current) {
+      const pos = pivotRef.current.position;
+      setPosition({
+        x: Number(pos.x.toFixed(4)),
+        y: Number(pos.y.toFixed(4)),
+        z: Number(pos.z.toFixed(4))
+      });
+    } else if (transformGizmoMode === 'rotate' && modelGroupRef.current) {
+      const rotEuler = new THREE.Euler().setFromQuaternion(modelGroupRef.current.quaternion, 'XYZ');
+      setRotation({
+        x: normalizeDegrees(THREE.MathUtils.radToDeg(rotEuler.x)),
+        y: normalizeDegrees(THREE.MathUtils.radToDeg(rotEuler.y)),
+        z: normalizeDegrees(THREE.MathUtils.radToDeg(rotEuler.z))
+      });
+    }
+  };
+
   if (loading || !modelGroup) return null;
 
-  return <primitive object={modelGroup} />;
+  return (
+    <>
+      <group
+        ref={pivotRef}
+        position={[modelPosition.x, modelPosition.y, modelPosition.z]}
+      >
+        <group
+          ref={modelGroupRef}
+          position={[0, groundOffsetY, 0]}
+        >
+          <primitive object={modelGroup} />
+        </group>
+      </group>
+
+      {transformGizmoMode !== 'none' && (
+        <TransformControls
+          key={transformGizmoMode}
+          ref={transformControlsRef}
+          object={(transformGizmoMode === 'rotate' ? modelGroupRef : pivotRef) as any}
+          mode={transformGizmoMode}
+          space="world"
+          size={0.75}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onObjectChange={handleObjectChange}
+        />
+      )}
+    </>
+  );
 };

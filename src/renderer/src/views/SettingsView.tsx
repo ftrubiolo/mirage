@@ -30,7 +30,9 @@ export const SettingsView: React.FC = () => {
     setFontDensity,
     updateSettings,
     libraryPath,
-    setLibraryPath
+    setLibraryPath,
+    workbenchSidebarPosition,
+    setWorkbenchSidebarPosition
   } = useAppStore();
 
   useEffect(() => {
@@ -274,6 +276,32 @@ export const SettingsView: React.FC = () => {
                     value={settings.defaultExportFormat}
                     onChange={(val) => updateSettings({ defaultExportFormat: val as any })}
                     size="xs"
+                  />
+                </div>
+              </div>
+
+              {/* Posición del Panel Lateral de Taller */}
+              <div className="bg-surface-lowest border border-hairline rounded-xs p-4 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-primary font-bold text-xs uppercase text-ink-primary">
+                        Posición del Panel Lateral de Taller
+                      </span>
+                      <InfoTooltip content="Ubica el panel de mapas PBR, geometría y exportación a la izquierda o derecha del visor 3D." />
+                    </div>
+                    <p className="text-[11px] text-ink-secondary">
+                      Selecciona la orientación de trabajo preferida para las herramientas del taller.
+                    </p>
+                  </div>
+                  <SegmentedControl
+                    options={[
+                      { value: 'left', label: 'Izquierda' },
+                      { value: 'right', label: 'Derecha' }
+                    ]}
+                    value={workbenchSidebarPosition}
+                    onChange={(val) => setWorkbenchSidebarPosition(val as 'left' | 'right')}
+                    size="sm"
                   />
                 </div>
               </div>

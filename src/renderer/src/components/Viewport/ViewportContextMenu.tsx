@@ -80,6 +80,8 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
     setCameraPreset,
     cameraFov,
     setCameraFov,
+    isOrthographic,
+    toggleOrthographic,
     triggerFitToModel,
     lightingPreset,
     setLightingPreset,
@@ -157,12 +159,22 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
         </ContextMenuItem>
 
         <ContextMenuSeparator />
+
+        <ContextMenuCheckbox
+          label="Modo Ortográfico"
+          checked={isOrthographic}
+          shortcut={getShortcutLabel('camera.toggleOrthographic')}
+          onChange={toggleOrthographic}
+        />
+
+        <ContextMenuSeparator />
         <ContextMenuHeader>Campo de Visión (FOV)</ContextMenuHeader>
 
         {FOV_PRESETS.map((f) => (
           <ContextMenuItem
             key={f.fov}
-            checked={cameraFov === f.fov}
+            checked={!isOrthographic && cameraFov === f.fov}
+            disabled={isOrthographic}
             onClick={() => setCameraFov(f.fov)}
           >
             {f.label}

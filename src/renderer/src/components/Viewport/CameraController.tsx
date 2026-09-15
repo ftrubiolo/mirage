@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
 import { useViewportStore, CameraPreset } from '../../store/viewportStore';
@@ -9,11 +9,12 @@ interface CameraControllerProps {
 }
 
 export const CameraController: React.FC<CameraControllerProps> = ({ orbitControlsRef }) => {
-  const { camera } = useThree();
+  const { camera, set, size, gl, scene, invalidate } = useThree();
   const {
     cameraPreset,
     cameraPresetCounter,
     cameraFov,
+    isOrthographic,
     fitToModelCounter,
     resetCameraCounter
   } = useViewportStore();
@@ -21,6 +22,17 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
   const isTransitioning = useRef(false);
   const targetPosition = useRef(new THREE.Vector3());
   const targetLookAt = useRef(new THREE.Vector3());
+  const targetZoom = useRef<number | null>(null);
+
+  const perspCamRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const orthoCamRef = useRef<THREE.OrthographicCamera | null>(null);
+
+  // Initialize and keep reference to initial camera
+  useEffect(() => {
+    if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera && !perspCamRef.current) {
+      perspCamRef.current = camera as THREE.PerspectiveCamera;
+    }
+  }, [camera]);
 
   // Update PerspectiveCamera FOV
   useEffect(() => {
@@ -29,9 +41,113 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
       if (persCam.fov !== cameraFov) {
         persCam.fov = cameraFov;
         persCam.updateProjectionMatrix();
+        invalidate();
       }
     }
-  }, [camera, cameraFov]);
+  }, [camera, cameraFov, invalidate]);
+
+  // Handle switching between Perspective and Orthographic projection
+  useEffect(() => {
+    const isCurrentlyOrtho = Boolean((camera as THREE.OrthographicCamera).isOrthographicCamera);
+    if (isOrthographic === isCurrentlyOrtho) {
+      return;
+    }
+
+    const aspect = size.width > 0 && size.height > 0 ? size.width / size.height : 1;
+    const target = orbitControlsRef.current?.target
+      ? orbitControlsRef.current.target.clone()
+      : new THREE.Vector3(0, 0.5, 0);
+
+    if (isOrthographic) {
+      // Switching: Perspective -> Orthographic
+      const perspCam = (camera as THREE.PerspectiveCamera).isPerspectiveCamera
+        ? (camera as THREE.PerspectiveCamera)
+        : perspCamRef.current || new THREE.PerspectiveCamera(cameraFov || 50, aspect, 0.1, 100);
+      perspCamRef.current = perspCam;
+
+      const dist = Math.max(perspCam.position.distanceTo(target), 0.1);
+      const fovRad = ((perspCam.fov || 50) * Math.PI) / 180;
+      const visibleH = 2 * dist * Math.tan(fovRad / 2);
+      const visibleW = visibleH * aspect;
+
+      let orthoCam = orthoCamRef.current;
+      if (!orthoCam) {
+        orthoCam = new THREE.OrthographicCamera(
+          -visibleW / 2,
+          visibleW / 2,
+          visibleH / 2,
+          -visibleH / 2,
+          -500,
+          1000
+        );
+        orthoCamRef.current = orthoCam;
+      } else {
+        orthoCam.left = -visibleW / 2;
+        orthoCam.right = visibleW / 2;
+        orthoCam.top = visibleH / 2;
+        orthoCam.bottom = -visibleH / 2;
+        orthoCam.near = -500;
+        orthoCam.far = 1000;
+        orthoCam.zoom = 1;
+      }
+
+      orthoCam.position.copy(perspCam.position);
+      orthoCam.quaternion.copy(perspCam.quaternion);
+      orthoCam.updateProjectionMatrix();
+
+      set({ camera: orthoCam });
+      if (orbitControlsRef.current) {
+        orbitControlsRef.current.object = orthoCam;
+        orbitControlsRef.current.target.copy(target);
+        orbitControlsRef.current.update();
+      }
+      viewportBridge.register(gl, scene, orthoCam);
+      invalidate();
+    } else {
+      // Switching: Orthographic -> Perspective
+      const orthoCam = (camera as THREE.OrthographicCamera).isOrthographicCamera
+        ? (camera as THREE.OrthographicCamera)
+        : orthoCamRef.current;
+      if (orthoCam) {
+        orthoCamRef.current = orthoCam;
+      }
+
+      let perspCam = perspCamRef.current;
+      if (!perspCam) {
+        perspCam = new THREE.PerspectiveCamera(cameraFov || 50, aspect, 0.1, 100);
+        perspCamRef.current = perspCam;
+      }
+
+      perspCam.fov = cameraFov || 50;
+      perspCam.aspect = aspect;
+
+      if (orthoCam) {
+        const visibleH = (orthoCam.top - orthoCam.bottom) / (orthoCam.zoom || 1);
+        const fovRad = (perspCam.fov * Math.PI) / 180;
+        const targetDist = Math.max((visibleH / 2) / Math.tan(fovRad / 2), 0.5);
+
+        const dir = new THREE.Vector3().subVectors(orthoCam.position, target);
+        if (dir.lengthSq() < 0.0001) {
+          dir.set(0, 0, 1);
+        } else {
+          dir.normalize();
+        }
+
+        perspCam.position.copy(target).addScaledVector(dir, targetDist);
+        perspCam.quaternion.copy(orthoCam.quaternion);
+      }
+      perspCam.updateProjectionMatrix();
+
+      set({ camera: perspCam });
+      if (orbitControlsRef.current) {
+        orbitControlsRef.current.object = perspCam;
+        orbitControlsRef.current.target.copy(target);
+        orbitControlsRef.current.update();
+      }
+      viewportBridge.register(gl, scene, perspCam);
+      invalidate();
+    }
+  }, [isOrthographic, camera, size, gl, scene, set, invalidate, cameraFov, orbitControlsRef]);
 
   const calculateTarget = (preset: CameraPreset | 'fit' | 'reset') => {
     const model = viewportBridge.modelGroup;
@@ -42,17 +158,29 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
       const box = new THREE.Box3().setFromObject(model);
       const center = new THREE.Vector3();
       box.getCenter(center);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      centerY = size.y / 2;
-      maxDim = Math.max(size.x, size.y, size.z, 0.2);
+      const sizeVec = new THREE.Vector3();
+      box.getSize(sizeVec);
+      centerY = sizeVec.y / 2;
+      maxDim = Math.max(sizeVec.x, sizeVec.y, sizeVec.z, 0.2);
     }
 
-    const persCam = camera as THREE.PerspectiveCamera;
-    const fovRad = ((persCam.fov || 50) * Math.PI) / 180;
+    const persCam = (camera as THREE.PerspectiveCamera).isPerspectiveCamera
+      ? (camera as THREE.PerspectiveCamera)
+      : perspCamRef.current || { fov: 50 };
+    const fovRad = (((persCam as any).fov || 50) * Math.PI) / 180;
     const fitDistance = Math.max(((maxDim / 2) / Math.tan(fovRad / 2)) * 1.35, 0.5);
 
     targetLookAt.current.set(0, centerY, 0);
+
+    // Target zoom for orthographic camera on fit / reset
+    if ((camera as THREE.OrthographicCamera).isOrthographicCamera) {
+      const ortho = camera as THREE.OrthographicCamera;
+      const baseFrustumH = ortho.top - ortho.bottom;
+      const desiredH = Math.max(maxDim * 1.35, 0.4);
+      targetZoom.current = baseFrustumH / desiredH;
+    } else {
+      targetZoom.current = null;
+    }
 
     switch (preset) {
       case 'front':
@@ -123,12 +251,29 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
       orbitControlsRef.current.update();
     }
 
+    if ((camera as THREE.OrthographicCamera).isOrthographicCamera && targetZoom.current !== null) {
+      const ortho = camera as THREE.OrthographicCamera;
+      ortho.zoom = THREE.MathUtils.lerp(ortho.zoom, targetZoom.current, alpha);
+      ortho.updateProjectionMatrix();
+    }
+
     const distPos = camera.position.distanceTo(targetPosition.current);
-    if (distPos < 0.003) {
+    const zoomFinished =
+      targetZoom.current === null ||
+      !((camera as THREE.OrthographicCamera).isOrthographicCamera) ||
+      Math.abs((camera as THREE.OrthographicCamera).zoom - targetZoom.current) < 0.003;
+
+    if (distPos < 0.003 && zoomFinished) {
       camera.position.copy(targetPosition.current);
       if (orbitControlsRef.current) {
         orbitControlsRef.current.target.copy(targetLookAt.current);
         orbitControlsRef.current.update();
+      }
+      if ((camera as THREE.OrthographicCamera).isOrthographicCamera && targetZoom.current !== null) {
+        const ortho = camera as THREE.OrthographicCamera;
+        ortho.zoom = targetZoom.current;
+        ortho.updateProjectionMatrix();
+        targetZoom.current = null;
       }
       isTransitioning.current = false;
     }
@@ -136,3 +281,5 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
 
   return null;
 };
+
+export default CameraController;

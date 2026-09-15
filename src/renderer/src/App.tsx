@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { WorkbenchView } from './views/WorkbenchView';
 import { OrmPackerModal } from './components/Staging/OrmPackerModal';
 import { TopNav } from './layouts/TopNav';
+import { NavSidebar } from './layouts/NavSidebar';
 import { HubView } from './views/HubView';
 import { LibraryView } from './views/LibraryView';
 import { EntryDetailView } from './views/EntryDetailView';
@@ -19,6 +20,8 @@ import { getSharedGltfLoader } from './components/Viewport/PBRModelViewer';
 
 export const App: React.FC = () => {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const isSaveModalOpenStore = useAppStore((s) => s.isSaveModalOpen);
+  const closeSaveModal = useAppStore((s) => s.closeSaveModal);
 
   const currentView = useAppStore((s) => s.currentView);
   const selectedEntryForDetail = useAppStore((s) => s.selectedEntryForDetail);
@@ -72,75 +75,86 @@ export const App: React.FC = () => {
   }, []);
 
   const handleOpenSaveModal = useCallback(() => setIsSaveModalOpen(true), []);
+  const isSaveModalActive = isSaveModalOpen || isSaveModalOpenStore;
+  const handleCloseSaveModal = useCallback(() => {
+    setIsSaveModalOpen(false);
+    closeSaveModal();
+  }, [closeSaveModal]);
 
   return (
     <div className="flex flex-col h-screen w-full bg-canvas text-ink-primary overflow-hidden font-body antialiased select-none">
       {/* Universal Architectural Top Navigation Bar */}
       <TopNav onOpenSaveModal={handleOpenSaveModal} />
 
-      {/* View Container */}
-      <div className="flex-1 flex overflow-hidden w-full min-h-0 relative">
-        {/* Workbench View (Persisted in DOM for WebGL context, frame rendering paused when not visible) */}
-        <div
-          className={`absolute inset-0 flex overflow-hidden w-full h-full transition-opacity duration-150 ${
-            currentView === 'workbench'
-              ? 'z-10 opacity-100 pointer-events-auto'
-              : 'z-0 opacity-0 pointer-events-none'
-          }`}
-          style={{ visibility: currentView === 'workbench' ? 'visible' : 'hidden' }}
-        >
-          <ErrorBoundary fallbackTitle="Mesa de trabajo">
-            <WorkbenchView />
-          </ErrorBoundary>
+      {/* Main Layout Area: NavSidebar on left + Views on right */}
+      <div className="flex-1 flex overflow-hidden w-full min-h-0 relative flex-row">
+        {/* Left Navigation Rail */}
+        <NavSidebar />
+
+        {/* View Container */}
+        <div className="flex-1 flex overflow-hidden w-full min-h-0 relative">
+          {/* Workbench View (Persisted in DOM for WebGL context, frame rendering paused when not visible) */}
+          <div
+            className={`absolute inset-0 flex overflow-hidden w-full h-full transition-opacity duration-150 ${
+              currentView === 'workbench'
+                ? 'z-10 opacity-100 pointer-events-auto'
+                : 'z-0 opacity-0 pointer-events-none'
+            }`}
+            style={{ visibility: currentView === 'workbench' ? 'visible' : 'hidden' }}
+          >
+            <ErrorBoundary fallbackTitle="Mesa de trabajo">
+              <WorkbenchView />
+            </ErrorBoundary>
+          </div>
+
+          {/* Hub View */}
+          {currentView === 'hub' && (
+            <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
+              <ErrorBoundary fallbackTitle="Inicio">
+                <HubView />
+              </ErrorBoundary>
+            </div>
+          )}
+
+          {/* Library View */}
+          {currentView === 'library' && (
+            <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
+              <ErrorBoundary fallbackTitle="Biblioteca">
+                <LibraryView />
+              </ErrorBoundary>
+            </div>
+          )}
+
+          {/* Entry Detail View (Split 1/3 - 2/3) */}
+          {currentView === 'entryDetail' && (
+            <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
+              <ErrorBoundary fallbackTitle="Detalle de pieza">
+                <EntryDetailView
+                  entry={selectedEntryForDetail}
+                  onBack={() => setView('library')}
+                />
+              </ErrorBoundary>
+            </div>
+          )}
+
+          {/* Settings View */}
+          {currentView === 'settings' && (
+            <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
+              <ErrorBoundary fallbackTitle="Configuración">
+                <SettingsView />
+              </ErrorBoundary>
+            </div>
+          )}
+
+          {/* Agent Studio View */}
+          {currentView === 'agent' && (
+            <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
+              <ErrorBoundary fallbackTitle="Estudio IA">
+                <AgentStudioView />
+              </ErrorBoundary>
+            </div>
+          )}
         </div>
-
-        {/* Hub View */}
-        {currentView === 'hub' && (
-          <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-            <ErrorBoundary fallbackTitle="Inicio">
-              <HubView />
-            </ErrorBoundary>
-          </div>
-        )}
-
-        {/* Library View */}
-        {currentView === 'library' && (
-          <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-            <ErrorBoundary fallbackTitle="Biblioteca">
-              <LibraryView />
-            </ErrorBoundary>
-          </div>
-        )}
-
-        {/* Entry Detail View (Split 1/3 - 2/3) */}
-        {currentView === 'entryDetail' && (
-          <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-            <ErrorBoundary fallbackTitle="Detalle de pieza">
-              <EntryDetailView
-                entry={selectedEntryForDetail}
-                onBack={() => setView('library')}
-              />
-            </ErrorBoundary>
-          </div>
-        )}
-
-        {/* Settings View */}
-        {currentView === 'settings' && (
-          <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-            <ErrorBoundary fallbackTitle="Configuración">
-              <SettingsView />
-            </ErrorBoundary>
-          </div>
-        )}
-
-        {/* Agent Studio View */}
-        {currentView === 'agent' && (
-          <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-            <ErrorBoundary fallbackTitle="Estudio IA">
-              <AgentStudioView />
-            </ErrorBoundary>
-          </div>
-        )}
       </div>
 
       {/* Global Sharp ORM Texture Packer Dialog Modal */}
@@ -151,8 +165,8 @@ export const App: React.FC = () => {
       {/* Save Current Workbench State to Library Modal */}
       <ErrorBoundary fallbackTitle="Guardar en biblioteca">
         <SaveToLibraryModal
-          isOpen={isSaveModalOpen}
-          onClose={() => setIsSaveModalOpen(false)}
+          isOpen={isSaveModalActive}
+          onClose={handleCloseSaveModal}
         />
       </ErrorBoundary>
     </div>

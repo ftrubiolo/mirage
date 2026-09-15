@@ -1,340 +1,328 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { SlidersHorizontal, Plus, Trash2, RotateCcw, EyeOff, Type, ArrowDownCircle } from 'lucide-react';
+import { useViewportStore } from '../../store/viewportStore';
+import { useAppStore } from '../../store/appStore';
 import {
-  RotateCcw,
-  Ruler,
-  Grid,
-  Sun,
-  Moon,
-  Camera,
-  Layers,
-  Box,
-  Globe,
-  ZoomIn,
-  ZoomOut,
-  ChevronDown,
-  Check,
-  FolderOpen
-} from 'lucide-react';
-import { useViewportStore, EnvironmentPreset } from '../../store/viewportStore';
-import { usePbrMaterialStore, DebugChannel } from '../../store/pbrMaterialStore';
-import { Switch } from '../UI';
+  ContextMenu,
+  ContextMenuHeader,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuCheckbox
+} from '../UI';
+import {
+  ChannelDropdownItem,
+  OverlaysItemGroup,
+  TransformGizmoItem,
+  ThemeToggleItem,
+  CameraOrientationItem,
+  ProjectionToggleItem,
+  FitModelItem,
+  AutoRotateItem,
+  EnvironmentHdriItem,
+  LightingIntensityItem,
+  SnapshotButtonItem,
+  ToolbarSpacerItem,
+  SidebarToggleItem,
+  ToolbarItemWrapper,
+  CompactToolbarDrawer,
+  VariantPickerItem,
+  ModelStatsItem,
+  isToolbarSpacer,
+  TOGGLEABLE_TOOLBAR_ITEMS,
+  ITEMS_WITH_TEXT,
+  isItemWithText
+} from './ToolbarItems';
 
 export const ViewportToolbar: React.FC = () => {
-  const {
-    autoRotate,
-    showDimensions,
-    showGrid,
-    showContactShadows,
-    environmentIntensity,
-    showEnvironmentBackground,
-    viewportTheme,
-    environmentPreset,
-    customHdrName,
-    toggleViewportTheme,
-    setEnvironmentPreset,
-    toggleEnvironmentBackground,
-    setCustomHdr,
-    toggleAutoRotate,
-    toggleDimensions,
-    toggleGrid,
-    toggleContactShadows,
-    setEnvironmentIntensity,
-    triggerResetCamera,
-    zoomIn3D,
-    zoomOut3D
-  } = useViewportStore();
+  const toolbarItems = useViewportStore((s) => s.toolbarItems);
+  const hiddenToolbarItems = useViewportStore((s) => s.hiddenToolbarItems);
+  const iconOnlyToolbarItems = useViewportStore((s) => s.iconOnlyToolbarItems);
+  const toggleToolbarItemVisibility = useViewportStore((s) => s.toggleToolbarItemVisibility);
+  const toggleToolbarItemIconOnly = useViewportStore((s) => s.toggleToolbarItemIconOnly);
+  const setAllToolbarItemsIconOnly = useViewportStore((s) => s.setAllToolbarItemsIconOnly);
+  const addToolbarSpacer = useViewportStore((s) => s.addToolbarSpacer);
+  const removeToolbarSpacer = useViewportStore((s) => s.removeToolbarSpacer);
+  const resetToolbarItems = useViewportStore((s) => s.resetToolbarItems);
+  const resetAllBars = useViewportStore((s) => s.resetAllBars);
+  const moveBarItem = useViewportStore((s) => s.moveBarItem);
+  const moveItemToOtherBar = useViewportStore((s) => s.moveItemToOtherBar);
 
-  const debugChannel = usePbrMaterialStore((state) => state.debugChannel);
-  const setDebugChannel = usePbrMaterialStore((state) => state.setDebugChannel);
+  const workbenchSidebarPosition = useAppStore((s) => s.workbenchSidebarPosition);
+  const isLeftSidebar = workbenchSidebarPosition === 'left';
 
-  const [isChannelDropdownOpen, setIsChannelDropdownOpen] = useState(false);
-  const [isEnvDropdownOpen, setIsEnvDropdownOpen] = useState(false);
+  const toolbarRef = useRef<HTMLElement>(null);
+  const [toolbarWidth, setToolbarWidth] = useState<number>(1000);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const envDropdownRef = useRef<HTMLDivElement>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    position: { x: number; y: number } | null;
+    targetItemId?: string;
+  }>({
+    isOpen: false,
+    position: null
+  });
 
-  const debugChannels: { id: DebugChannel; label: string; desc: string }[] = [
-    { id: 'lit', label: 'PBR Completo', desc: 'Renderizado realista final con iluminación' },
-    { id: 'albedo', label: 'Albedo (Color)', desc: 'Inspección de mapa difuso / BaseColor' },
-    { id: 'normal', label: 'Normales', desc: 'Relieve superficial y dirección de normales' },
-    { id: 'roughness', label: 'Rugosidad', desc: 'Canal de aspereza en escala de grises' },
-    { id: 'metalness', label: 'Metálico', desc: 'Canal metálico / dieléctrico' },
-    { id: 'ao', label: 'Oclusión Ambiental', desc: 'Sombras de contacto y rincones (AO)' },
-    { id: 'emissive', label: 'Emisivo', desc: 'Canal de auto-iluminación y brillo' },
-    { id: 'wireframe', label: 'Modo Wireframe', desc: 'Topología y malla poligonal' }
-  ];
-
-  const environmentPresets: { id: EnvironmentPreset; label: string }[] = [
-    { id: 'studio', label: 'Estudio' },
-    { id: 'city', label: 'Ciudad' },
-    { id: 'warehouse', label: 'Almacén' },
-    { id: 'apartment', label: 'Apartamento' },
-    { id: 'lobby', label: 'Lobby' },
-    { id: 'sunset', label: 'Atardecer' },
-    { id: 'night', label: 'Noche' },
-    { id: 'park', label: 'Parque' }
-  ];
-
-  // Close dropdowns on outside click
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsChannelDropdownOpen(false);
+    const el = toolbarRef.current;
+    if (!el) return;
+
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0) {
+          setToolbarWidth(entry.contentRect.width);
+        }
       }
-      if (envDropdownRef.current && !envDropdownRef.current.contains(event.target as Node)) {
-        setIsEnvDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    });
+    ro.observe(el);
+    setToolbarWidth(el.getBoundingClientRect().width || 1000);
+
+    return () => ro.disconnect();
   }, []);
 
-  const handlePickCustomHdr = async () => {
-    if (window.electronAPI) {
-      const file = await window.electronAPI.openFileDialog({
-        title: 'Seleccionar mapa de entorno HDRI (.hdr)',
-        filters: [{ name: 'HDRI Environment Map', extensions: ['hdr'] }]
-      });
-      if (file) {
-        const url = window.electronAPI.toAssetUrl(file);
-        const name = file.split(/[/\\]/).pop() || 'Custom HDRI';
-        setCustomHdr(url, name);
-        setIsEnvDropdownOpen(false);
-      }
+  const isCompact = toolbarWidth < 680;
+
+  const handleContextMenu = (e: React.MouseEvent, itemId?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      isOpen: true,
+      position: { x: e.clientX, y: e.clientY },
+      targetItemId: itemId
+    });
+  };
+
+  const visibleToolbarItems = toolbarItems.filter((id) => !hiddenToolbarItems.includes(id));
+
+  const renderToolbarItem = (id: string) => {
+    if (isToolbarSpacer(id)) {
+      return <ToolbarSpacerItem id={id} />;
+    }
+
+    const isIconOnly = iconOnlyToolbarItems.includes(id);
+
+    switch (id) {
+      case 'channel-dropdown':
+        return <ChannelDropdownItem compact={isCompact} iconOnly={isIconOnly} />;
+      case 'overlays':
+        return <OverlaysItemGroup />;
+      case 'transform-gizmo':
+        return <TransformGizmoItem />;
+      case 'theme-toggle':
+        return <ThemeToggleItem />;
+      case 'camera-orientation':
+        return <CameraOrientationItem compact={isCompact} iconOnly={isIconOnly} />;
+      case 'projection-toggle':
+        return <ProjectionToggleItem iconOnly={isIconOnly} />;
+      case 'fit-model':
+        return <FitModelItem />;
+      case 'auto-rotate':
+        return <AutoRotateItem />;
+      case 'environment-hdri':
+        return <EnvironmentHdriItem compact={isCompact} iconOnly={isIconOnly} />;
+      case 'lighting-intensity':
+        return <LightingIntensityItem />;
+      case 'snapshot-button':
+        return <SnapshotButtonItem />;
+      case 'variant-picker':
+        return <VariantPickerItem compact={isCompact} iconOnly={isIconOnly} />;
+      case 'model-stats':
+        return <ModelStatsItem compact={isCompact} iconOnly={isIconOnly} />;
+      default:
+        return null;
     }
   };
 
-  const currentEnvLabel = customHdrName
-    ? customHdrName
-    : environmentPresets.find((p) => p.id === environmentPreset)?.label || 'Entorno';
+  const isTargetWithText = Boolean(contextMenu.targetItemId && isItemWithText(contextMenu.targetItemId));
+  const areAllIconOnly = ITEMS_WITH_TEXT.every((item) => iconOnlyToolbarItems.includes(item.id));
 
   return (
-    <div className="absolute top-4 left-4 z-10 flex items-center gap-1 p-1 rounded-xs bg-surface-lowest border border-hairline shadow-md">
-      {/* Viewport Theme Toggle (Light/Dark mode isolated to 3D Viewer) */}
-      <button
-        onClick={toggleViewportTheme}
-        title={
-          viewportTheme === 'dark'
-            ? 'Cambiar fondo del visor a Modo Claro'
-            : 'Cambiar fondo del visor a Modo Oscuro'
-        }
-        className="p-1.5 rounded-xs transition-colors flex items-center gap-1 text-xs font-medium text-ink-secondary hover:text-ink-primary hover:bg-surface-container border border-transparent cursor-pointer"
+    <header
+      ref={toolbarRef}
+      aria-label="Barra de herramientas del visor 3D"
+      data-no-canvas-menu="true"
+      onContextMenu={(e) => handleContextMenu(e)}
+      className="w-full h-9 border-b border-hairline bg-surface-low/95 backdrop-blur-xs px-2 flex items-center justify-between shrink-0 select-none z-10 relative text-xs gap-1"
+    >
+      {/* Pinned Sidebar Toggle on Left */}
+      {isLeftSidebar && <SidebarToggleItem position="left" />}
+
+      {/* Dynamic Reorderable Toolbar Items with Dynamic Expanding Spacers */}
+      <div
+        className="flex-1 flex items-center gap-1 min-w-0 h-full"
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        }}
+        onDrop={(e) => {
+          const sourceId = e.dataTransfer.getData('text/plain');
+          if (!sourceId) return;
+          const sourceBar =
+            (e.dataTransfer.getData('application/x-mirage-bar') as 'toolbar' | 'statusbar') ||
+            (toolbarItems.includes(sourceId) ? 'toolbar' : 'statusbar');
+          if (e.target === e.currentTarget) {
+            moveBarItem(sourceId, sourceBar, 'toolbar', toolbarItems.length);
+          }
+        }}
       >
-        {viewportTheme === 'dark' ? (
-          <Sun className="w-3.5 h-3.5 text-amber-500" />
-        ) : (
-          <Moon className="w-3.5 h-3.5 text-ink-primary" />
-        )}
-      </button>
-
-      <div className="w-px h-4 bg-hairline mx-0.5" />
-
-      {/* Auto Rotate */}
-      <button
-        onClick={toggleAutoRotate}
-        title={autoRotate ? 'Detener rotación automática' : 'Activar rotación automática'}
-        className={`p-1.5 rounded-xs transition-colors flex items-center gap-1.5 text-xs font-medium border cursor-pointer ${
-          autoRotate ? 'bg-action/15 text-action border-action/40' : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-container border-transparent'
-        }`}
-      >
-        <RotateCcw className="w-3.5 h-3.5" />
-      </button>
-
-      {/* Dimensions */}
-      <button
-        onClick={toggleDimensions}
-        title="Mostrar cotas y dimensiones arquitectónicas"
-        className={`p-1.5 rounded-xs transition-colors flex items-center gap-1.5 text-xs font-medium border cursor-pointer ${
-          showDimensions ? 'bg-action/15 text-action border-action/40' : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-container border-transparent'
-        }`}
-      >
-        <Ruler className="w-3.5 h-3.5" />
-      </button>
-
-      {/* Channel Inspection Dropdown */}
-      <div className="relative" ref={dropdownRef}>
-        <button
-          onClick={() => setIsChannelDropdownOpen((prev) => !prev)}
-          title="Inspección de Canales"
-          className={`p-1.5 rounded-xs transition-colors flex items-center gap-1 text-xs font-medium border cursor-pointer ${
-            debugChannel !== 'lit'
-              ? 'bg-action/15 text-action border-action/40'
-              : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-container border-transparent'
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <ChevronDown
-            className={`w-3 h-3 text-ink-tertiary transition-transform duration-150 ${
-              isChannelDropdownOpen ? 'rotate-180 text-action' : ''
-            }`}
-          />
-        </button>
-
-        {isChannelDropdownOpen && (
-          <div className="absolute top-full left-0 mt-1 w-56 rounded-xs bg-surface-lowest border border-hairline shadow-xl p-1 z-50 flex flex-col gap-0.5">
-            <div className="px-2 py-1 text-[10px] font-primary font-semibold text-ink-tertiary uppercase tracking-wider border-b border-hairline mb-1 flex items-center justify-between">
-              <span>Inspección de Canales PBR</span>
-            </div>
-
-            {debugChannels.map((ch) => {
-              const isSelected = debugChannel === ch.id;
-              return (
-                <button
-                  key={ch.id}
-                  onClick={() => {
-                    setDebugChannel(ch.id);
-                    setIsChannelDropdownOpen(false);
-                  }}
-                  className={`w-full px-2.5 py-1.5 rounded-xs text-left text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                    isSelected
-                      ? 'bg-action/10 text-action font-semibold'
-                      : 'text-ink-primary hover:bg-surface-container'
-                  }`}
-                  title={ch.desc}
-                >
-                  <span className="truncate">{ch.label}</span>
-                  {isSelected && <Check className="w-3.5 h-3.5 text-action shrink-0 ml-2" />}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {visibleToolbarItems.map((id, index) => (
+          <ToolbarItemWrapper
+            key={id}
+            itemId={id}
+            index={index}
+            bar="toolbar"
+            onContextMenu={handleContextMenu}
+          >
+            {renderToolbarItem(id)}
+          </ToolbarItemWrapper>
+        ))}
       </div>
 
-      {/* Environment / Reflection Map Dropdown */}
-      <div className="relative" ref={envDropdownRef}>
-        <button
-          onClick={() => setIsEnvDropdownOpen((prev) => !prev)}
-          title={`Reflejos e Iluminación (${currentEnvLabel})`}
-          className={`p-1.5 rounded-xs transition-colors flex items-center gap-1 text-xs font-medium border cursor-pointer ${
-            isEnvDropdownOpen
-              ? 'bg-action/15 text-action border-action/40'
-              : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-container border-transparent'
-          }`}
-        >
-          <Globe className="w-3.5 h-3.5" />
-          <ChevronDown
-            className={`w-3 h-3 text-ink-tertiary transition-transform duration-150 ${
-              isEnvDropdownOpen ? 'rotate-180 text-action' : ''
+      {/* Compact Mode Overflow Drawer */}
+      {isCompact && (
+        <div className="relative shrink-0 flex items-center">
+          <button
+            onClick={() => setIsDrawerOpen((prev) => !prev)}
+            title="Más herramientas y opciones del visor 3D"
+            className={`h-6 px-1.5 rounded-xs transition-colors flex items-center gap-1 text-xs font-medium border cursor-pointer ${
+              isDrawerOpen
+                ? 'bg-action/15 text-action border-action/40'
+                : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-container border-transparent'
             }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span className="font-primary font-bold uppercase tracking-wider text-[10px]">
+              Ajustes
+            </span>
+          </button>
+          <CompactToolbarDrawer
+            isOpen={isDrawerOpen}
+            onClose={() => setIsDrawerOpen(false)}
           />
-        </button>
+        </div>
+      )}
 
-        {isEnvDropdownOpen && (
-          <div className="absolute top-full left-0 mt-1 w-48 rounded-xs bg-surface-lowest border border-hairline shadow-xl p-1 z-50 flex flex-col gap-0.5">
-            <div className="px-2 py-1 text-[10px] font-primary font-semibold text-ink-tertiary uppercase tracking-wider border-b border-hairline mb-1 flex items-center justify-between">
-              <span>Reflejos de Entorno</span>
-            </div>
+      {/* Pinned Sidebar Toggle on Right */}
+      {!isLeftSidebar && <SidebarToggleItem position="right" />}
 
-            {/* Toggle 360° Scene Background */}
-            <div className="px-2 py-1.5 border-b border-hairline mb-1 flex items-center justify-between">
-              <span className="text-xs text-ink-primary font-medium">Fondo 360°</span>
-              <Switch
-                checked={showEnvironmentBackground}
-                onChange={toggleEnvironmentBackground}
-                title={showEnvironmentBackground ? 'Ocultar fondo 360° de la escena' : 'Mostrar entorno HDRI como fondo 360° en la escena'}
+      {/* Context Menu for Spacer and Toolbar Item Customization */}
+      <ContextMenu
+        isOpen={contextMenu.isOpen}
+        position={contextMenu.position}
+        onClose={() => setContextMenu({ isOpen: false, position: null })}
+      >
+        <ContextMenuHeader>Personalizar Barra</ContextMenuHeader>
+
+        {/* Quick icon-only toggle when right-clicking directly on an item that has text */}
+        {isTargetWithText && (
+          <ContextMenuCheckbox
+            label="Solo icono"
+            icon={<Type className="w-3.5 h-3.5 text-action" />}
+            checked={iconOnlyToolbarItems.includes(contextMenu.targetItemId!)}
+            onChange={() => toggleToolbarItemIconOnly(contextMenu.targetItemId!)}
+          />
+        )}
+
+        {/* Quick hide option if right-clicked directly on a non-spacer tool */}
+        {contextMenu.targetItemId && !isToolbarSpacer(contextMenu.targetItemId) && (
+          <ContextMenuItem
+            icon={<EyeOff className="w-3.5 h-3.5 text-ink-secondary" />}
+            onClick={() => toggleToolbarItemVisibility(contextMenu.targetItemId!)}
+          >
+            Ocultar este botón
+          </ContextMenuItem>
+        )}
+
+        {/* Quick swap to Status Bar */}
+        {contextMenu.targetItemId && !isToolbarSpacer(contextMenu.targetItemId) && (
+          <ContextMenuItem
+            icon={<ArrowDownCircle className="w-3.5 h-3.5 text-action" />}
+            onClick={() => moveItemToOtherBar(contextMenu.targetItemId!, 'toolbar')}
+          >
+            Mover a la barra de estado
+          </ContextMenuItem>
+        )}
+
+        <ContextMenuItem
+          icon={<Plus className="w-3.5 h-3.5 text-action" />}
+          onClick={() => addToolbarSpacer(contextMenu.targetItemId)}
+        >
+          Añadir espaciador flexible
+        </ContextMenuItem>
+
+        {contextMenu.targetItemId && isToolbarSpacer(contextMenu.targetItemId) && (
+          <ContextMenuItem
+            icon={<Trash2 className="w-3.5 h-3.5 text-rose-500" />}
+            danger
+            onClick={() => removeToolbarSpacer(contextMenu.targetItemId!)}
+          >
+            Eliminar este espaciador
+          </ContextMenuItem>
+        )}
+
+        <ContextMenuSeparator />
+
+        {/* Submenu to toggle individual items into Icon-Only mode */}
+        <ContextMenuSub
+          label="Modo Solo Icono"
+          icon={<Type className="w-3.5 h-3.5 text-action" />}
+        >
+          <ContextMenuHeader>Botones con Texto</ContextMenuHeader>
+          <ContextMenuCheckbox
+            label="Todos en solo icono"
+            checked={areAllIconOnly}
+            onChange={(checked) => setAllToolbarItemsIconOnly(checked)}
+          />
+          <ContextMenuSeparator />
+          {ITEMS_WITH_TEXT.map((item) => {
+            const isIcon = iconOnlyToolbarItems.includes(item.id);
+            return (
+              <ContextMenuCheckbox
+                key={item.id}
+                label={item.label}
+                checked={isIcon}
+                onChange={() => toggleToolbarItemIconOnly(item.id)}
               />
-            </div>
+            );
+          })}
+        </ContextMenuSub>
 
-            {environmentPresets.map((preset) => {
-              const isSelected = !customHdrName && environmentPreset === preset.id;
-              return (
-                <button
-                  key={preset.id}
-                  onClick={() => {
-                    setEnvironmentPreset(preset.id);
-                    setIsEnvDropdownOpen(false);
-                  }}
-                  className={`w-full px-2.5 py-1.5 rounded-xs text-left text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                    isSelected
-                      ? 'bg-action/10 text-action font-semibold'
-                      : 'text-ink-primary hover:bg-surface-container'
-                  }`}
-                >
-                  <span className="truncate">{preset.label}</span>
-                  {isSelected && <Check className="w-3.5 h-3.5 text-action shrink-0 ml-2" />}
-                </button>
-              );
-            })}
+        {/* Submenu with checkboxes to toggle any tool on/off */}
+        <ContextMenuSub
+          label="Herramientas Visibles"
+          icon={<SlidersHorizontal className="w-3.5 h-3.5 text-action" />}
+        >
+          <ContextMenuHeader>Mostrar / Ocultar</ContextMenuHeader>
+          {TOGGLEABLE_TOOLBAR_ITEMS.map((item) => {
+            const isVisible = !hiddenToolbarItems.includes(item.id);
+            return (
+              <ContextMenuCheckbox
+                key={item.id}
+                label={item.label}
+                checked={isVisible}
+                onChange={() => toggleToolbarItemVisibility(item.id)}
+              />
+            );
+          })}
+        </ContextMenuSub>
 
-            <div className="border-t border-hairline my-1 pt-1">
-              <button
-                type="button"
-                onClick={handlePickCustomHdr}
-                className="w-full px-2.5 py-1.5 rounded-xs text-left text-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-container flex items-center gap-2 transition-colors cursor-pointer"
-                title="Cargar un archivo .hdr personalizado desde tu disco"
-              >
-                <FolderOpen className="w-3.5 h-3.5 text-action" />
-                <span className="truncate">Cargar HDR...</span>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+        <ContextMenuSeparator />
 
-      <button
-        onClick={toggleGrid}
-        title="Alternar grilla de taller"
-        className={`p-1.5 rounded-xs transition-colors flex items-center gap-1.5 text-xs font-medium border cursor-pointer ${
-          showGrid ? 'bg-surface-container text-ink-primary border-hairline' : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-container border-transparent'
-        }`}
-      >
-        <Grid className="w-3.5 h-3.5" />
-      </button>
+        <ContextMenuItem
+          icon={<RotateCcw className="w-3.5 h-3.5 text-ink-secondary" />}
+          onClick={resetToolbarItems}
+        >
+          Restablecer barra predeterminada
+        </ContextMenuItem>
 
-      <button
-        onClick={toggleContactShadows}
-        title="Alternar sombras de contacto"
-        className={`p-1.5 rounded-xs transition-colors flex items-center gap-1.5 text-xs font-medium border cursor-pointer ${
-          showContactShadows ? 'bg-surface-container text-ink-primary border-hairline' : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-container border-transparent'
-        }`}
-      >
-        <Box className="w-3.5 h-3.5" />
-      </button>
-
-      <div className="w-px h-4 bg-hairline mx-0.5" />
-
-      {/* 3D Camera Zoom and Reset */}
-      <button
-        onClick={zoomIn3D}
-        title="Acercar cámara 3D (Zoom In)"
-        className="p-1.5 rounded-xs transition-colors text-ink-secondary hover:text-ink-primary hover:bg-surface-container cursor-pointer"
-      >
-        <ZoomOut className="w-3.5 h-3.5" />
-      </button>
-
-      <button
-        onClick={zoomOut3D}
-        title="Alejar cámara 3D (Zoom Out)"
-        className="p-1.5 rounded-xs transition-colors text-ink-secondary hover:text-ink-primary hover:bg-surface-container cursor-pointer"
-      >
-        <ZoomIn className="w-3.5 h-3.5" />
-      </button>
-
-      <button
-        onClick={triggerResetCamera}
-        title="Reencuadrar cámara a escala 1:1"
-        className="p-1.5 rounded-xs transition-colors text-ink-secondary hover:text-ink-primary hover:bg-surface-container cursor-pointer"
-      >
-        <Camera className="w-3.5 h-3.5" />
-      </button>
-
-      <div className="w-px h-4 bg-hairline mx-0.5" />
-
-      {/* Lighting Intensity slider */}
-      <div className="flex items-center gap-1.5 px-1.5 text-xs text-ink-secondary">
-        <Sun className="w-3.5 h-3.5 text-action" />
-        <input
-          type="range"
-          min="0.2"
-          max="2.5"
-          step="0.1"
-          value={environmentIntensity}
-          onChange={(e) => setEnvironmentIntensity(parseFloat(e.target.value))}
-          className="w-16 h-1 bg-surface-container rounded-none appearance-none cursor-pointer accent-action"
-          title={`Intensidad de iluminación: ${environmentIntensity}x`}
-        />
-      </div>
-    </div>
+        <ContextMenuItem
+          icon={<RotateCcw className="w-3.5 h-3.5 text-ink-secondary" />}
+          onClick={resetAllBars}
+        >
+          Restablecer ambas barras
+        </ContextMenuItem>
+      </ContextMenu>
+    </header>
   );
 };

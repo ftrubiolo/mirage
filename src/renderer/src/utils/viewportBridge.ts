@@ -248,18 +248,59 @@ export async function captureViewportSnapshot(
   }
 }
 
+/**
+ * Bakes an object's world matrix (rotation, scale in meters, floor grounding)
+ * directly into each child mesh's geometry vertices and normals.
+ * Resets local transforms to identity, ensuring universal 1:1 Y-up compatibility.
+ */
+export function bakeModelTransforms(targetObject: THREE.Object3D): THREE.Object3D {
+  const baked = targetObject.clone(true);
+  // Staging viewport position is never baked into exported files; only rotation & unit scale are baked
+  baked.position.set(0, 0, 0);
+  baked.updateMatrixWorld(true);
+
+  // 1. Bake world matrix into each mesh geometry
+  baked.traverse((child) => {
+    if ((child as THREE.Mesh).isMesh) {
+      const mesh = child as THREE.Mesh;
+      if (mesh.geometry) {
+        mesh.geometry = mesh.geometry.clone();
+        mesh.geometry.applyMatrix4(mesh.matrixWorld);
+        mesh.geometry.computeVertexNormals();
+      }
+    }
+  });
+
+  // 2. Reset local transforms across the hierarchy
+  baked.traverse((child) => {
+    child.position.set(0, 0, 0);
+    child.rotation.set(0, 0, 0);
+    child.scale.set(1, 1, 1);
+    child.updateMatrix();
+  });
+
+  baked.position.set(0, 0, 0);
+  baked.rotation.set(0, 0, 0);
+  baked.scale.set(1, 1, 1);
+  baked.updateMatrixWorld(true);
+
+  return baked;
+}
+
 export async function exportModelToGLB(): Promise<ArrayBuffer> {
   const targetObject = viewportBridge.modelGroup || viewportBridge.scene;
   if (!targetObject) {
     throw new Error('No hay ningún modelo 3D cargado para exportar.');
   }
 
+  const bakedObject = bakeModelTransforms(targetObject);
+
   const { GLTFExporter } = await import('three/examples/jsm/exporters/GLTFExporter.js');
   const exporter = new GLTFExporter();
 
   return new Promise<ArrayBuffer>((resolve, reject) => {
     exporter.parse(
-      targetObject,
+      bakedObject,
       (result) => {
         if (result instanceof ArrayBuffer) {
           resolve(result);
@@ -308,9 +349,9 @@ export async function exportCleanGeometryGLB(): Promise<ArrayBuffer> {
     throw new Error('No hay ningún modelo 3D cargado para exportar.');
   }
 
-  const cloned = targetObject.clone(true);
+  const bakedObject = bakeModelTransforms(targetObject);
 
-  cloned.traverse((child) => {
+  bakedObject.traverse((child) => {
     if ((child as THREE.Mesh).isMesh) {
       const mesh = child as THREE.Mesh;
       if (mesh.material) {
@@ -328,7 +369,7 @@ export async function exportCleanGeometryGLB(): Promise<ArrayBuffer> {
 
   return new Promise<ArrayBuffer>((resolve, reject) => {
     exporter.parse(
-      cloned,
+      bakedObject,
       (result) => {
         if (result instanceof ArrayBuffer) {
           resolve(result);
@@ -362,10 +403,12 @@ export async function exportModelToUSDZ(options: UsdzExportOptions = {}): Promis
     throw new Error('No hay ningún modelo 3D cargado para exportar.');
   }
 
+  const bakedObject = bakeModelTransforms(targetObject);
+
   const { USDZExporter } = await import('three/examples/jsm/exporters/USDZExporter.js');
   const exporter = new USDZExporter();
 
-  const uint8Result = await exporter.parseAsync(targetObject, {
+  const uint8Result = await exporter.parseAsync(bakedObject, {
     quickLookCompatible: true,
     maxTextureSize: options.maxTextureSize || 2048,
     ...options

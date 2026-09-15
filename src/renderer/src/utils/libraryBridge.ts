@@ -1,4 +1,4 @@
-import { SlotName, PbrSlotMap, usePbrMaterialStore } from '../store/pbrMaterialStore';
+import { ALL_SLOT_NAMES, SlotName, PbrSlotMap, usePbrMaterialStore } from '../store/pbrMaterialStore';
 import { useModelStore } from '../store/modelStore';
 import {
   selectActiveColorwayId,
@@ -69,6 +69,8 @@ export const computeWorkbenchHash = (): string => {
     displacementScale: pbr.displacementScale,
     unitScale: model.unitScale,
     unitType: model.unitType,
+    modelRotation: model.modelRotation,
+    autoGround: model.autoGround,
     useOrmPack: pbr.useOrmPack,
     loadFromCache: pbr.loadFromCache,
     slotEnabled: pbr.slotEnabled,
@@ -186,20 +188,7 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
     }
 
     // Restore maps
-    const slotNames: SlotName[] = [
-      'baseColor',
-      'normal',
-      'orm',
-      'ao',
-      'roughness',
-      'metalness',
-      'emissive',
-      'clearcoat',
-      'sheen',
-      'transmission',
-      'alpha',
-      'displacement'
-    ];
+    const slotNames = ALL_SLOT_NAMES;
 
     const mapsRecord: Partial<Record<SlotName, PbrSlotMap>> = {};
     for (const slot of slotNames) {
@@ -344,20 +333,7 @@ export const saveWorkbenchToLibrary = async (params: {
   const defaultVar = variant.variants.find((v) => v.isDefault) || variant.variants[0];
   const mapsRecord: Record<string, { fileName: string; filePath: string; fileSize?: number }> = {};
 
-  const slotNames: SlotName[] = [
-    'baseColor',
-    'normal',
-    'orm',
-    'ao',
-    'roughness',
-    'metalness',
-    'emissive',
-    'clearcoat',
-    'sheen',
-    'transmission',
-    'alpha',
-    'displacement'
-  ];
+  const slotNames = ALL_SLOT_NAMES;
 
   for (const slot of slotNames) {
     const defaultSlotMap = defaultVar?.maps?.[slot] || (variant.activeVariantId === defaultVar?.id ? (pbr as any)[`${slot}Map`] : null);
@@ -389,7 +365,10 @@ export const saveWorkbenchToLibrary = async (params: {
     displacementScale: pbr.displacementScale,
     unitScale: model.unitScale,
     unitType: model.unitType,
+    modelRotation: model.modelRotation,
+    autoGround: model.autoGround,
     useOrmPack: pbr.useOrmPack,
+    materialPackingMode: pbr.materialPackingMode,
     loadFromCache: pbr.loadFromCache
   };
 

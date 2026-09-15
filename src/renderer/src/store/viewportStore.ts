@@ -25,6 +25,30 @@ export type LightingPreset =
   | 'dramatic'
   | 'technical';
 
+export type TransformGizmoMode = 'none' | 'translate' | 'rotate';
+
+export const DEFAULT_TOOLBAR_ITEMS: string[] = [
+  'channel-dropdown',
+  'overlays',
+  'transform-gizmo',
+  'theme-toggle',
+  'spacer-1',
+  'camera-orientation',
+  'projection-toggle',
+  'fit-model',
+  'auto-rotate',
+  'spacer-2',
+  'environment-hdri',
+  'lighting-intensity',
+  'snapshot-button'
+];
+
+export const DEFAULT_STATUSBAR_ITEMS: string[] = [
+  'variant-picker',
+  'spacer-sb-1',
+  'model-stats'
+];
+
 export interface ViewportPersistedSettings {
   viewportTheme?: 'dark' | 'light';
   environmentPreset?: EnvironmentPreset;
@@ -44,6 +68,11 @@ export interface ViewportPersistedSettings {
   contactShadowOpacity?: number;
   cameraFov?: number;
   isOrthographic?: boolean;
+  toolbarItems?: string[];
+  hiddenToolbarItems?: string[];
+  iconOnlyToolbarItems?: string[];
+  statusBarItems?: string[];
+  hiddenStatusBarItems?: string[];
 }
 
 interface ViewportState {
@@ -78,6 +107,10 @@ interface ViewportState {
   directionalShadows: boolean;
   contactShadowOpacity: number;
 
+  // Transform Gizmo state
+  transformGizmoMode: TransformGizmoMode;
+  setTransformGizmoMode: (mode: TransformGizmoMode) => void;
+
   // Actions
   toggleViewportTheme: () => void;
   setViewportTheme: (theme: 'dark' | 'light') => void;
@@ -110,6 +143,42 @@ interface ViewportState {
   setFillLightIntensity: (val: number) => void;
   toggleDirectionalShadows: () => void;
   setContactShadowOpacity: (val: number) => void;
+
+  // Toolbar Layout & Reordering Actions
+  toolbarItems: string[];
+  hiddenToolbarItems: string[];
+  iconOnlyToolbarItems: string[];
+  reorderToolbarItems: (newOrder: string[]) => void;
+  toggleToolbarItemVisibility: (itemId: string) => void;
+  setToolbarItemVisibility: (itemId: string, visible: boolean) => void;
+  toggleToolbarItemIconOnly: (itemId: string) => void;
+  setToolbarItemIconOnly: (itemId: string, iconOnly: boolean) => void;
+  setAllToolbarItemsIconOnly: (iconOnly: boolean) => void;
+  addToolbarSpacer: (afterId?: string) => void;
+  removeToolbarSpacer: (spacerId: string) => void;
+  resetToolbarItems: () => void;
+
+  // Status Bar Layout & Reordering Actions
+  statusBarItems: string[];
+  hiddenStatusBarItems: string[];
+  reorderStatusBarItems: (newOrder: string[]) => void;
+  toggleStatusBarItemVisibility: (itemId: string) => void;
+  setStatusBarItemVisibility: (itemId: string, visible: boolean) => void;
+  addStatusBarSpacer: (afterId?: string) => void;
+  removeStatusBarSpacer: (spacerId: string) => void;
+  resetStatusBarItems: () => void;
+
+  // Cross-Bar Actions
+  moveBarItem: (
+    itemId: string,
+    sourceBar: 'toolbar' | 'statusbar',
+    targetBar: 'toolbar' | 'statusbar',
+    targetIndex?: number,
+    targetItemId?: string,
+    position?: 'before' | 'after'
+  ) => void;
+  moveItemToOtherBar: (itemId: string, currentBar: 'toolbar' | 'statusbar') => void;
+  resetAllBars: () => void;
 
   // File Persistence
   applyPersistedSettings: (settings: ViewportPersistedSettings) => void;
@@ -164,6 +233,10 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
   fillLightIntensity: 0.4,
   directionalShadows: true,
   contactShadowOpacity: 0.4,
+
+  // Transform Gizmo initial state
+  transformGizmoMode: 'none',
+  setTransformGizmoMode: (mode: TransformGizmoMode) => set({ transformGizmoMode: mode }),
 
   toggleViewportTheme: () => {
     set((state) => ({ viewportTheme: state.viewportTheme === 'dark' ? 'light' : 'dark' }));
@@ -303,6 +376,231 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
     requestSaveSettings();
   },
 
+  // Toolbar state & actions
+  toolbarItems: [...DEFAULT_TOOLBAR_ITEMS],
+  hiddenToolbarItems: [],
+  iconOnlyToolbarItems: [],
+  reorderToolbarItems: (newOrder: string[]) => {
+    set({ toolbarItems: newOrder });
+    requestSaveSettings();
+  },
+  toggleToolbarItemVisibility: (itemId: string) => {
+    set((state) => {
+      const isHidden = state.hiddenToolbarItems.includes(itemId);
+      const nextHidden = isHidden
+        ? state.hiddenToolbarItems.filter((id) => id !== itemId)
+        : [...state.hiddenToolbarItems, itemId];
+      return { hiddenToolbarItems: nextHidden };
+    });
+    requestSaveSettings();
+  },
+  setToolbarItemVisibility: (itemId: string, visible: boolean) => {
+    set((state) => {
+      const isHidden = state.hiddenToolbarItems.includes(itemId);
+      if (visible && isHidden) {
+        return { hiddenToolbarItems: state.hiddenToolbarItems.filter((id) => id !== itemId) };
+      }
+      if (!visible && !isHidden) {
+        return { hiddenToolbarItems: [...state.hiddenToolbarItems, itemId] };
+      }
+      return state;
+    });
+    requestSaveSettings();
+  },
+  toggleToolbarItemIconOnly: (itemId: string) => {
+    set((state) => {
+      const isIconOnly = state.iconOnlyToolbarItems.includes(itemId);
+      const next = isIconOnly
+        ? state.iconOnlyToolbarItems.filter((id) => id !== itemId)
+        : [...state.iconOnlyToolbarItems, itemId];
+      return { iconOnlyToolbarItems: next };
+    });
+    requestSaveSettings();
+  },
+  setToolbarItemIconOnly: (itemId: string, iconOnly: boolean) => {
+    set((state) => {
+      const isIconOnly = state.iconOnlyToolbarItems.includes(itemId);
+      if (iconOnly && !isIconOnly) {
+        return { iconOnlyToolbarItems: [...state.iconOnlyToolbarItems, itemId] };
+      }
+      if (!iconOnly && isIconOnly) {
+        return { iconOnlyToolbarItems: state.iconOnlyToolbarItems.filter((id) => id !== itemId) };
+      }
+      return state;
+    });
+    requestSaveSettings();
+  },
+  setAllToolbarItemsIconOnly: (iconOnly: boolean) => {
+    const allTextItemIds = [
+      'channel-dropdown',
+      'camera-orientation',
+      'environment-hdri',
+      'projection-toggle',
+      'variant-picker',
+      'model-stats'
+    ];
+    set({
+      iconOnlyToolbarItems: iconOnly ? [...allTextItemIds] : []
+    });
+    requestSaveSettings();
+  },
+  addToolbarSpacer: (afterId?: string) => {
+    set((state) => {
+      const newSpacerId = `spacer-${Date.now()}`;
+      if (!afterId) {
+        return { toolbarItems: [...state.toolbarItems, newSpacerId] };
+      }
+      const idx = state.toolbarItems.indexOf(afterId);
+      if (idx === -1) {
+        return { toolbarItems: [...state.toolbarItems, newSpacerId] };
+      }
+      const next = [...state.toolbarItems];
+      next.splice(idx + 1, 0, newSpacerId);
+      return { toolbarItems: next };
+    });
+    requestSaveSettings();
+  },
+  removeToolbarSpacer: (spacerId: string) => {
+    set((state) => ({
+      toolbarItems: state.toolbarItems.filter((id) => id !== spacerId),
+      hiddenToolbarItems: state.hiddenToolbarItems.filter((id) => id !== spacerId),
+      iconOnlyToolbarItems: state.iconOnlyToolbarItems.filter((id) => id !== spacerId)
+    }));
+    requestSaveSettings();
+  },
+  resetToolbarItems: () => {
+    set({ toolbarItems: [...DEFAULT_TOOLBAR_ITEMS], hiddenToolbarItems: [], iconOnlyToolbarItems: [] });
+    requestSaveSettings();
+  },
+
+  // Status Bar state & actions
+  statusBarItems: [...DEFAULT_STATUSBAR_ITEMS],
+  hiddenStatusBarItems: [],
+  reorderStatusBarItems: (newOrder: string[]) => {
+    set({ statusBarItems: newOrder });
+    requestSaveSettings();
+  },
+  toggleStatusBarItemVisibility: (itemId: string) => {
+    set((state) => {
+      const isHidden = state.hiddenStatusBarItems.includes(itemId);
+      const nextHidden = isHidden
+        ? state.hiddenStatusBarItems.filter((id) => id !== itemId)
+        : [...state.hiddenStatusBarItems, itemId];
+      return { hiddenStatusBarItems: nextHidden };
+    });
+    requestSaveSettings();
+  },
+  setStatusBarItemVisibility: (itemId: string, visible: boolean) => {
+    set((state) => {
+      const isHidden = state.hiddenStatusBarItems.includes(itemId);
+      if (visible && isHidden) {
+        return { hiddenStatusBarItems: state.hiddenStatusBarItems.filter((id) => id !== itemId) };
+      }
+      if (!visible && !isHidden) {
+        return { hiddenStatusBarItems: [...state.hiddenStatusBarItems, itemId] };
+      }
+      return state;
+    });
+    requestSaveSettings();
+  },
+  addStatusBarSpacer: (afterId?: string) => {
+    set((state) => {
+      const newSpacerId = `spacer-sb-${Date.now()}`;
+      if (!afterId) {
+        return { statusBarItems: [...state.statusBarItems, newSpacerId] };
+      }
+      const idx = state.statusBarItems.indexOf(afterId);
+      if (idx === -1) {
+        return { statusBarItems: [...state.statusBarItems, newSpacerId] };
+      }
+      const next = [...state.statusBarItems];
+      next.splice(idx + 1, 0, newSpacerId);
+      return { statusBarItems: next };
+    });
+    requestSaveSettings();
+  },
+  removeStatusBarSpacer: (spacerId: string) => {
+    set((state) => ({
+      statusBarItems: state.statusBarItems.filter((id) => id !== spacerId),
+      hiddenStatusBarItems: state.hiddenStatusBarItems.filter((id) => id !== spacerId),
+      iconOnlyToolbarItems: state.iconOnlyToolbarItems.filter((id) => id !== spacerId)
+    }));
+    requestSaveSettings();
+  },
+  resetStatusBarItems: () => {
+    set({ statusBarItems: [...DEFAULT_STATUSBAR_ITEMS], hiddenStatusBarItems: [] });
+    requestSaveSettings();
+  },
+
+  // Cross-Bar Actions
+  moveBarItem: (itemId, sourceBar, targetBar, targetIndex, targetItemId, position = 'before') => {
+    set((state) => {
+      const nextToolbar = [...state.toolbarItems];
+      const nextStatusBar = [...state.statusBarItems];
+
+      // Remove from source
+      if (sourceBar === 'toolbar') {
+        const fromIdx = nextToolbar.indexOf(itemId);
+        if (fromIdx !== -1) nextToolbar.splice(fromIdx, 1);
+      } else {
+        const fromIdx = nextStatusBar.indexOf(itemId);
+        if (fromIdx !== -1) nextStatusBar.splice(fromIdx, 1);
+      }
+
+      // Ensure it's removed if it already existed in target
+      const existingInTarget =
+        targetBar === 'toolbar' ? nextToolbar.indexOf(itemId) : nextStatusBar.indexOf(itemId);
+      if (existingInTarget !== -1) {
+        if (targetBar === 'toolbar') nextToolbar.splice(existingInTarget, 1);
+        else nextStatusBar.splice(existingInTarget, 1);
+      }
+
+      const targetList = targetBar === 'toolbar' ? nextToolbar : nextStatusBar;
+
+      let insertAt: number;
+      if (targetItemId) {
+        const tIndex = targetList.indexOf(targetItemId);
+        if (tIndex !== -1) {
+          insertAt = position === 'after' ? tIndex + 1 : tIndex;
+        } else {
+          insertAt = targetIndex !== undefined ? targetIndex : targetList.length;
+        }
+      } else if (targetIndex !== undefined) {
+        insertAt = targetIndex;
+      } else {
+        insertAt = targetList.length;
+      }
+
+      insertAt = Math.max(0, Math.min(targetList.length, insertAt));
+      targetList.splice(insertAt, 0, itemId);
+
+      return {
+        toolbarItems: nextToolbar,
+        statusBarItems: nextStatusBar
+      };
+    });
+    requestSaveSettings();
+  },
+
+  moveItemToOtherBar: (itemId, currentBar) => {
+    const targetBar = currentBar === 'toolbar' ? 'statusbar' : 'toolbar';
+    const state = get();
+    const targetLength =
+      targetBar === 'toolbar' ? state.toolbarItems.length : state.statusBarItems.length;
+    state.moveBarItem(itemId, currentBar, targetBar, targetLength);
+  },
+
+  resetAllBars: () => {
+    set({
+      toolbarItems: [...DEFAULT_TOOLBAR_ITEMS],
+      statusBarItems: [...DEFAULT_STATUSBAR_ITEMS],
+      hiddenToolbarItems: [],
+      hiddenStatusBarItems: [],
+      iconOnlyToolbarItems: []
+    });
+    requestSaveSettings();
+  },
+
   applyPersistedSettings: (settings) => {
     set((state) => ({
       ...state,
@@ -323,7 +621,12 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
       ...(settings.directionalShadows !== undefined ? { directionalShadows: settings.directionalShadows } : {}),
       ...(settings.contactShadowOpacity !== undefined ? { contactShadowOpacity: settings.contactShadowOpacity } : {}),
       ...(settings.cameraFov !== undefined ? { cameraFov: settings.cameraFov } : {}),
-      ...(settings.isOrthographic !== undefined ? { isOrthographic: settings.isOrthographic } : {})
+      ...(settings.isOrthographic !== undefined ? { isOrthographic: settings.isOrthographic } : {}),
+      ...(settings.toolbarItems && Array.isArray(settings.toolbarItems) ? { toolbarItems: settings.toolbarItems } : {}),
+      ...(settings.hiddenToolbarItems && Array.isArray(settings.hiddenToolbarItems) ? { hiddenToolbarItems: settings.hiddenToolbarItems } : {}),
+      ...(settings.iconOnlyToolbarItems && Array.isArray(settings.iconOnlyToolbarItems) ? { iconOnlyToolbarItems: settings.iconOnlyToolbarItems } : {}),
+      ...(settings.statusBarItems && Array.isArray(settings.statusBarItems) ? { statusBarItems: settings.statusBarItems } : {}),
+      ...(settings.hiddenStatusBarItems && Array.isArray(settings.hiddenStatusBarItems) ? { hiddenStatusBarItems: settings.hiddenStatusBarItems } : {})
     }));
   },
 
@@ -347,7 +650,12 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
       directionalShadows: s.directionalShadows,
       contactShadowOpacity: s.contactShadowOpacity,
       cameraFov: s.cameraFov,
-      isOrthographic: s.isOrthographic
+      isOrthographic: s.isOrthographic,
+      toolbarItems: s.toolbarItems,
+      hiddenToolbarItems: s.hiddenToolbarItems,
+      iconOnlyToolbarItems: s.iconOnlyToolbarItems,
+      statusBarItems: s.statusBarItems,
+      hiddenStatusBarItems: s.hiddenStatusBarItems
     };
   }
 }));

@@ -5,6 +5,7 @@ import {
 } from '../store/pbrMaterialStore';
 import { SlotName } from '../store/pbrMaterialStore';
 import { useViewportStore, EnvironmentPreset } from '../store/viewportStore';
+import { useModelStore, ModelRotation, ModelPosition } from '../store/modelStore';
 import { setMaterialProperty } from '../store/workbenchActions';
 
 /**
@@ -113,6 +114,50 @@ export class ToggleSlotEnabledCommand implements Command {
   undo() {
     if (this.previousEnabled === undefined) return;
     usePbrMaterialStore.getState().setSlotEnabled(this.slot, this.previousEnabled);
+  }
+}
+
+export class SetModelRotationCommand implements Command {
+  public name: string;
+  private previousRotation: ModelRotation | undefined;
+
+  constructor(private nextRotation: ModelRotation, previousRotation?: ModelRotation) {
+    this.name = `Rotar modelo a [${nextRotation.x}°, ${nextRotation.y}°, ${nextRotation.z}°]`;
+    this.previousRotation = previousRotation ? { ...previousRotation } : undefined;
+  }
+
+  execute() {
+    if (this.previousRotation === undefined) {
+      this.previousRotation = { ...useModelStore.getState().modelRotation };
+    }
+    useModelStore.getState().setRotation(this.nextRotation);
+  }
+
+  undo() {
+    if (!this.previousRotation) return;
+    useModelStore.getState().setRotation(this.previousRotation);
+  }
+}
+
+export class SetModelPositionCommand implements Command {
+  public name: string;
+  private previousPosition: ModelPosition | undefined;
+
+  constructor(private nextPosition: ModelPosition, previousPosition?: ModelPosition) {
+    this.name = `Mover modelo a [${nextPosition.x.toFixed(2)}, ${nextPosition.y.toFixed(2)}, ${nextPosition.z.toFixed(2)}]`;
+    this.previousPosition = previousPosition ? { ...previousPosition } : undefined;
+  }
+
+  execute() {
+    if (this.previousPosition === undefined) {
+      this.previousPosition = { ...useModelStore.getState().modelPosition };
+    }
+    useModelStore.getState().setPosition(this.nextPosition);
+  }
+
+  undo() {
+    if (!this.previousPosition) return;
+    useModelStore.getState().setPosition(this.previousPosition);
   }
 }
 

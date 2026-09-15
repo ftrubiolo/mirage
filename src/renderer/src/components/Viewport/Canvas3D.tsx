@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, Suspense } from 'react';
 import * as THREE from 'three';
+import { Upload } from 'lucide-react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { StoreEnvironment } from './StoreEnvironment';
@@ -8,12 +9,13 @@ import { PBRModelViewer } from './PBRModelViewer';
 import { CameraController } from './CameraController';
 import { ViewportContextMenu } from './ViewportContextMenu';
 import { ViewportToolbar } from './ViewportToolbar';
-import { VariantBottomToolbar } from './VariantBottomToolbar';
+import { ViewportStatusBar } from './ViewportStatusBar';
 import { useModelStore } from '../../store/modelStore';
 import { useViewportStore } from '../../store/viewportStore';
 import { useAppStore } from '../../store/appStore';
 import { useKeybindsStore } from '../../utils/keybindsManager';
 import { viewportBridge } from '../../utils/viewportBridge';
+import { handleCanvasDrop } from '../../utils/canvasDropHandler';
 import { Spinner, Button } from '../UI';
 
 const ViewportBridgeSync: React.FC = () => {
@@ -44,6 +46,14 @@ const ViewportResizeHandler: React.FC = () => {
         if ('aspect' in camera) {
           (camera as THREE.PerspectiveCamera).aspect = rect.width / rect.height;
           (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+        } else if ((camera as THREE.OrthographicCamera).isOrthographicCamera) {
+          const orthoCam = camera as THREE.OrthographicCamera;
+          const aspect = rect.width / rect.height;
+          const frustumHeight = orthoCam.top - orthoCam.bottom;
+          const frustumWidth = frustumHeight * aspect;
+          orthoCam.left = -frustumWidth / 2;
+          orthoCam.right = frustumWidth / 2;
+          orthoCam.updateProjectionMatrix();
         }
         invalidate();
       }
@@ -70,6 +80,7 @@ const ViewportResizeHandler: React.FC = () => {
 export const Canvas3D: React.FC = React.memo(() => {
   const modelUrl = useModelStore((state) => state.modelUrl);
   const modelStats = useModelStore((state) => state.modelStats);
+  const modelPosition = useModelStore((state) => state.modelPosition);
   const isModelLoading = useModelStore((state) => state.isModelLoading);
   const productName = useModelStore((state) => state.productName);
   const autoRotate = useViewportStore((state) => state.autoRotate);
@@ -108,15 +119,28 @@ export const Canvas3D: React.FC = React.memo(() => {
   });
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const isRightDownRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0, time: 0 });
   const hasDraggedRef = useRef(false);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const isExcludedTarget = (target: EventTarget | null): boolean => {
+      if (!target || !(target instanceof HTMLElement)) return false;
+      return Boolean(
+        target.closest('header') ||
+        target.closest('footer') ||
+        target.closest('[data-no-canvas-menu]') ||
+        target.closest('[role="menu"]') ||
+        target.closest('.z-50')
+      );
+    };
 
     const onPointerDown = (e: PointerEvent) => {
+      if (isExcludedTarget(e.target)) return;
       if (e.button === 2) {
         isRightDownRef.current = true;
         hasDraggedRef.current = false;
@@ -138,6 +162,7 @@ export const Canvas3D: React.FC = React.memo(() => {
     const onPointerUp = (e: PointerEvent) => {
       if (e.button === 2 && isRightDownRef.current) {
         isRightDownRef.current = false;
+        if (isExcludedTarget(e.target)) return;
         const dt = performance.now() - dragStartRef.current.time;
         // Open context menu ONLY if cursor did NOT move and click was intentional
         if (!hasDraggedRef.current && dt < 450) {
@@ -147,19 +172,20 @@ export const Canvas3D: React.FC = React.memo(() => {
     };
 
     const onContextMenu = (e: MouseEvent) => {
-      e.preventDefault(); // Unconditionally block native browser menu
+      if (isExcludedTarget(e.target)) return;
+      e.preventDefault(); // Unconditionally block native browser menu on canvas
     };
 
-    container.addEventListener('pointerdown', onPointerDown, { passive: true });
+    stage.addEventListener('pointerdown', onPointerDown, { passive: true });
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     window.addEventListener('pointerup', onPointerUp, { passive: true });
-    container.addEventListener('contextmenu', onContextMenu);
+    stage.addEventListener('contextmenu', onContextMenu);
 
     return () => {
-      container.removeEventListener('pointerdown', onPointerDown);
+      stage.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
-      container.removeEventListener('contextmenu', onContextMenu);
+      stage.removeEventListener('contextmenu', onContextMenu);
     };
   }, []);
 
@@ -200,6 +226,15 @@ export const Canvas3D: React.FC = React.memo(() => {
       } else if (matches(e, 'camera.reset')) {
         e.preventDefault();
         vp.triggerFitToModel();
+      } else if (matches(e, 'gizmo.select')) {
+        e.preventDefault();
+        vp.setTransformGizmoMode('none');
+      } else if (matches(e, 'gizmo.translate')) {
+        e.preventDefault();
+        vp.setTransformGizmoMode('translate');
+      } else if (matches(e, 'gizmo.rotate')) {
+        e.preventDefault();
+        vp.setTransformGizmoMode('rotate');
       } else if (matches(e, 'view.toggleGrid')) {
         e.preventDefault();
         vp.toggleGrid();
@@ -252,68 +287,84 @@ export const Canvas3D: React.FC = React.memo(() => {
     prevZoomAction.current = cameraZoomAction;
   }, [cameraZoomAction]);
 
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dragCounterRef = useRef(0);
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    dragCounterRef.current--;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setIsDragOver(false);
+    }
+  };
+
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
-    if (e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      const filePath = window.electronAPI?.getPathForFile(file);
-      if (filePath) {
-        // Grant the main process read access to the dropped asset's folder.
-        await window.electronAPI?.approveDroppedPath(filePath);
-      }
-      if (filePath && (filePath.toLowerCase().endsWith('.glb') || filePath.toLowerCase().endsWith('.gltf'))) {
-        const fileInfo = await window.electronAPI.getFileInfo(filePath);
-        const activeSlug = useAppStore.getState().activeEntrySlug;
-        let targetPath = filePath;
-        let targetSize = fileInfo.size;
+    dragCounterRef.current = 0;
+    setIsDragOver(false);
 
-        if (activeSlug && window.electronAPI) {
-          const normalizedPath = filePath.replace(/\\/g, '/');
-          if (!normalizedPath.includes(`/${activeSlug}/`)) {
-            try {
-              const ext = filePath.split('.').pop() || 'glb';
-              const copied = await window.electronAPI.copyFileToLibrary({
-                entrySlug: activeSlug,
-                sourceFilePath: filePath,
-                targetType: 'model',
-                ext
-              });
-              targetPath = copied.filePath;
-              targetSize = copied.fileSize;
-            } catch (copyErr) {
-              console.warn('[Canvas3D] Could not copy model to library folder:', copyErr);
-            }
-          }
-        }
-
-        const assetUrl = window.electronAPI.toAssetUrl(targetPath);
-        useModelStore.getState().setModel(targetPath, assetUrl, targetSize);
-      }
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      await handleCanvasDrop(files);
     }
   };
 
   return (
     <div
       ref={containerRef}
-      onDragOver={(e) => e.preventDefault()}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`relative w-full h-full overflow-hidden select-none transition-colors duration-200 ${
+      className={`relative w-full h-full overflow-hidden select-none flex flex-col transition-colors duration-200 ${
         viewportTheme === 'dark' ? 'bg-[#111110]' : 'bg-[#f7f5f2]'
       }`}
     >
-      {/* Top Floating Controls - Preserved per user instruction */}
+      {/* Top Viewport Toolbar: Full width, docked at top */}
       <ViewportToolbar />
 
-      {/* Bottom Left Variant Floating Toolbar */}
-      <VariantBottomToolbar />
+      {/* 3D Viewport Main Stage */}
+      <div ref={stageRef} className="flex-1 relative w-full h-full min-h-0 overflow-hidden">
+        {/* Visual Drag & Drop Overlay */}
+        {isDragOver && (
+          <div className="absolute inset-0 z-40 pointer-events-none flex flex-col items-center justify-center bg-action-subtle/80 backdrop-blur-xs border-2 border-dashed border-action m-3 rounded-xs animate-in fade-in duration-150">
+            <div className="p-6 rounded-xs bg-surface-lowest/95 border border-hairline shadow-lg flex flex-col items-center gap-3 max-w-sm text-center">
+              <div className="w-12 h-12 rounded-xs bg-surface-container text-action border border-hairline flex items-center justify-center">
+                <Upload className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs font-primary font-bold uppercase tracking-wider text-ink-primary block">
+                  Soltar en Visor 3D
+                </span>
+                <span className="text-[11px] text-ink-secondary block">
+                  Auto-asignación de mapas PBR (_baseColor, _normal, _orm...) o modelo .glb
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
-      {/* Right-Click Context Menu */}
-      <ViewportContextMenu
-        isOpen={contextMenu.isOpen}
-        x={contextMenu.x}
-        y={contextMenu.y}
-        onClose={() => setContextMenu((prev) => ({ ...prev, isOpen: false }))}
-      />
+        {/* Right-Click Context Menu */}
+        <ViewportContextMenu
+          isOpen={contextMenu.isOpen}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu((prev) => ({ ...prev, isOpen: false }))}
+        />
 
       {/* 3D R3F Canvas - frameloop pauses when workbench is not active */}
       <Canvas
@@ -366,7 +417,9 @@ export const Canvas3D: React.FC = React.memo(() => {
         )}
 
         {modelStats?.dimensions && (
-          <DynamicDimensions dimensions={modelStats.dimensions} />
+          <group position={[modelPosition.x, modelPosition.y, modelPosition.z]}>
+            <DynamicDimensions dimensions={modelStats.dimensions} />
+          </group>
         )}
 
         <OrbitControls
@@ -378,6 +431,8 @@ export const Canvas3D: React.FC = React.memo(() => {
           maxPolarAngle={Math.PI / 2 + 0.05}
           minDistance={0.5}
           maxDistance={15}
+          minZoom={0.05}
+          maxZoom={40}
           onChange={() => viewportBridge.notify()}
         />
       </Canvas>
@@ -430,18 +485,22 @@ export const Canvas3D: React.FC = React.memo(() => {
         </div>
       )}
 
-      {/* Empty State Overlay */}
-      {!modelUrl && !isModelLoading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-ink-tertiary">
-          <div className="p-4 rounded-xs bg-surface-lowest border border-hairline shadow-xs mb-3">
-            <svg className="w-8 h-8 text-ink-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
+        {/* Empty State Overlay */}
+        {!modelUrl && !isModelLoading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-ink-tertiary">
+            <div className="p-4 rounded-xs bg-surface-lowest border border-hairline shadow-xs mb-3">
+              <svg className="w-8 h-8 text-ink-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-primary">Atelier 3D Sera</p>
+            <p className="text-xs text-ink-secondary mt-1">Arrastra un archivo .glb o mapas de textura (_baseColor, _normal, _orm...)</p>
           </div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-ink-primary">Atelier 3D Sera</p>
-          <p className="text-xs text-ink-secondary mt-1">Arrastra un archivo de mobiliario .glb o selecciónalo en el panel lateral</p>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Viewport Status Bar: Variants + Model Metrology */}
+      <ViewportStatusBar />
     </div>
   );
 });

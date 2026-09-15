@@ -93,7 +93,7 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
             value={posterRes}
             onChange={(v) => setPosterRes(v as any)}
             size="xs"
-            className="w-full justify-between"
+            className="w-full"
           />
         </div>
 
@@ -110,7 +110,7 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
             value={posterFormat}
             onChange={(v) => setPosterFormat(v as any)}
             size="xs"
-            className="w-full justify-between"
+            className="w-full"
           />
         </div>
       </div>

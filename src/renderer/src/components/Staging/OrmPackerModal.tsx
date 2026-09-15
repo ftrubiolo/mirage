@@ -36,7 +36,10 @@ export const OrmPackerModal: React.FC = () => {
       if (pbrState.aoMap.filePath) setAoPath(pbrState.aoMap.filePath);
       if (pbrState.roughnessMap.filePath) setRoughnessPath(pbrState.roughnessMap.filePath);
       if (pbrState.metalnessMap.filePath) setMetalnessPath(pbrState.metalnessMap.filePath);
-      if (pbrState.aoMap.filePath && (pbrState.roughnessMap.filePath || pbrState.metalnessMap.filePath)) {
+      if (pbrState.metalRoughnessMap?.filePath) {
+        setMetalRoughnessPath(pbrState.metalRoughnessMap.filePath);
+        setMode('gltf');
+      } else if (pbrState.aoMap.filePath && (pbrState.roughnessMap.filePath || pbrState.metalnessMap.filePath)) {
         setMode('separate');
       }
 
@@ -90,18 +93,13 @@ export const OrmPackerModal: React.FC = () => {
   };
 
   const handlePack = async () => {
-    if (!aoPath) {
-      alert('Debes seleccionar el mapa de AO (Oclusión Ambiental)');
-      return;
-    }
-
     if (mode === 'gltf' && !metalRoughnessPath) {
       alert('Debes seleccionar el mapa metalRoughness de glTF');
       return;
     }
 
-    if (mode === 'separate' && !roughnessPath && !metalnessPath) {
-      alert('Debes seleccionar al menos un mapa de rugosidad o metalicidad');
+    if (mode === 'separate' && !aoPath && !roughnessPath && !metalnessPath) {
+      alert('Debes seleccionar al menos un mapa de rugosidad, metalicidad u oclusión');
       return;
     }
 
@@ -118,9 +116,10 @@ export const OrmPackerModal: React.FC = () => {
         const destFileName = `${activeSlug}_${targetType}.webp`;
         finalOutput = `${entryDir}${sep}${destFileName}`;
       } catch (err) {
-        const lastSlash = Math.max(aoPath.lastIndexOf('/'), aoPath.lastIndexOf('\\'));
-        const dir = lastSlash !== -1 ? aoPath.substring(0, lastSlash) : '';
-        const sep = aoPath.includes('\\') ? '\\' : '/';
+        const samplePath = aoPath || metalRoughnessPath || roughnessPath || metalnessPath || '';
+        const lastSlash = Math.max(samplePath.lastIndexOf('/'), samplePath.lastIndexOf('\\'));
+        const dir = lastSlash !== -1 ? samplePath.substring(0, lastSlash) : '';
+        const sep = samplePath.includes('\\') ? '\\' : '/';
         finalOutput = `${dir}${sep}output_orm.webp`;
       }
     }
@@ -133,7 +132,7 @@ export const OrmPackerModal: React.FC = () => {
       // 1. Primary engine: Hardware-accelerated Canvas WebP packing
       try {
         packedPath = await packOrmWithCanvas({
-          aoUrl: window.electronAPI.toAssetUrl(aoPath),
+          aoUrl: aoPath ? window.electronAPI.toAssetUrl(aoPath) : undefined,
           metalRoughnessUrl: mode === 'gltf' && metalRoughnessPath ? window.electronAPI.toAssetUrl(metalRoughnessPath) : undefined,
           roughnessUrl: mode === 'separate' && roughnessPath ? window.electronAPI.toAssetUrl(roughnessPath) : undefined,
           metalnessUrl: mode === 'separate' && metalnessPath ? window.electronAPI.toAssetUrl(metalnessPath) : undefined,
@@ -173,6 +172,7 @@ export const OrmPackerModal: React.FC = () => {
 
       addMapVariant('orm', newVariant);
       setUseOrmPack(true);
+      usePbrMaterialStore.getState().setMaterialPackingMode('orm');
       autoSaveActiveEntry(true);
       closeOrmPacker();
     } catch (err: any) {
@@ -218,25 +218,25 @@ export const OrmPackerModal: React.FC = () => {
               isLoading={isProcessing}
               disabled={!newName.trim()}
             >
-              Empaquetar
+              Empaquetar ORM
             </Button>
           </div>
         </div>
       }
     >
-      <div className="space-y-3.5 font-body">
-        {/* Mode Selector */}
+      <div className="space-y-4">
+        {/* Mode Switcher */}
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-primary font-semibold text-ink-secondary uppercase tracking-wider">
-            Modo de Entrada:
+          <span className="text-xs font-semibold text-ink-primary font-primary">
+            Modo de Entrada
           </span>
           <SegmentedControl
-            options={[
-              { value: 'gltf', label: 'glTF Split (2 Mapas)' },
-              { value: 'separate', label: 'Mapas Separados (3)' }
-            ]}
             value={mode}
-            onChange={(val) => setMode(val as any)}
+            onChange={(val) => setMode(val as 'gltf' | 'separate')}
+            options={[
+              { value: 'gltf', label: 'glTF (MR + AO opcional)' },
+              { value: 'separate', label: '3 Mapas (R, G, B)' }
+            ]}
             size="sm"
           />
         </div>
@@ -246,14 +246,14 @@ export const OrmPackerModal: React.FC = () => {
           {/* AO Map Input (Canal R) */}
           <div className="space-y-1">
             <label className="text-[10px] font-mono tabular-nums text-ink-secondary flex items-center justify-between">
-              <span>Canal R — Oclusión Ambiental (AO)</span>
+              <span>Canal R — Oclusión Ambiental (AO){mode === 'gltf' ? ' (Opcional)' : ''}</span>
             </label>
             <div className="flex gap-1.5">
               <div className="flex-1">
                 <TextInput
                   readOnly
                   value={aoPath}
-                  placeholder="Selecciona el mapa AO..."
+                  placeholder={mode === 'gltf' ? 'Opcional (Sin AO = luz ambiente 100%)...' : 'Selecciona el mapa AO...'}
                   mono
                 />
               </div>

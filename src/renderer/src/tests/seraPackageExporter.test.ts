@@ -215,8 +215,7 @@ describe('seraPackageExporter', () => {
 
       const zipBlob = await createSeraPackageZip({
         productName: 'Silla Nórdica Escandinava',
-        variants: mockVariants as any,
-        includeUsdz: true
+        variants: mockVariants as any
       });
 
       expect(zipBlob).toBeDefined();
@@ -227,7 +226,7 @@ describe('seraPackageExporter', () => {
 
       // Check root files
       expect(fileNames).toContain('geometry.glb');
-      expect(fileNames).toContain('model.usdz');
+      expect(fileNames).not.toContain('model.usdz');
       expect(fileNames).toContain('model-3d.json');
 
       // Check maps/ directory
@@ -248,8 +247,7 @@ describe('seraPackageExporter', () => {
       const jsonContent = JSON.parse(await zip.file('model-3d.json')!.async('text'));
       expect(jsonContent.name).toBe('Silla Nórdica Escandinava');
       expect(jsonContent.files).toEqual({
-        glb: 'geometry.glb',
-        usdz: 'model.usdz'
+        glb: 'geometry.glb'
       });
       expect(jsonContent.variants).toHaveLength(2);
       expect(jsonContent.variants[0].code).toBe('lino-arena');
@@ -263,6 +261,107 @@ describe('seraPackageExporter', () => {
       expect(jsonContent.variants[1].baseColor).toBe('maps/lino-terracota_base.webp');
       expect(jsonContent.variants[1].normalMap).toBe('maps/lino_norm.webp');
       expect(jsonContent.variants[1].ormMap).toBe('maps/lino_orm.webp');
+    });
+
+    it('packages baked AR variant models into ar/ folder and updates model-3d.json when includeArVariants is true', async () => {
+      const mockVariants = [
+        {
+          id: 'v-cuero-negro',
+          name: 'Cuero Negro',
+          maps: {},
+          settings: { roughnessFactor: 0.4 }
+        }
+      ];
+
+      const zipBlob = await createSeraPackageZip({
+        productName: 'Butaca Moderna',
+        variants: mockVariants as any,
+        includeArVariants: true,
+        arTextureSize: 1024
+      });
+
+      const zip = await JSZip.loadAsync(zipBlob);
+      const fileNames = Object.keys(zip.files);
+
+      expect(fileNames).toContain('geometry.glb');
+      expect(fileNames).not.toContain('model.usdz');
+      expect(fileNames).toContain('model-3d.json');
+      expect(fileNames).toContain('ar/glb/cuero-negro.glb');
+      expect(fileNames).toContain('ar/usdz/cuero-negro.usdz');
+
+      const json = JSON.parse(await zip.file('model-3d.json')!.async('text'));
+      expect(json.files.ar).toEqual({
+        glbDir: 'ar/glb',
+        usdzDir: 'ar/usdz'
+      });
+      expect(json.variants[0].ar).toEqual({
+        glb: 'ar/glb/cuero-negro.glb',
+        usdz: 'ar/usdz/cuero-negro.usdz'
+      });
+    });
+
+    it('falls back to candidate pool if a variant primary normal map file is missing on disk', async () => {
+      // Mock readBinaryFile to fail on missing/corrupt path
+      (window as any).electronAPI.readBinaryFile = vi.fn(async (filePath: string) => {
+        if (filePath.includes('corrupt')) {
+          throw new Error('ENOENT: no such file or directory');
+        }
+        return new TextEncoder().encode(`RAW_BYTES_FOR_${filePath}`);
+      });
+
+      // Simulate missing primary file but working candidate in mapVariants.normal
+      useVariantStore.setState({
+        mapVariants: {
+          baseColor: [],
+          normal: [
+            {
+              id: 'n-fallback',
+              name: 'lino_norm',
+              fileName: 'lino_norm.webp',
+              filePath: '/fake/path/lino_norm.webp',
+              url: ''
+            }
+          ],
+          orm: [],
+          metalRoughness: [],
+          ao: [],
+          roughness: [],
+          metalness: [],
+          emissive: [],
+          clearcoat: [],
+          sheen: [],
+          transmission: [],
+          alpha: [],
+          displacement: []
+        }
+      });
+
+      const mockVariants = [
+        {
+          id: 'v-corrupt-norm',
+          name: 'Lino Arena',
+          maps: {
+            normal: {
+              fileName: 'corrupt_norm.webp',
+              filePath: '/non/existent/corrupt_norm.webp'
+            }
+          },
+          settings: {}
+        }
+      ];
+
+      const zipBlob = await createSeraPackageZip({
+        productName: 'Silla Fallback',
+        variants: mockVariants as any
+      });
+
+      const zip = await JSZip.loadAsync(zipBlob);
+      const fileNames = Object.keys(zip.files);
+
+      // Verify that normal map was NOT lost, it was recovered from candidate pool
+      expect(fileNames).toContain('maps/lino_norm.webp');
+      const json = JSON.parse(await zip.file('model-3d.json')!.async('text'));
+      expect(json.variants[0].normalMap).toBe('maps/lino_norm.webp');
     });
   });
 });

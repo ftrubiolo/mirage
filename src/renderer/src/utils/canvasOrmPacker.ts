@@ -1,5 +1,5 @@
 export interface CanvasOrmPackOptions {
-  aoUrl: string;
+  aoUrl?: string;
   metalRoughnessUrl?: string;
   roughnessUrl?: string;
   metalnessUrl?: string;
@@ -39,8 +39,11 @@ export async function packOrmWithCanvas(options: CanvasOrmPackOptions): Promise<
   } = options;
 
   // 1. Load source images
-  onProgress?.('Cargando mapa de Oclusión Ambiental (AO)...');
-  const aoImg = await loadImage(aoUrl);
+  let aoImg: HTMLImageElement | null = null;
+  if (aoUrl) {
+    onProgress?.('Cargando mapa de Oclusión Ambiental (AO)...');
+    aoImg = await loadImage(aoUrl);
+  }
 
   let mrImg: HTMLImageElement | null = null;
   let roughImg: HTMLImageElement | null = null;
@@ -71,10 +74,13 @@ export async function packOrmWithCanvas(options: CanvasOrmPackOptions): Promise<
   }
 
   // 3. Extract AO (Red channel)
-  onProgress?.('Extrayendo canal de Oclusión (R)...');
-  helperCtx.clearRect(0, 0, resolution, resolution);
-  helperCtx.drawImage(aoImg, 0, 0, resolution, resolution);
-  const aoData = helperCtx.getImageData(0, 0, resolution, resolution).data;
+  let aoData: Uint8ClampedArray | null = null;
+  if (aoImg) {
+    onProgress?.('Extrayendo canal de Oclusión (R)...');
+    helperCtx.clearRect(0, 0, resolution, resolution);
+    helperCtx.drawImage(aoImg, 0, 0, resolution, resolution);
+    aoData = helperCtx.getImageData(0, 0, resolution, resolution).data;
+  }
 
   // 4. Extract Roughness (G) and Metalness (B)
   let mrData: Uint8ClampedArray | null = null;
@@ -121,7 +127,7 @@ export async function packOrmWithCanvas(options: CanvasOrmPackOptions): Promise<
     const idx = i * 4;
 
     // Red = Occlusion (AO)
-    out[idx + 0] = aoData[idx + 0];
+    out[idx + 0] = aoData ? aoData[idx + 0] : 255;
 
     // Green = Roughness
     if (mrData) {

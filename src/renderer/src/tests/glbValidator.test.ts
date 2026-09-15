@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { analyzeGlbHierarchy, auditModelScale } from '@renderer/utils/glbValidator';
+import {
+  analyzeGlbHierarchy,
+  auditModelScale,
+  extractGlbManifest,
+  parseGlbBinaryJson,
+  extractEmbeddedImageBytes,
+  extractAllEmbeddedImages
+} from '@renderer/utils/glbValidator';
+import { bakeModelTransforms } from '@renderer/utils/viewportBridge';
 
 describe('glbValidator', () => {
   describe('analyzeGlbHierarchy', () => {
@@ -180,6 +188,237 @@ describe('glbValidator', () => {
       const res005 = auditModelScale({ width: 0.05, height: 0.02, depth: 0.01 });
       expect(res005.status).toBe('optimal');
       expect(res005.detectedUnitHint).toBe('meters');
+    });
+  });
+
+  describe('bakeModelTransforms', () => {
+    it('bakes rotation and scale into mesh geometry vertices and keeps model centered at origin (ignoring staging translation)', () => {
+      const root = new THREE.Group();
+      // Box geometry with dimensions X=1, Y=2, Z=3
+      const geom = new THREE.BoxGeometry(1, 2, 3);
+      const mesh = new THREE.Mesh(geom, new THREE.MeshStandardMaterial());
+      root.add(mesh);
+
+      // Rotate 90 deg on X (Math.PI / 2): swaps Y (2) and Z (3)
+      root.rotation.x = Math.PI / 2;
+      root.scale.set(2, 2, 2); // Scales all dimensions by 2
+      root.position.set(5, 10, 15);
+      root.updateMatrixWorld(true);
+
+      const baked = bakeModelTransforms(root);
+
+      // Node transforms are reset to identity
+      expect(baked.position.x).toBe(0);
+      expect(baked.position.y).toBe(0);
+      expect(baked.position.z).toBe(0);
+      expect(baked.rotation.x).toBe(0);
+      expect(baked.rotation.y).toBe(0);
+      expect(baked.rotation.z).toBe(0);
+      expect(baked.scale.x).toBe(1);
+      expect(baked.scale.y).toBe(1);
+      expect(baked.scale.z).toBe(1);
+
+      // Find the child mesh
+      let childMesh: THREE.Mesh | null = null;
+      baked.traverse((c) => {
+        if ((c as THREE.Mesh).isMesh) childMesh = c as THREE.Mesh;
+      });
+
+      expect(childMesh).not.toBeNull();
+      expect(childMesh!.position.x).toBe(0);
+      expect(childMesh!.position.y).toBe(0);
+      expect(childMesh!.position.z).toBe(0);
+      expect(childMesh!.scale.x).toBe(1);
+
+      // Bounding box of baked object now reflects the baked transform in world space
+      const box = new THREE.Box3().setFromObject(baked);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+
+      // Dimensions scaled by 2:
+      // Width (X) was 1 -> 2
+      // Height (Y) was 2, now swapped with Z (3) -> 3 * 2 = 6
+      // Depth (Z) was 3, now swapped with Y (2) -> 2 * 2 = 4
+      expect(size.x).toBeCloseTo(2.0, 1);
+      expect(size.y).toBeCloseTo(6.0, 1);
+      expect(size.z).toBeCloseTo(4.0, 1);
+
+      // Center should remain at (0, 0, 0) because staging position is excluded from exports
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      expect(center.x).toBeCloseTo(0.0, 1);
+      expect(center.y).toBeCloseTo(0.0, 1);
+      expect(center.z).toBeCloseTo(0.0, 1);
+    });
+  });
+
+  describe('extractGlbManifest & parseGlbBinaryJson', () => {
+    it('returns null on invalid or empty source', () => {
+      expect(extractGlbManifest(null)).toBeNull();
+      expect(extractGlbManifest(undefined)).toBeNull();
+      expect(parseGlbBinaryJson(new Uint8Array(10))).toBeNull();
+    });
+
+    it('extracts complete glTF manifest from JSON object', () => {
+      const gltfMock = {
+        asset: { generator: 'Blender 4.2', version: '2.0' },
+        extensionsUsed: ['KHR_materials_transmission'],
+        bufferViews: [
+          { byteLength: 5000 },
+          { byteLength: 12000 }
+        ],
+        images: [
+          { name: 'base_img', mimeType: 'image/png', bufferView: 0 },
+          { name: 'glass_mask', mimeType: 'image/png', bufferView: 1 }
+        ],
+        textures: [
+          { source: 0 },
+          { source: 1 }
+        ],
+        materials: [
+          {
+            name: 'Glass_Tabletop',
+            alphaMode: 'BLEND',
+            doubleSided: true,
+            pbrMetallicRoughness: {
+              baseColorTexture: { index: 0 },
+              roughnessFactor: 0.1,
+              metallicFactor: 0.0
+            },
+            extensions: {
+              KHR_materials_transmission: {
+                transmissionFactor: 1.0,
+                transmissionTexture: { index: 1 }
+              }
+            }
+          }
+        ],
+        animations: [{ name: 'Turntable' }],
+        cameras: [{ name: 'Camera_Main' }]
+      };
+
+      const manifest = extractGlbManifest(gltfMock);
+      expect(manifest).not.toBeNull();
+      expect(manifest?.generator).toBe('Blender 4.2');
+      expect(manifest?.version).toBe('2.0');
+      expect(manifest?.extensionsUsed).toEqual(['KHR_materials_transmission']);
+      expect(manifest?.totalTexturesByteLength).toBe(17000);
+      expect(manifest?.textures.length).toBe(2);
+      expect(manifest?.textures[0].name).toBe('base_img');
+      expect(manifest?.textures[0].assignedSlots).toContain('BaseColor');
+      expect(manifest?.textures[1].assignedSlots).toContain('Transmisión');
+
+      expect(manifest?.materials.length).toBe(1);
+      const mat = manifest!.materials[0];
+      expect(mat.name).toBe('Glass_Tabletop');
+      expect(mat.alphaMode).toBe('BLEND');
+      expect(mat.doubleSided).toBe(true);
+      expect(mat.transmissionFactor).toBe(1.0);
+      expect(mat.extensions).toContain('KHR_materials_transmission');
+      expect(mat.textures.length).toBe(2);
+
+      expect(manifest?.animationsCount).toBe(1);
+      expect(manifest?.animationNames).toEqual(['Turntable']);
+      expect(manifest?.camerasCount).toBe(1);
+      expect(manifest?.lightsCount).toBe(0);
+    });
+
+    it('extracts glTF manifest from gltf.parser.json structure', () => {
+      const gltfWrapper = {
+        parser: {
+          json: {
+            asset: { version: '2.0' },
+            materials: [{ name: 'Fabric' }]
+          }
+        }
+      };
+      const manifest = extractGlbManifest(gltfWrapper);
+      expect(manifest).not.toBeNull();
+      expect(manifest?.materials.length).toBe(1);
+      expect(manifest?.materials[0].name).toBe('Fabric');
+    });
+
+    it('correctly parses binary GLB chunk into glTF JSON', () => {
+      const jsonStr = JSON.stringify({
+        asset: { version: '2.0', generator: 'TestExporter' },
+        materials: [{ name: 'Mat_Binary' }]
+      });
+      const jsonBytes = new TextEncoder().encode(jsonStr);
+
+      // Construct a valid binary GLB header
+      // Header: 12 bytes [magic(4), version(4), length(4)]
+      // Chunk 0: 8 bytes [chunkLength(4), chunkType(4)], then jsonBytes
+      const totalLen = 12 + 8 + jsonBytes.length;
+      const buffer = new ArrayBuffer(totalLen);
+      const view = new DataView(buffer);
+      view.setUint32(0, 0x46546c67, true); // 'glTF'
+      view.setUint32(4, 2, true); // version 2
+      view.setUint32(8, totalLen, true);
+      view.setUint32(12, jsonBytes.length, true);
+      view.setUint32(16, 0x4e4f534a, true); // 'JSON'
+      new Uint8Array(buffer).set(jsonBytes, 20);
+
+      const parsed = parseGlbBinaryJson(buffer);
+      expect(parsed).not.toBeNull();
+      expect(parsed.asset.generator).toBe('TestExporter');
+
+      const manifest = extractGlbManifest(buffer);
+      expect(manifest).not.toBeNull();
+      expect(manifest?.generator).toBe('TestExporter');
+      expect(manifest?.materials[0].name).toBe('Mat_Binary');
+    });
+
+    it('extracts raw embedded image bytes from binary GLB buffer', () => {
+      const mockImgData = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 1, 2, 3]); // Fake PNG bytes
+      const jsonStr = JSON.stringify({
+        asset: { version: '2.0' },
+        bufferViews: [{ byteOffset: 0, byteLength: mockImgData.length }],
+        images: [{ name: 'test_tex', mimeType: 'image/png', bufferView: 0 }]
+      });
+      const jsonBytes = new TextEncoder().encode(jsonStr);
+
+      // Binary GLB layout:
+      // Header: 12 bytes
+      // Chunk 0 (JSON): 8 bytes header + jsonBytes (padded to 4 bytes if needed)
+      const jsonPadding = (4 - (jsonBytes.length % 4)) % 4;
+      const jsonChunkLen = jsonBytes.length + jsonPadding;
+
+      // Chunk 1 (BIN): 8 bytes header + mockImgData (padded to 4 bytes)
+      const binPadding = (4 - (mockImgData.length % 4)) % 4;
+      const binChunkLen = mockImgData.length + binPadding;
+
+      const totalLen = 12 + 8 + jsonChunkLen + 8 + binChunkLen;
+      const buffer = new ArrayBuffer(totalLen);
+      const view = new DataView(buffer);
+      const u8 = new Uint8Array(buffer);
+
+      // GLB Header
+      view.setUint32(0, 0x46546c67, true);
+      view.setUint32(4, 2, true);
+      view.setUint32(8, totalLen, true);
+
+      // Chunk 0 (JSON)
+      view.setUint32(12, jsonChunkLen, true);
+      view.setUint32(16, 0x4e4f534a, true);
+      u8.set(jsonBytes, 20);
+
+      // Chunk 1 (BIN)
+      const binOffset = 20 + jsonChunkLen;
+      view.setUint32(binOffset, binChunkLen, true);
+      view.setUint32(binOffset + 4, 0x004e4942, true); // 'BIN\0'
+      u8.set(mockImgData, binOffset + 8);
+
+      const extracted = extractEmbeddedImageBytes(buffer, 0);
+      expect(extracted).not.toBeNull();
+      expect(extracted?.name).toBe('test_tex');
+      expect(extracted?.mimeType).toBe('image/png');
+      expect(extracted?.extension).toBe('png');
+      expect(extracted?.bytes).toEqual(mockImgData);
+
+      const all = extractAllEmbeddedImages(buffer);
+      expect(all.length).toBe(1);
+      expect(all[0].name).toBe('test_tex');
+      expect(all[0].bytes).toEqual(mockImgData);
     });
   });
 });

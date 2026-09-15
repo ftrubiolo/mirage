@@ -51,6 +51,12 @@ export const DEFAULT_STATUSBAR_ITEMS: string[] = [
   'model-stats'
 ];
 
+export interface CanvasWidget {
+  id: string;
+  x: number;
+  y: number;
+}
+
 export interface ViewportPersistedSettings {
   viewportTheme?: 'dark' | 'light';
   environmentPreset?: EnvironmentPreset;
@@ -75,6 +81,7 @@ export interface ViewportPersistedSettings {
   iconOnlyToolbarItems?: string[];
   statusBarItems?: string[];
   hiddenStatusBarItems?: string[];
+  canvasWidgets?: CanvasWidget[];
 }
 
 interface ViewportState {
@@ -181,6 +188,13 @@ interface ViewportState {
   ) => void;
   moveItemToOtherBar: (itemId: string, currentBar: 'toolbar' | 'statusbar') => void;
   resetAllBars: () => void;
+
+  // Canvas Floating Widgets State & Actions
+  canvasWidgets: CanvasWidget[];
+  addCanvasWidget: (id: string, x: number, y: number) => void;
+  removeCanvasWidget: (id: string, targetBar?: 'toolbar' | 'statusbar') => void;
+  updateCanvasWidgetPosition: (id: string, x: number, y: number) => void;
+  resetCanvasWidgets: () => void;
 
   // Animation Playback State & Actions
   hasAnimations: boolean;
@@ -683,9 +697,12 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
       insertAt = Math.max(0, Math.min(targetList.length, insertAt));
       targetList.splice(insertAt, 0, itemId);
 
+      const nextCanvasWidgets = state.canvasWidgets.filter((w) => w.id !== itemId);
+
       return {
         toolbarItems: nextToolbar,
-        statusBarItems: nextStatusBar
+        statusBarItems: nextStatusBar,
+        canvasWidgets: nextCanvasWidgets
       };
     });
     requestSaveSettings();
@@ -703,10 +720,72 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
     set({
       toolbarItems: [...DEFAULT_TOOLBAR_ITEMS],
       statusBarItems: [...DEFAULT_STATUSBAR_ITEMS],
+      canvasWidgets: [],
       hiddenToolbarItems: [],
       hiddenStatusBarItems: [],
       iconOnlyToolbarItems: []
     });
+    requestSaveSettings();
+  },
+
+  // Canvas Floating Widgets Actions
+  canvasWidgets: [],
+  addCanvasWidget: (id, x, y) => {
+    set((state) => {
+      const nextToolbar = state.toolbarItems.filter((i) => i !== id);
+      const nextStatus = state.statusBarItems.filter((i) => i !== id);
+      const existingIdx = state.canvasWidgets.findIndex((w) => w.id === id);
+      let nextWidgets: CanvasWidget[];
+      if (existingIdx !== -1) {
+        nextWidgets = [...state.canvasWidgets];
+        nextWidgets[existingIdx] = { id, x, y };
+      } else {
+        nextWidgets = [...state.canvasWidgets, { id, x, y }];
+      }
+      return {
+        toolbarItems: nextToolbar,
+        statusBarItems: nextStatus,
+        canvasWidgets: nextWidgets
+      };
+    });
+    requestSaveSettings();
+  },
+
+  removeCanvasWidget: (id, targetBar) => {
+    set((state) => {
+      const nextWidgets = state.canvasWidgets.filter((w) => w.id !== id);
+      const bar = targetBar || (DEFAULT_STATUSBAR_ITEMS.includes(id) ? 'statusbar' : 'toolbar');
+      let nextToolbar = state.toolbarItems;
+      let nextStatus = state.statusBarItems;
+
+      if (bar === 'statusbar') {
+        if (!nextStatus.includes(id)) {
+          nextStatus = [...nextStatus, id];
+        }
+      } else {
+        if (!nextToolbar.includes(id)) {
+          nextToolbar = [...nextToolbar, id];
+        }
+      }
+
+      return {
+        canvasWidgets: nextWidgets,
+        toolbarItems: nextToolbar,
+        statusBarItems: nextStatus
+      };
+    });
+    requestSaveSettings();
+  },
+
+  updateCanvasWidgetPosition: (id, x, y) => {
+    set((state) => ({
+      canvasWidgets: state.canvasWidgets.map((w) => (w.id === id ? { ...w, x, y } : w))
+    }));
+    requestSaveSettings();
+  },
+
+  resetCanvasWidgets: () => {
+    set({ canvasWidgets: [] });
     requestSaveSettings();
   },
 
@@ -735,7 +814,8 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
       ...(settings.hiddenToolbarItems && Array.isArray(settings.hiddenToolbarItems) ? { hiddenToolbarItems: settings.hiddenToolbarItems } : {}),
       ...(settings.iconOnlyToolbarItems && Array.isArray(settings.iconOnlyToolbarItems) ? { iconOnlyToolbarItems: settings.iconOnlyToolbarItems } : {}),
       ...(settings.statusBarItems && Array.isArray(settings.statusBarItems) ? { statusBarItems: settings.statusBarItems } : {}),
-      ...(settings.hiddenStatusBarItems && Array.isArray(settings.hiddenStatusBarItems) ? { hiddenStatusBarItems: settings.hiddenStatusBarItems } : {})
+      ...(settings.hiddenStatusBarItems && Array.isArray(settings.hiddenStatusBarItems) ? { hiddenStatusBarItems: settings.hiddenStatusBarItems } : {}),
+      ...(settings.canvasWidgets && Array.isArray(settings.canvasWidgets) ? { canvasWidgets: settings.canvasWidgets } : {})
     }));
   },
 
@@ -764,7 +844,8 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
       hiddenToolbarItems: s.hiddenToolbarItems,
       iconOnlyToolbarItems: s.iconOnlyToolbarItems,
       statusBarItems: s.statusBarItems,
-      hiddenStatusBarItems: s.hiddenStatusBarItems
+      hiddenStatusBarItems: s.hiddenStatusBarItems,
+      canvasWidgets: s.canvasWidgets
     };
   }
 }));

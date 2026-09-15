@@ -10,6 +10,7 @@ import { CameraController } from './CameraController';
 import { ViewportContextMenu } from './ViewportContextMenu';
 import { ViewportToolbar } from './ViewportToolbar';
 import { ViewportStatusBar } from './ViewportStatusBar';
+import { CanvasWidgetRenderer } from './Widgets';
 import { useModelStore } from '../../store/modelStore';
 import { useViewportStore } from '../../store/viewportStore';
 import { useAppStore } from '../../store/appStore';
@@ -86,6 +87,7 @@ export const Canvas3D: React.FC = React.memo(() => {
   const autoRotate = useViewportStore((state) => state.autoRotate);
   const cameraZoomAction = useViewportStore((state) => state.cameraZoomAction);
   const viewportTheme = useViewportStore((state) => state.viewportTheme);
+  const canvasWidgets = useViewportStore((state) => state.canvasWidgets);
   const currentView = useAppStore((state) => state.currentView);
   const orbitControlsRef = useRef<any>(null);
   const prevZoomAction = useRef(cameraZoomAction);
@@ -287,49 +289,103 @@ export const Canvas3D: React.FC = React.memo(() => {
     prevZoomAction.current = cameraZoomAction;
   }, [cameraZoomAction]);
 
-  const [isDragOver, setIsDragOver] = useState(false);
+  const [isDragOverFile, setIsDragOverFile] = useState(false);
+  const [isDragOverBarItem, setIsDragOverBarItem] = useState(false);
   const dragCounterRef = useRef(0);
+  const [stageBounds, setStageBounds] = useState({ width: 1000, height: 800 });
 
-  const handleDragEnter = (e: React.DragEvent) => {
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0) {
+          setStageBounds({
+            width: entry.contentRect.width,
+            height: entry.contentRect.height
+          });
+        }
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Guarantee drag state is ALWAYS cleared on global cancellation, dragend, or drop
+  useEffect(() => {
+    const handleGlobalDragReset = () => {
+      dragCounterRef.current = 0;
+      setIsDragOverFile(false);
+      setIsDragOverBarItem(false);
+    };
+    window.addEventListener('dragend', handleGlobalDragReset);
+    window.addEventListener('drop', handleGlobalDragReset);
+    return () => {
+      window.removeEventListener('dragend', handleGlobalDragReset);
+      window.removeEventListener('drop', handleGlobalDragReset);
+    };
+  }, []);
+
+  const handleStageDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
     dragCounterRef.current++;
-    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
-      setIsDragOver(true);
+
+    const types = e.dataTransfer?.types ? Array.from(e.dataTransfer.types) : [];
+    if (types.includes('Files')) {
+      setIsDragOverFile(true);
+      setIsDragOverBarItem(false);
+    } else if (types.includes('application/x-mirage-bar') || types.includes('text/plain')) {
+      setIsDragOverBarItem(true);
+      setIsDragOverFile(false);
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleStageDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
+    const types = e.dataTransfer?.types ? Array.from(e.dataTransfer.types) : [];
+    if (types.includes('Files')) {
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    } else {
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    }
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleStageDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     dragCounterRef.current--;
     if (dragCounterRef.current <= 0) {
       dragCounterRef.current = 0;
-      setIsDragOver(false);
+      setIsDragOverFile(false);
+      setIsDragOverBarItem(false);
     }
   };
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleStageDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     dragCounterRef.current = 0;
-    setIsDragOver(false);
+    setIsDragOverFile(false);
+    setIsDragOverBarItem(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+    // 1. External OS File Drop
+    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
       const files = Array.from(e.dataTransfer.files);
       await handleCanvasDrop(files);
+      return;
+    }
+
+    // 2. Toolbar/StatusBar Item Drop onto Canvas Stage
+    const sourceId = e.dataTransfer?.getData ? e.dataTransfer.getData('text/plain') : '';
+    if (sourceId && stageRef.current) {
+      const rect = stageRef.current.getBoundingClientRect();
+      const dropX = Math.max(16, Math.min(rect.width - 280, e.clientX - rect.left - 100));
+      const dropY = Math.max(16, Math.min(rect.height - 140, e.clientY - rect.top - 20));
+      useViewportStore.getState().addCanvasWidget(sourceId, dropX, dropY);
     }
   };
 
   return (
     <div
       ref={containerRef}
-      onDragEnter={handleDragEnter}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
       className={`relative w-full h-full overflow-hidden select-none flex flex-col transition-colors duration-200 ${
         viewportTheme === 'dark' ? 'bg-[#111110]' : 'bg-[#f7f5f2]'
       }`}
@@ -338,9 +394,16 @@ export const Canvas3D: React.FC = React.memo(() => {
       <ViewportToolbar />
 
       {/* 3D Viewport Main Stage */}
-      <div ref={stageRef} className="flex-1 relative w-full h-full min-h-0 overflow-hidden">
-        {/* Visual Drag & Drop Overlay */}
-        {isDragOver && (
+      <div
+        ref={stageRef}
+        onDragEnter={handleStageDragEnter}
+        onDragOver={handleStageDragOver}
+        onDragLeave={handleStageDragLeave}
+        onDrop={handleStageDrop}
+        className="flex-1 relative w-full h-full min-h-0 overflow-hidden"
+      >
+        {/* Visual Drag & Drop Overlay for External OS Files */}
+        {isDragOverFile && (
           <div className="absolute inset-0 z-40 pointer-events-none flex flex-col items-center justify-center bg-action-subtle/80 backdrop-blur-xs border-2 border-dashed border-action m-3 rounded-xs animate-in fade-in duration-150">
             <div className="p-6 rounded-xs bg-surface-lowest/95 border border-hairline shadow-lg flex flex-col items-center gap-3 max-w-sm text-center">
               <div className="w-12 h-12 rounded-xs bg-surface-container text-action border border-hairline flex items-center justify-center">
@@ -357,6 +420,29 @@ export const Canvas3D: React.FC = React.memo(() => {
             </div>
           </div>
         )}
+
+        {/* Visual Drop Zone Indicator for Canvas Floating Widgets */}
+        {isDragOverBarItem && (
+          <div className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center bg-action/5 backdrop-blur-[2px] border-2 border-dashed border-action m-3 rounded-xs animate-in fade-in duration-100">
+            <div className="px-4 py-2.5 rounded-xs bg-surface-lowest/95 border border-action shadow-xl flex items-center gap-2 text-action">
+              <Upload className="w-4 h-4" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider">
+                Soltar para anclar widget flotante en el visor
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Floating Canvas Widgets */}
+        {canvasWidgets.map((widget) => (
+          <CanvasWidgetRenderer
+            key={widget.id}
+            id={widget.id}
+            x={widget.x}
+            y={widget.y}
+            containerBounds={stageBounds}
+          />
+        ))}
 
         {/* Right-Click Context Menu */}
         <ViewportContextMenu

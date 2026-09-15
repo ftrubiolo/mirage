@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useViewportStore } from '../../../store/viewportStore';
-import { isToolbarSpacer } from './types';
+import { isToolbarSpacer, TOOLBAR_ITEM_NAMES } from './types';
 
 interface ToolbarItemWrapperProps {
   itemId: string;
@@ -36,6 +36,38 @@ export const ToolbarItemWrapper: React.FC<ToolbarItemWrapperProps> = ({
     e.dataTransfer.setData('text/plain', itemId);
     e.dataTransfer.setData('application/x-mirage-bar', bar);
     e.dataTransfer.effectAllowed = 'move';
+
+    // Custom high-fidelity drag badge (avoids ugly browser OS snapshots)
+    try {
+      if (typeof document !== 'undefined' && e.dataTransfer.setDragImage) {
+        const itemName = (TOOLBAR_ITEM_NAMES as any)[itemId] || itemId;
+        const badge = document.createElement('div');
+        badge.style.position = 'fixed';
+        badge.style.top = '-1000px';
+        badge.style.left = '-1000px';
+        badge.style.pointerEvents = 'none';
+        badge.style.padding = '4px 10px';
+        badge.style.borderRadius = '2px';
+        badge.style.backgroundColor = '#181816';
+        badge.style.border = '1px solid #d94e34';
+        badge.style.color = '#ffffff';
+        badge.style.fontFamily = 'monospace';
+        badge.style.fontSize = '11px';
+        badge.style.fontWeight = 'bold';
+        badge.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.5)';
+        badge.style.display = 'flex';
+        badge.style.alignItems = 'center';
+        badge.style.gap = '6px';
+        badge.style.zIndex = '9999';
+        badge.innerText = `⋮⋮ ${itemName}`;
+        document.body.appendChild(badge);
+        e.dataTransfer.setDragImage(badge, 40, 12);
+        setTimeout(() => badge.remove(), 0);
+      }
+    } catch {
+      // Ignore if setDragImage is unsupported or running in headless test
+    }
+
     setIsDragging(true);
   };
 

@@ -20,6 +20,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/utilities": "^3.2.2",
     "@janhapke/sharp-electron": "^0.35.4-electron.1",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@needle-tools/three-animation-pointer": "^1.1.2",

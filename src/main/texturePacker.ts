@@ -1,7 +1,36 @@
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { app } from 'electron';
+
+let cachedNodeExecutable: string | null | undefined = undefined;
+
+export function getNodeExecutable(): string {
+  if (cachedNodeExecutable !== undefined) {
+    return cachedNodeExecutable || process.execPath;
+  }
+
+  // If a clean system Node.js binary is available, prefer it to completely avoid
+  // Chromium/Electron binary overhead and symbol collisions.
+  try {
+    const whichCmd = process.platform === 'win32' ? 'where node' : 'which node';
+    const foundPath = execSync(whichCmd, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 1500
+    }).trim().split(/\r?\n/)[0];
+
+    if (foundPath && path.isAbsolute(foundPath)) {
+      cachedNodeExecutable = foundPath;
+      return foundPath;
+    }
+  } catch {
+    // No system node available or command timed out
+  }
+
+  cachedNodeExecutable = null;
+  return process.execPath;
+}
 
 export interface PackOrmOptions {
   task?: 'packOrm';
@@ -15,7 +44,7 @@ export interface PackOrmOptions {
 }
 
 export interface TextureProcessOptions {
-  task: 'packOrm' | 'flipNormal' | 'invertRoughness' | 'convertResize';
+  task: 'packOrm' | 'flipNormal' | 'invertRoughness' | 'convertResize' | 'thumbnail';
   inputPath?: string;
   outputPath: string;
   aoPath?: string;
@@ -27,11 +56,10 @@ export interface TextureProcessOptions {
 }
 
 /**
- * Executes Sharp texture processing inside an isolated Node.js process to avoid
- * the GLib / libvips assertion collisions that occur inside Electron on Linux.
+ * Executes Sharp texture processing inside an isolated Node.js process (or Electron RUN_AS_NODE).
  */
 export async function processTextureTask(options: TextureProcessOptions): Promise<string> {
-  const isDev = !app.isPackaged;
+  const isDev = !app?.isPackaged;
   const workerScript = isDev
     ? path.resolve(process.cwd(), 'resources', 'scripts', 'sharpWorker.cjs')
     : path.join(process.resourcesPath, 'resources', 'scripts', 'sharpWorker.cjs');
@@ -43,12 +71,20 @@ export async function processTextureTask(options: TextureProcessOptions): Promis
       ? path.resolve(process.cwd(), 'node_modules')
       : path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules');
 
-    const child = spawn(process.execPath, [workerScript, JSON.stringify(options)], {
-      env: {
-        ...process.env,
-        ELECTRON_RUN_AS_NODE: '1',
-        NODE_PATH: `${nodeModulesPath}${path.delimiter}${process.env.NODE_PATH || ''}`
-      },
+    const execBinary = getNodeExecutable();
+    const isElectronBinary = execBinary === process.execPath;
+
+    const childEnv: NodeJS.ProcessEnv = {
+      ...process.env,
+      NODE_PATH: `${nodeModulesPath}${path.delimiter}${process.env.NODE_PATH || ''}`
+    };
+
+    if (isElectronBinary) {
+      childEnv.ELECTRON_RUN_AS_NODE = '1';
+    }
+
+    const child = spawn(execBinary, [workerScript, JSON.stringify(options)], {
+      env: childEnv,
       stdio: ['pipe', 'pipe', 'pipe']
     });
 

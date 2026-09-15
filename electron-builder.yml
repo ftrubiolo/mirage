@@ -15,6 +15,7 @@ extraResources:
     to: resources/scripts
 asarUnpack:
   - "node_modules/sharp/**/*"
+  - "node_modules/@janhapke/**/*"
   - "node_modules/@img/**/*"
   - "resources/scripts/**/*"
 linux:
@@ -22,7 +23,7 @@ linux:
     - AppImage
     - tar.gz
   category: Graphics
-  maintainer: "ftrubiolo <contact@mirage3d.app>"
+  maintainer: "ftrubiolo <facu1rubiolo@gmail.com>"
 mac:
   target:
     - dmg

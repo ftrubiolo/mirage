@@ -1,7 +1,9 @@
 import { ipcMain, dialog, BrowserWindow, app, shell } from 'electron';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import * as crypto from 'node:crypto';
 import { packOrmTexture, processTextureTask, PackOrmOptions } from './texturePacker';
+import { getThumbnail } from './thumbnailService';
 import { watchFile, stopWatching } from './fileWatcher';
 import {
   getLibraryBasePath,
@@ -31,6 +33,7 @@ import {
   AgentConnectionSchema,
   CopyFileToLibrarySchema,
   EntrySlugSchema,
+  GetThumbnailSchema,
   KeybindsSchema,
   LibraryEntrySchema,
   McpServerConfigSchema,
@@ -251,6 +254,19 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     } catch (err: any) {
       console.error('[ipcMain texture:process] Error:', err);
       throw new Error(`Error procesando textura: ${err?.message || err}`);
+    }
+  });
+
+  // High-performance background thumbnail generator with persistent disk caching
+  ipcMain.handle('thumbnail:get', async (_event, options: unknown) => {
+    try {
+      const parsed = parseOrThrow(GetThumbnailSchema, options, 'thumbnail options');
+      await assertReadable(parsed.filePath, 'thumbnail source filePath');
+      const targetSize = parsed.size || 96;
+      return await getThumbnail(parsed.filePath, targetSize);
+    } catch (err: any) {
+      console.error('[ipcMain thumbnail:get] Error:', err);
+      throw new Error(`Error generando miniatura: ${err?.message || err}`);
     }
   });
 

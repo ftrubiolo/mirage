@@ -2,20 +2,26 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 
 let sharp;
-try {
-  sharp = require('sharp');
-} catch (err1) {
+const candidateModules = [
+  '@janhapke/sharp-electron',
+  'sharp',
+  path.resolve(__dirname, '../../app.asar.unpacked/node_modules/@janhapke/sharp-electron'),
+  path.resolve(__dirname, '../../../app.asar.unpacked/node_modules/@janhapke/sharp-electron'),
+  path.resolve(__dirname, '../../app.asar.unpacked/node_modules/sharp'),
+  path.resolve(__dirname, '../../../app.asar.unpacked/node_modules/sharp')
+];
+
+for (const mod of candidateModules) {
   try {
-    const unpacked = path.resolve(__dirname, '../../app.asar.unpacked/node_modules/sharp');
-    sharp = require(unpacked);
-  } catch (err2) {
-    try {
-      const parentUnpacked = path.resolve(__dirname, '../../../app.asar.unpacked/node_modules/sharp');
-      sharp = require(parentUnpacked);
-    } catch (err3) {
-      throw new Error(`Failed to load sharp module: ${err1.message}; ${err2.message}; ${err3.message}`);
-    }
+    sharp = require(mod);
+    if (sharp) break;
+  } catch {
+    // continue to next candidate
   }
+}
+
+if (!sharp) {
+  throw new Error('Failed to load sharp or @janhapke/sharp-electron module');
 }
 
 async function run() {
@@ -215,6 +221,29 @@ async function run() {
         preset: 'photo'
       }).toFile(outputPath);
     }
+
+    console.log(JSON.stringify({ success: true, outputPath }));
+    return;
+  }
+
+  if (task === 'thumbnail') {
+    const { inputPath, resolution, size = 96, quality = 80 } = options;
+    if (!inputPath) throw new Error('inputPath is required for thumbnail');
+
+    const targetSize = resolution || size;
+    await sharp(inputPath)
+      .rotate()
+      .resize(targetSize, targetSize, {
+        fit: 'cover',
+        position: 'centre',
+        withoutEnlargement: true
+      })
+      .webp({
+        quality,
+        effort: 4,
+        smartSubsample: true
+      })
+      .toFile(outputPath);
 
     console.log(JSON.stringify({ success: true, outputPath }));
     return;

@@ -70,6 +70,55 @@ export function getMirageDataDir(): string {
 }
 
 /**
+ * Resolves the application cache directory:
+ * - Linux: $XDG_CACHE_HOME/mirage (default: ~/.cache/mirage)
+ * - Windows: %LOCALAPPDATA%/mirage/cache (or %APPDATA%/mirage/cache)
+ * - macOS: ~/Library/Caches/mirage
+ */
+export function getMirageCacheDir(): string {
+  if (isLinux) {
+    const xdgCacheHome = process.env.XDG_CACHE_HOME;
+    if (xdgCacheHome) {
+      return path.join(xdgCacheHome, 'mirage');
+    }
+    const home = process.env.HOME || '';
+    return path.join(home, '.cache', 'mirage');
+  }
+
+  if (isWindows) {
+    const localAppData = process.env.LOCALAPPDATA;
+    if (localAppData) {
+      return path.join(localAppData, 'mirage', 'cache');
+    }
+    const appData = process.env.APPDATA;
+    if (appData) {
+      return path.join(appData, 'mirage', 'cache');
+    }
+    try {
+      if (app?.getPath) {
+        return path.join(app.getPath('temp'), 'mirage', 'cache');
+      }
+    } catch {
+      // Ignore
+    }
+    return path.join(process.env.TEMP || process.env.TMP || '/tmp', 'mirage-cache');
+  }
+
+  const home = process.env.HOME || '';
+  return path.join(home, 'Library', 'Caches', 'mirage');
+}
+
+/**
+ * Resolves the dedicated thumbnails cache directory:
+ * - Linux: ~/.cache/mirage/thumbnails
+ * - Windows: %LOCALAPPDATA%/mirage/cache/thumbnails
+ * - macOS: ~/Library/Caches/mirage/thumbnails
+ */
+export function getThumbnailsCacheDir(): string {
+  return path.join(getMirageCacheDir(), 'thumbnails');
+}
+
+/**
  * Resolves legacy application data directory for automatic migration from mirage-sera to mirage.
  */
 export function getLegacyMirageDataDir(): string {

@@ -65,7 +65,7 @@ export const PackOrmOptionsSchema = z.object({
 });
 
 export const TextureProcessOptionsSchema = z.object({
-  task: z.enum(['packOrm', 'flipNormal', 'invertRoughness', 'convertResize']),
+  task: z.enum(['packOrm', 'flipNormal', 'invertRoughness', 'convertResize', 'thumbnail']),
   inputPath: pathString.optional(),
   outputPath: pathString,
   aoPath: pathString.optional(),
@@ -74,6 +74,11 @@ export const TextureProcessOptionsSchema = z.object({
   metalRoughnessPath: pathString.optional(),
   resolution: z.number().int().min(16).max(8192).optional(),
   quality: z.number().int().min(1).max(100).optional()
+});
+
+export const GetThumbnailSchema = z.object({
+  filePath: pathString,
+  size: z.number().int().min(16).max(512).optional().default(96)
 });
 
 export const CopyFileToLibrarySchema = z.object({

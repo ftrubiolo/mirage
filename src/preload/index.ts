@@ -41,6 +41,7 @@ export interface ElectronAPI {
   stopWatching: () => Promise<boolean>;
   packOrmTexture: (options: PackOrmOptions) => Promise<string>;
   processTexture: (options: TextureProcessOptions) => Promise<string>;
+  getThumbnail: (options: { filePath: string; size?: number }) => Promise<{ url: string; filePath: string }>;
   getResourcePath: (relativePath: string) => Promise<string>;
   toAssetUrl: (filePath: string) => string;
   getPathForFile: (file: File) => string;
@@ -86,6 +87,23 @@ export interface ElectronAPI {
   getSettingsPath: () => Promise<string>;
 }
 
+function formatAssetUrl(filePath: string): string {
+  if (!filePath) return '';
+  if (
+    filePath.startsWith('local-asset:') ||
+    filePath.startsWith('data:') ||
+    filePath.startsWith('blob:') ||
+    filePath.startsWith('http:') ||
+    filePath.startsWith('https:')
+  ) {
+    return filePath;
+  }
+  // Normalize Windows backslashes to forward slashes
+  const forwardSlashed = filePath.replace(/\\/g, '/');
+  const cleanPath = forwardSlashed.replace(/^\/+/, '');
+  return `local-asset:///${cleanPath}`;
+}
+
 const api: ElectronAPI = {
   openFileDialog: (options) => ipcRenderer.invoke('dialog:openFile', options),
   openDirectoryDialog: () => ipcRenderer.invoke('dialog:openDirectory'),
@@ -98,6 +116,13 @@ const api: ElectronAPI = {
   stopWatching: () => ipcRenderer.invoke('watcher:stop'),
   packOrmTexture: (options) => ipcRenderer.invoke('texture:packOrm', options),
   processTexture: (options) => ipcRenderer.invoke('texture:process', options),
+  getThumbnail: async (options) => {
+    const res = await ipcRenderer.invoke('thumbnail:get', options);
+    return {
+      filePath: res.filePath,
+      url: formatAssetUrl(res.filePath)
+    };
+  },
   getResourcePath: (relativePath) => ipcRenderer.invoke('app:getResourcePath', relativePath),
   getLibraryPath: () => ipcRenderer.invoke('library:getBaseDir'),
   listLibraryEntries: () => ipcRenderer.invoke('library:list'),
@@ -135,22 +160,7 @@ const api: ElectronAPI = {
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
   updateSettings: (partial) => ipcRenderer.invoke('settings:update', partial),
   getSettingsPath: () => ipcRenderer.invoke('settings:getPath'),
-  toAssetUrl: (filePath: string) => {
-    if (!filePath) return '';
-    if (
-      filePath.startsWith('local-asset:') ||
-      filePath.startsWith('data:') ||
-      filePath.startsWith('blob:') ||
-      filePath.startsWith('http:') ||
-      filePath.startsWith('https:')
-    ) {
-      return filePath;
-    }
-    // Normalize Windows backslashes to forward slashes
-    const forwardSlashed = filePath.replace(/\\/g, '/');
-    const cleanPath = forwardSlashed.replace(/^\/+/, '');
-    return `local-asset:///${cleanPath}`;
-  },
+  toAssetUrl: formatAssetUrl,
   getPathForFile: (file: File) => {
     try {
       return webUtils.getPathForFile(file);

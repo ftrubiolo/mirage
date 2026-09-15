@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { Upload, FileCode, CheckCircle2 } from 'lucide-react';
+import { Upload, CheckCircle2 } from 'lucide-react';
 import { useModelStore } from '../../store/modelStore';
 import { useAppStore } from '../../store/appStore';
-import { ScaleChecker } from '../Audit/ScaleChecker';
+
 
 export const ModelDropZone: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const modelFilePath = useModelStore((s) => s.modelFilePath);
-  const modelFileSize = useModelStore((s) => s.modelFileSize);
   const setModel = useModelStore((s) => s.setModel);
   const setProductMeta = useModelStore((s) => s.setProductMeta);
 
@@ -76,61 +75,34 @@ export const ModelDropZone: React.FC = () => {
     }
   };
 
-  const formatBytes = (bytes: number) => {
-    if (!bytes) return '0 B';
-    const mb = bytes / (1024 * 1024);
-    return `${mb.toFixed(2)} MB`;
-  };
-
   return (
-    <div className="space-y-4">
-      {/* Drag & Drop Area */}
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsDragging(true);
-        }}
-        onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
-        onClick={handleOpenFileDialog}
-        className={`relative border border-dashed rounded-xs p-6 text-center cursor-pointer transition-colors ${
-          isDragging
-            ? 'border-action bg-action-subtle'
-            : modelFilePath
-            ? 'border-hairline-strong hover:border-action bg-surface-lowest'
-            : 'border-hairline hover:border-hairline-strong bg-surface-lowest/70'
-        }`}
-      >
-        <div className="flex flex-col items-center justify-center gap-2">
-          <div className="w-12 h-12 rounded-xs bg-surface-container text-action border border-hairline flex items-center justify-center">
-            {modelFilePath ? <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" /> : <Upload className="w-6 h-6" />}
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider font-primary text-ink-primary">
-              {modelFilePath ? 'Reemplazar archivo .glb' : 'Arrastra un modelo .glb aquí'}
-            </p>
-            <p className="text-[11px] text-ink-tertiary mt-0.5">o haz clic para explorar en el explorador del taller</p>
-          </div>
+    <div
+      onDragOver={(e) => {
+        e.preventDefault();
+        setIsDragging(true);
+      }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={handleDrop}
+      onClick={handleOpenFileDialog}
+      className={`relative border border-dashed rounded-xs p-6 text-center cursor-pointer transition-colors ${
+        isDragging
+          ? 'border-action bg-action-subtle'
+          : modelFilePath
+          ? 'border-hairline-strong hover:border-action bg-surface-lowest'
+          : 'border-hairline hover:border-hairline-strong bg-surface-lowest/70'
+      }`}
+    >
+      <div className="flex flex-col items-center justify-center gap-2">
+        <div className="w-12 h-12 rounded-xs bg-surface-container text-action border border-hairline flex items-center justify-center">
+          {modelFilePath ? <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" /> : <Upload className="w-6 h-6" />}
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider font-primary text-ink-primary">
+            {modelFilePath ? 'Reemplazar archivo .glb' : 'Arrastra un modelo .glb aquí'}
+          </p>
+          <p className="text-[11px] text-ink-tertiary mt-0.5">o haz clic para explorar en el explorador del taller</p>
         </div>
       </div>
-
-      {/* Loaded Model Status Card */}
-      {modelFilePath && (
-        <div className="p-3.5 rounded-xs bg-surface-lowest border border-hairline text-xs shadow-xs">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 truncate">
-              <FileCode className="w-4 h-4 text-action shrink-0" />
-              <span className="font-mono tabular-nums text-ink-primary font-medium truncate" title={modelFilePath}>
-                {modelFilePath.split(/[\\/]/).pop()}
-              </span>
-            </div>
-            <span className="text-ink-tertiary shrink-0 font-mono tabular-nums">{formatBytes(modelFileSize)}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Scale & Units Picker */}
-      <ScaleChecker />
     </div>
   );
 };

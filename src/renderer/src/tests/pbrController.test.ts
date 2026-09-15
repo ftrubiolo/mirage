@@ -483,5 +483,161 @@ describe('pbrController', () => {
       expect(cleanMat.emissiveIntensity).toBe(0);
     });
   });
+
+  describe('glTF Metal-Roughness packing mode (materialPackingMode === "metalRoughness")', () => {
+    it('binds metalRoughness texture to both roughnessMap and metalnessMap, and preserves optional aoMap', () => {
+      const mrTex = new THREE.Texture();
+      const aoTex = new THREE.Texture();
+
+      // Synchronous texture binding
+      applyPbrTextures(model, {
+        roughnessMap: mrTex,
+        metalnessMap: mrTex,
+        aoMap: aoTex
+      });
+
+      expect(mat.roughnessMap).toBe(mrTex);
+      expect(mat.metalnessMap).toBe(mrTex);
+      expect(mat.aoMap).toBe(aoTex);
+    });
+
+    it('clears or keeps aoMap null if no AO is provided in metalRoughness mode', () => {
+      const mrTex = new THREE.Texture();
+
+      applyPbrTextures(model, {
+        roughnessMap: mrTex,
+        metalnessMap: mrTex,
+        aoMap: null
+      });
+
+      expect(mat.roughnessMap).toBe(mrTex);
+      expect(mat.metalnessMap).toBe(mrTex);
+      expect(mat.aoMap).toBeNull();
+    });
+
+    it('gating check: assigning same metalRoughness texture twice does not recompile shader', () => {
+      const mrTex = new THREE.Texture();
+      applyPbrTextures(model, {
+        roughnessMap: mrTex,
+        metalnessMap: mrTex
+      });
+
+      const versionAfter = mat.version;
+      const setterSpy = vi.spyOn(mat, 'needsUpdate', 'set');
+
+      applyPbrTextures(model, {
+        roughnessMap: mrTex,
+        metalnessMap: mrTex
+      });
+
+      expect(setterSpy).not.toHaveBeenCalledWith(true);
+      expect(mat.version).toBe(versionAfter);
+      setterSpy.mockRestore();
+    });
+  });
+
+  describe('Multi-material targeting & isolation (targetMaterialName)', () => {
+    let multiModel: THREE.Group;
+    let metalMat: THREE.MeshStandardMaterial;
+    let glassMat: THREE.MeshPhysicalMaterial;
+
+    beforeEach(() => {
+      metalMat = new THREE.MeshStandardMaterial({
+        name: 'Estructura_Metal',
+        roughness: 0.2,
+        metalness: 0.9
+      });
+
+      glassMat = new THREE.MeshPhysicalMaterial({
+        name: 'Vidrio_Tapa',
+        roughness: 0.05,
+        metalness: 0.0,
+        transmission: 0.95,
+        ior: 1.5
+      });
+
+      const meshA = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), metalMat);
+      const meshB = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1), glassMat);
+
+      multiModel = new THREE.Group();
+      multiModel.add(meshA);
+      multiModel.add(meshB);
+    });
+
+    it('applyPbrUniforms modifies only the targeted material and leaves others untouched', () => {
+      applyPbrUniforms(multiModel, {
+        targetMaterialName: 'Estructura_Metal',
+        roughness: 0.8,
+        metalness: 0.4
+      });
+
+      expect(metalMat.roughness).toBe(0.8);
+      expect(metalMat.metalness).toBe(0.4);
+
+      // Glass material must remain strictly untouched
+      expect(glassMat.roughness).toBe(0.05);
+      expect(glassMat.metalness).toBe(0.0);
+      expect(glassMat.transmission).toBe(0.95);
+      expect(glassMat.ior).toBe(1.5);
+    });
+
+    it('applyPbrUniforms targets the second material without affecting the first', () => {
+      applyPbrUniforms(multiModel, {
+        targetMaterialName: 'Vidrio_Tapa',
+        transmission: 1.0,
+        ior: 1.52,
+        roughness: 0.01
+      });
+
+      // Glass material updated
+      expect(glassMat.transmission).toBe(1.0);
+      expect(glassMat.ior).toBe(1.52);
+      expect(glassMat.roughness).toBe(0.01);
+
+      // Metal material preserved
+      expect(metalMat.roughness).toBe(0.2);
+      expect(metalMat.metalness).toBe(0.9);
+    });
+
+    it('applyPbrUniforms applies globally when targetMaterialName is null, undefined, or "*"', () => {
+      applyPbrUniforms(multiModel, {
+        targetMaterialName: null,
+        roughness: 0.55
+      });
+
+      expect(metalMat.roughness).toBe(0.55);
+      expect(glassMat.roughness).toBe(0.55);
+
+      applyPbrUniforms(multiModel, {
+        targetMaterialName: '*',
+        metalness: 0.77
+      });
+
+      expect(metalMat.metalness).toBe(0.77);
+      expect(glassMat.metalness).toBe(0.77);
+    });
+
+    it('applyPbrTextures (sync) attaches texture map only to the targeted material', () => {
+      const metalTex = new THREE.Texture();
+      const glassTex = new THREE.Texture();
+
+      applyPbrTextures(multiModel, {
+        targetMaterialName: 'Estructura_Metal',
+        map: metalTex
+      });
+
+      expect(metalMat.map).toBe(metalTex);
+      expect(glassMat.map).toBeNull();
+
+      applyPbrTextures(multiModel, {
+        targetMaterialName: 'Vidrio_Tapa',
+        map: glassTex
+      });
+
+      expect(metalMat.map).toBe(metalTex);
+      expect(glassMat.map).toBe(glassTex);
+    });
+  });
 });
+
 

@@ -27,10 +27,17 @@ interface AppState {
   lastAutoSavedAt: string | null;
 
   workbenchSidebarWidth: number;
+  workbenchSidebarPosition: 'left' | 'right';
   isWorkbenchSidebarCollapsed: boolean;
   setWorkbenchSidebarWidth: (width: number) => void;
+  setWorkbenchSidebarPosition: (position: 'left' | 'right') => void;
   setWorkbenchSidebarCollapsed: (collapsed: boolean) => void;
   toggleWorkbenchSidebar: () => void;
+
+  /** Whether the global save piece modal is open. */
+  isSaveModalOpen: boolean;
+  openSaveModal: () => void;
+  closeSaveModal: () => void;
 
   /** Whether the global Sharp ORM packer dialog is open. UI state, not model state. */
   isOrmPackerOpen: boolean;
@@ -95,6 +102,17 @@ const getStoredSidebarCollapsed = (): boolean => {
     console.warn('Failed to parse mirage-workbench-sidebar-collapsed:', e);
   }
   return false;
+};
+
+const getStoredSidebarPosition = (): 'left' | 'right' => {
+  if (typeof window === 'undefined') return 'right';
+  try {
+    const raw = localStorage.getItem('mirage-workbench-sidebar-position');
+    if (raw === 'left' || raw === 'right') return raw;
+  } catch (e) {
+    console.warn('Failed to parse mirage-workbench-sidebar-position:', e);
+  }
+  return 'right';
 };
 
 const resolveThemeClass = (mode: ThemeMode): 'dark' | 'light' => {
@@ -175,11 +193,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   isAutoSaving: false,
   lastAutoSavedAt: null,
   workbenchSidebarWidth: getStoredSidebarWidth(),
+  workbenchSidebarPosition: getStoredSidebarPosition(),
   isWorkbenchSidebarCollapsed: getStoredSidebarCollapsed(),
+  isSaveModalOpen: false,
   isOrmPackerOpen: false,
 
+  openSaveModal: () => set({ isSaveModalOpen: true }),
+  closeSaveModal: () => set({ isSaveModalOpen: false }),
   openOrmPacker: () => set({ isOrmPackerOpen: true }),
   closeOrmPacker: () => set({ isOrmPackerOpen: false }),
+
+  setWorkbenchSidebarPosition: (position: 'left' | 'right') => {
+    try {
+      localStorage.setItem('mirage-workbench-sidebar-position', position);
+    } catch {}
+    set({ workbenchSidebarPosition: position });
+  },
 
   setWorkbenchSidebarWidth: (width: number) => {
     const minWidth = 340;

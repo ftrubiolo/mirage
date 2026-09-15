@@ -37,7 +37,10 @@ export interface LibraryEntrySettings {
   unitScale: number;
   unitType: 'm' | 'cm' | 'mm' | 'in' | 'custom';
   useOrmPack: boolean;
+  materialPackingMode?: 'orm' | 'metalRoughness' | 'separate';
   loadFromCache: boolean;
+  modelRotation?: { x: number; y: number; z: number };
+  autoGround?: boolean;
 }
 
 export interface EntryVariantMapSlot {

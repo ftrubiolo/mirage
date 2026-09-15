@@ -66,7 +66,10 @@ export interface LoadWorkbenchData {
     unitScale?: number;
     unitType?: 'm' | 'cm' | 'mm' | 'in' | 'custom';
     useOrmPack?: boolean;
+    materialPackingMode?: 'orm' | 'metalRoughness' | 'separate';
     loadFromCache?: boolean;
+    modelRotation?: { x: number; y: number; z: number };
+    autoGround?: boolean;
   };
   colorways?: ColorwayItem[];
 }
@@ -82,6 +85,8 @@ export function loadWorkbenchState(data: LoadWorkbenchData): void {
   const s = data.settings || {};
   const unitScale = s.unitScale ?? 1.0;
   const unitType = s.unitType ?? 'm';
+  const modelRotation = s.modelRotation || { x: 0, y: 0, z: 0 };
+  const autoGround = s.autoGround ?? true;
 
   // 1. Model store hydration
   const modelStats: ModelStats | null = data.stats
@@ -122,6 +127,8 @@ export function loadWorkbenchState(data: LoadWorkbenchData): void {
     rawDimensions: data.dimensions || null,
     unitScale,
     unitType,
+    modelRotation,
+    autoGround,
     isModelLoading: isModelChanging
   });
 
@@ -306,10 +313,13 @@ export function loadWorkbenchState(data: LoadWorkbenchData): void {
 
   // 3. PBR material store hydration
   const nextSlotEnabled = { ...createDefaultSlotEnabled(), ...targetVarSlotEnabled };
+  const rawPackingMode = (targetVarSettings as any)?.materialPackingMode || (s as any)?.materialPackingMode;
+  const packingMode = rawPackingMode || ((targetVarSettings.useOrmPack ?? s.useOrmPack) === false ? 'separate' : 'orm');
   const pbrPartial = {
     ...mapsObj,
     slotEnabled: nextSlotEnabled,
-    useOrmPack: s.useOrmPack ?? true,
+    useOrmPack: packingMode === 'orm',
+    materialPackingMode: packingMode,
     loadFromCache: s.loadFromCache ?? false,
     debugChannel: 'lit' as DebugChannel,
     normalScale: targetVarSettings.normalScale ?? defaultPbrParameters.normalScale,

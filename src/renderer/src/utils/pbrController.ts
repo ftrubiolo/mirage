@@ -47,11 +47,12 @@ export async function loadTextureAsync(url: string, isSRGB = false): Promise<THR
   return promise;
 }
 
-export function invalidateTexture(url: string | null | undefined): void {
+export function invalidateTexture(url: string | null | undefined, filePath?: string | null): void {
+  if (!url && !filePath) return;
+  if (url) invalidateThumbnail(url);
+  if (filePath) invalidateThumbnail(filePath);
   if (!url) return;
   const cleanUrl = url.split('?')[0];
-
-  invalidateThumbnail(url);
 
   for (const [key, tex] of Array.from(loadedTextureCache.entries())) {
     if (key.startsWith(url) || key.startsWith(cleanUrl) || key.includes(cleanUrl)) {
@@ -100,6 +101,7 @@ export interface PbrUniformValues {
   displacementScale?: number;
   forcedNullSlots?: string[];
   slotEnabled?: Partial<Record<string, boolean>>;
+  targetMaterialName?: string | null;
 }
 
 export interface PbrTextureValues {
@@ -116,6 +118,7 @@ export interface PbrTextureValues {
   displacementMap?: THREE.Texture | null;
   debugChannel?: 'lit' | 'albedo' | 'normal' | 'roughness' | 'metalness' | 'ao' | 'emissive' | 'wireframe';
   wireframe?: boolean;
+  targetMaterialName?: string | null;
 }
 
 export interface PbrTextureOptions {
@@ -123,6 +126,7 @@ export interface PbrTextureOptions {
   baseColorUrl?: string | null;
   normalUrl?: string | null;
   ormUrl?: string | null;
+  metalRoughnessUrl?: string | null;
   aoUrl?: string | null;
   roughnessUrl?: string | null;
   metalnessUrl?: string | null;
@@ -134,6 +138,7 @@ export interface PbrTextureOptions {
   displacementUrl?: string | null;
 
   useOrmPack?: boolean;
+  materialPackingMode?: 'orm' | 'metalRoughness' | 'separate';
   loadFromCache?: boolean;
   forcedNullSlots?: string[];
   debugChannel?: 'lit' | 'albedo' | 'normal' | 'roughness' | 'metalness' | 'ao' | 'emissive' | 'wireframe';
@@ -154,6 +159,7 @@ export interface PbrTextureOptions {
   transmissionFactor?: number;
   ior?: number;
   displacementScale?: number;
+  targetMaterialName?: string | null;
 }
 
 export interface PbrStateOptions extends PbrTextureOptions, PbrUniformValues {
@@ -288,6 +294,9 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
 
       for (const m of rawMats) {
         if (m instanceof THREE.MeshStandardMaterial) {
+          if (uniforms.targetMaterialName && uniforms.targetMaterialName !== '*' && m.name !== uniforms.targetMaterialName) {
+            continue;
+          }
           // Tracks whether this material needs its shader program rebuilt.
           // Uniform-only changes (roughness, metalness, intensities) must NOT
           // set it; only changes to the *presence* of a shader feature do.
@@ -474,16 +483,18 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
  * Loads active textures in parallel based on options.
  */
 async function loadSlotTextures(options: PbrTextureOptions): Promise<Record<string, THREE.Texture | null>> {
-  const { forcedNullSlots = [], useOrmPack = true } = options;
+  const { forcedNullSlots = [], useOrmPack = true, materialPackingMode } = options;
   const isNull = (s: string) => forcedNullSlots.includes(s);
+  const mode = materialPackingMode || (useOrmPack ? 'orm' : 'separate');
 
   const slotEntries: Array<{ key: string; url?: string | null; isSRGB: boolean }> = [
     { key: 'baseColor', url: isNull('baseColor') ? null : options.baseColorUrl, isSRGB: true },
     { key: 'normal', url: isNull('normal') ? null : options.normalUrl, isSRGB: false },
-    { key: 'orm', url: useOrmPack && !isNull('orm') ? options.ormUrl : null, isSRGB: false },
-    { key: 'ao', url: !useOrmPack && !isNull('ao') ? options.aoUrl : null, isSRGB: false },
-    { key: 'roughness', url: !useOrmPack && !isNull('roughness') ? options.roughnessUrl : null, isSRGB: false },
-    { key: 'metalness', url: !useOrmPack && !isNull('metalness') ? options.metalnessUrl : null, isSRGB: false },
+    { key: 'orm', url: mode === 'orm' && !isNull('orm') ? options.ormUrl : null, isSRGB: false },
+    { key: 'metalRoughness', url: mode === 'metalRoughness' && !isNull('metalRoughness') ? options.metalRoughnessUrl : null, isSRGB: false },
+    { key: 'ao', url: (mode === 'separate' || mode === 'metalRoughness') && !isNull('ao') ? options.aoUrl : null, isSRGB: false },
+    { key: 'roughness', url: mode === 'separate' && !isNull('roughness') ? options.roughnessUrl : null, isSRGB: false },
+    { key: 'metalness', url: mode === 'separate' && !isNull('metalness') ? options.metalnessUrl : null, isSRGB: false },
     { key: 'emissive', url: isNull('emissive') ? null : options.emissiveUrl, isSRGB: true },
     { key: 'clearcoat', url: isNull('clearcoat') ? null : options.clearcoatUrl, isSRGB: false },
     { key: 'sheen', url: isNull('sheen') ? null : options.sheenUrl, isSRGB: true },
@@ -539,6 +550,9 @@ export function applyPbrTextures(
 
         for (const m of materials) {
           if (m instanceof THREE.MeshStandardMaterial) {
+            if (textures.targetMaterialName && textures.targetMaterialName !== '*' && m.name !== textures.targetMaterialName) {
+              continue;
+            }
             let structuralChange = false;
 
             if (textures.debugChannel !== undefined && textures.debugChannel !== currentDebugChannel) {
@@ -586,6 +600,7 @@ export function applyPbrTextures(
       loadFromCache = false,
       forcedNullSlots = [],
       useOrmPack = true,
+      materialPackingMode,
       normalScale,
       normalInvertY = false,
       roughnessFactor,
@@ -606,6 +621,7 @@ export function applyPbrTextures(
     } = options;
 
     const isNull = (slot: string) => forcedNullSlots.includes(slot);
+    const mode = materialPackingMode || (useOrmPack ? 'orm' : 'separate');
     const tTraverseStart = performance.now();
     let meshCount = 0;
 
@@ -622,6 +638,9 @@ export function applyPbrTextures(
         rawMats.forEach((m, matIdx) => {
           let mat = m as THREE.MeshStandardMaterial;
           if (!(mat instanceof THREE.MeshStandardMaterial)) return;
+          if (options.targetMaterialName && options.targetMaterialName !== '*' && mat.name !== options.targetMaterialName) {
+            return;
+          }
 
           let orig = originalMaterialCache.get(mat);
           if (!orig) {
@@ -704,16 +723,26 @@ export function applyPbrTextures(
               }
             }
 
-            // AO, Roughness, Metalness (ORM or discrete)
-            const targetAo = useOrmPack
-              ? (!isNull('orm') ? (loaded.orm || (loadFromCache ? orig.aoMap : null)) : null)
-              : (!isNull('ao') ? (loaded.ao || (loadFromCache ? orig.aoMap : null)) : null);
-            const targetRoughness = useOrmPack
-              ? (!isNull('orm') ? (loaded.orm || (loadFromCache ? orig.roughnessMap : null)) : null)
-              : (!isNull('roughness') ? (loaded.roughness || (loadFromCache ? orig.roughnessMap : null)) : null);
-            const targetMetalness = useOrmPack
-              ? (!isNull('orm') ? (loaded.orm || (loadFromCache ? orig.metalnessMap : null)) : null)
-              : (!isNull('metalness') ? (loaded.metalness || (loadFromCache ? orig.metalnessMap : null)) : null);
+            // AO, Roughness, Metalness (ORM, glTF Metal-Roughness, or discrete)
+            let targetAo: THREE.Texture | null = null;
+            let targetRoughness: THREE.Texture | null = null;
+            let targetMetalness: THREE.Texture | null = null;
+
+            if (mode === 'orm') {
+              const ormTex = !isNull('orm') ? (loaded.orm || (loadFromCache ? orig.aoMap || orig.roughnessMap : null)) : null;
+              targetAo = ormTex;
+              targetRoughness = ormTex;
+              targetMetalness = ormTex;
+            } else if (mode === 'metalRoughness') {
+              const mrTex = !isNull('metalRoughness') ? (loaded.metalRoughness || (loadFromCache ? orig.roughnessMap : null)) : null;
+              targetRoughness = mrTex;
+              targetMetalness = mrTex;
+              targetAo = !isNull('ao') ? (loaded.ao || (loadFromCache ? orig.aoMap : null)) : null;
+            } else {
+              targetAo = !isNull('ao') ? (loaded.ao || (loadFromCache ? orig.aoMap : null)) : null;
+              targetRoughness = !isNull('roughness') ? (loaded.roughness || (loadFromCache ? orig.roughnessMap : null)) : null;
+              targetMetalness = !isNull('metalness') ? (loaded.metalness || (loadFromCache ? orig.metalnessMap : null)) : null;
+            }
 
             if (assignMaterialMap(mat, 'aoMap', targetAo)) structuralChange = true;
             if (mat.aoMap && aoIntensity !== undefined) mat.aoMapIntensity = aoIntensity;
@@ -808,20 +837,24 @@ export function applyPbrTextures(
                 chRoughness = 0.5;
                 break;
               case 'roughness':
-                isolatedMap = useOrmPack
+                isolatedMap = mode === 'orm'
                   ? (isNull('orm') ? null : loaded.orm)
-                  : (isNull('roughness') ? null : (loaded.roughness || (loadFromCache ? orig.roughnessMap : null)));
+                  : mode === 'metalRoughness'
+                    ? (isNull('metalRoughness') ? null : loaded.metalRoughness)
+                    : (isNull('roughness') ? null : (loaded.roughness || (loadFromCache ? orig.roughnessMap : null)));
                 chRoughness = roughnessFactor ?? 1.0;
                 break;
               case 'metalness':
-                isolatedMap = useOrmPack
+                isolatedMap = mode === 'orm'
                   ? (isNull('orm') ? null : loaded.orm)
-                  : (isNull('metalness') ? null : (loaded.metalness || (loadFromCache ? orig.metalnessMap : null)));
+                  : mode === 'metalRoughness'
+                    ? (isNull('metalRoughness') ? null : loaded.metalRoughness)
+                    : (isNull('metalness') ? null : (loaded.metalness || (loadFromCache ? orig.metalnessMap : null)));
                 chRoughness = 0.5;
                 chMetalness = metalnessFactor ?? 1.0;
                 break;
               case 'ao':
-                isolatedMap = useOrmPack
+                isolatedMap = mode === 'orm'
                   ? (isNull('orm') ? null : loaded.orm)
                   : (isNull('ao') ? null : (loaded.ao || (loadFromCache ? orig.aoMap : null)));
                 break;

@@ -131,4 +131,57 @@ describe('modelStore & Model Replacement Cache Busting', () => {
     expect(tableUrl).not.toBe(chairUrl);
     expect(useModelStore.getState().isModelLoading).toBe(true);
   });
+
+  it('manages model rotation state and 90-degree step accumulation', () => {
+    const store = useModelStore.getState();
+    expect(store.modelRotation).toEqual({ x: 0, y: 0, z: 0 });
+    expect(store.autoGround).toBe(true);
+
+    // Rotate X by 90
+    store.rotateAxisBy('x', 90);
+    expect(useModelStore.getState().modelRotation).toEqual({ x: 90, y: 0, z: 0 });
+
+    // Rotate X by another 90 (180)
+    store.rotateAxisBy('x', 90);
+    expect(useModelStore.getState().modelRotation).toEqual({ x: 180, y: 0, z: 0 });
+
+    // Rotate X by -90 (90)
+    store.rotateAxisBy('x', -90);
+    expect(useModelStore.getState().modelRotation).toEqual({ x: 90, y: 0, z: 0 });
+
+    // Rotate Y and Z
+    store.rotateAxisBy('y', 180);
+    store.rotateAxisBy('z', 270);
+    expect(useModelStore.getState().modelRotation).toEqual({ x: 90, y: 180, z: 270 });
+
+    // Set rotation directly
+    store.setRotation({ x: 45, y: 90 });
+    expect(useModelStore.getState().modelRotation).toEqual({ x: 45, y: 90, z: 270 });
+
+    // Reset rotation
+    store.resetRotation();
+    expect(useModelStore.getState().modelRotation).toEqual({ x: 0, y: 0, z: 0 });
+  });
+
+  it('updates oriented dimensions and recalculates raw dimensions based on unit scale', () => {
+    const store = useModelStore.getState();
+    store.setModelStats({
+      triangleCount: 1000,
+      vertexCount: 500,
+      meshCount: 1,
+      materials: ['Mat'],
+      dimensions: { width: 0.6, height: 0.5, depth: 0.4 }
+    });
+
+    // Update oriented dimensions after 90 deg rotation (e.g. height and depth swap)
+    store.updateOrientedDimensions({ width: 0.6, height: 0.4, depth: 0.5 });
+    let state = useModelStore.getState();
+    expect(state.modelStats?.dimensions).toEqual({ width: 0.6, height: 0.4, depth: 0.5 });
+    expect(state.rawDimensions).toEqual({ width: 0.6, height: 0.4, depth: 0.5 });
+
+    // When unit scale changes to 100 (cm), dimensions scale from the new raw dimensions
+    store.setUnitScale(100, 'cm');
+    state = useModelStore.getState();
+    expect(state.modelStats?.dimensions).toEqual({ width: 60, height: 40, depth: 50 });
+  });
 });

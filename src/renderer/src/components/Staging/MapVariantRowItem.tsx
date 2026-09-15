@@ -170,6 +170,7 @@ export const MapVariantRowItem: React.FC<MapVariantRowItemProps> = React.memo(({
           >
             <ThumbnailImage
               src={variant.url}
+              filePath={variant.filePath}
               alt={variant.name}
               className={`w-10 h-10 rounded-xs border shrink-0 transition-all ${
                 isActive ? 'border-action ring-1 ring-action/40' : 'border-hairline bg-surface-container'

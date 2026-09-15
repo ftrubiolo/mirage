@@ -28,12 +28,12 @@ export interface ColorwayItem {
 }
 
 export const createEmptyMapVariants = (): Record<SlotName, MapVariantItem[]> => ({
-  baseColor: [], normal: [], orm: [], ao: [], roughness: [], metalness: [],
+  baseColor: [], normal: [], orm: [], metalRoughness: [], ao: [], roughness: [], metalness: [],
   emissive: [], clearcoat: [], sheen: [], transmission: [], alpha: [], displacement: []
 });
 
 export const createEmptyActiveVariantIds = (): Record<SlotName, string | null> => ({
-  baseColor: null, normal: null, orm: null, ao: null, roughness: null, metalness: null,
+  baseColor: null, normal: null, orm: null, metalRoughness: null, ao: null, roughness: null, metalness: null,
   emissive: null, clearcoat: null, sheen: null, transmission: null, alpha: null, displacement: null
 });
 

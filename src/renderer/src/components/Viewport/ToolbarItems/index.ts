@@ -17,3 +17,4 @@ export * from './CompactToolbarDrawer';
 export * from './useDropdownPlacement';
 export * from './VariantPickerItem';
 export * from './ModelStatsItem';
+export * from './AnimationControlsItem';

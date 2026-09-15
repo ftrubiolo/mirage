@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-import { useThree } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
 import { TransformControls } from '@react-three/drei';
+import { GLTFAnimationPointerExtension } from '@needle-tools/three-animation-pointer';
 import { useModelStore, normalizeDegrees } from '../../store/modelStore';
 import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
 import { useViewportStore } from '../../store/viewportStore';
@@ -19,6 +20,7 @@ let dracoConfigured = false;
 export async function getSharedGltfLoader(): Promise<GLTFLoader> {
   if (!sharedGltfLoader) {
     sharedGltfLoader = new GLTFLoader();
+    sharedGltfLoader.register((parser) => new GLTFAnimationPointerExtension(parser));
   }
 
   if (!dracoConfigured && window.electronAPI) {
@@ -242,6 +244,21 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
             setIsModelLoading(false);
             setLoading(false);
             console.log(`[PERF: 3D VIEWER] Model placed in scene in ${(performance.now() - tModelStart).toFixed(1)}ms`);
+
+            // 5. Setup glTF animations if present
+            if (gltf.animations && gltf.animations.length > 0) {
+              const mixer = new THREE.AnimationMixer(scene);
+              viewportBridge.registerAnimations(mixer, gltf.animations);
+              const storeClips = gltf.animations.map((c, i) => ({
+                name: c.name || `Animación ${i + 1}`,
+                duration: Number(c.duration.toFixed(2))
+              }));
+              useViewportStore.getState().setAnimations(storeClips);
+              console.log(`[PERF: 3D VIEWER] glTF animations registered: ${gltf.animations.length} clip(s)`);
+            } else {
+              viewportBridge.registerAnimations(null, []);
+              useViewportStore.getState().resetAnimationState();
+            }
           },
           undefined,
           (err) => {
@@ -251,6 +268,8 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
             setError('No se pudo cargar el modelo 3D. Verifica el archivo.');
             setLoading(false);
             setIsModelLoading(false);
+            viewportBridge.registerAnimations(null, []);
+            useViewportStore.getState().resetAnimationState();
           }
         );
       } catch (err) {
@@ -260,6 +279,8 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
         setError('Error al inicializar el visor 3D.');
         setLoading(false);
         setIsModelLoading(false);
+        viewportBridge.registerAnimations(null, []);
+        useViewportStore.getState().resetAnimationState();
       }
     }
 
@@ -269,6 +290,8 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
       clearTimeout(watchdog);
       isCancelled = true;
       viewportBridge.registerModel(null);
+      viewportBridge.registerAnimations(null, []);
+      useViewportStore.getState().resetAnimationState();
       useModelStore.getState().setIsModelLoading(false);
     };
   }, [modelUrl]);
@@ -568,6 +591,17 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
       });
     }
   };
+
+  // 60 FPS animation mixer tick
+  useFrame((_, delta) => {
+    const mixer = viewportBridge.mixer;
+    if (!mixer) return;
+
+    const { isAnimationPlaying, animationPlaybackSpeed } = useViewportStore.getState();
+    if (isAnimationPlaying) {
+      mixer.update(delta * animationPlaybackSpeed);
+    }
+  });
 
   if (loading || !modelGroup) return null;
 

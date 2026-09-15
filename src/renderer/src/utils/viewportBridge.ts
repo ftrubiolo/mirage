@@ -6,9 +6,23 @@ interface ViewportBridge {
   scene: THREE.Scene | null;
   camera: THREE.Camera | null;
   modelGroup: THREE.Object3D | null;
+  mixer: THREE.AnimationMixer | null;
+  actions: THREE.AnimationAction[];
+  activeAction: THREE.AnimationAction | null;
+  activeClipIndex: number;
+  onAnimationFinished: (() => void) | null;
   listeners: Set<() => void>;
   register: (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) => void;
   registerModel: (model: THREE.Object3D | null) => void;
+  registerAnimations: (mixer: THREE.AnimationMixer | null, clips: THREE.AnimationClip[]) => void;
+  playAnimation: () => void;
+  pauseAnimation: () => void;
+  seekAnimation: (time: number) => void;
+  setAnimationSpeed: (speed: number) => void;
+  setAnimationLoop: (loop: boolean) => void;
+  setActiveClip: (index: number) => void;
+  getAnimationTime: () => number;
+  getAnimationDuration: () => number;
   unregister: () => void;
   subscribe: (listener: () => void) => () => void;
   notify: () => void;
@@ -24,6 +38,11 @@ export const viewportBridge: ViewportBridge = {
   scene: null,
   camera: null,
   modelGroup: null,
+  mixer: null,
+  actions: [],
+  activeAction: null,
+  activeClipIndex: 0,
+  onAnimationFinished: null,
   listeners: new Set(),
   register(gl, scene, camera) {
     this.gl = gl;
@@ -35,11 +54,106 @@ export const viewportBridge: ViewportBridge = {
     this.modelGroup = model;
     this.notify();
   },
+  registerAnimations(mixer, clips) {
+    if (this.mixer && this.mixer !== mixer) {
+      this.mixer.stopAllAction();
+      try {
+        const root = this.mixer.getRoot();
+        if (root) this.mixer.uncacheRoot(root);
+      } catch (e) {
+        // ignore
+      }
+    }
+    this.mixer = mixer;
+    this.actions = [];
+    this.activeAction = null;
+    this.activeClipIndex = 0;
+
+    if (mixer && clips.length > 0) {
+      this.actions = clips.map((clip) => mixer.clipAction(clip));
+      this.activeAction = this.actions[0];
+      this.activeAction.play();
+
+      mixer.addEventListener('finished', () => {
+        if (this.onAnimationFinished) {
+          this.onAnimationFinished();
+        }
+      });
+    }
+    this.notify();
+  },
+  playAnimation() {
+    if (this.activeAction) {
+      const duration = this.activeAction.getClip().duration || 0;
+      if (this.activeAction.time >= duration - 0.005) {
+        this.activeAction.reset();
+      }
+      this.activeAction.paused = false;
+      this.activeAction.play();
+    }
+  },
+  pauseAnimation() {
+    if (this.activeAction) {
+      this.activeAction.paused = true;
+    }
+  },
+  seekAnimation(time) {
+    if (this.activeAction && this.mixer) {
+      const duration = this.activeAction.getClip().duration || 1;
+      const clamped = Math.max(0, Math.min(time, duration));
+      const wasPaused = this.activeAction.paused;
+      this.activeAction.paused = false;
+      this.mixer.setTime(clamped);
+      this.activeAction.paused = wasPaused;
+    }
+  },
+  setAnimationSpeed(speed) {
+    if (this.mixer) {
+      this.mixer.timeScale = speed;
+    }
+  },
+  setAnimationLoop(loop) {
+    if (this.activeAction) {
+      this.activeAction.setLoop(loop ? THREE.LoopRepeat : THREE.LoopOnce, loop ? Infinity : 0);
+      this.activeAction.clampWhenFinished = !loop;
+    }
+  },
+  setActiveClip(index) {
+    if (this.actions[index] && this.actions[index] !== this.activeAction) {
+      const prev = this.activeAction;
+      const next = this.actions[index];
+      if (prev) {
+        prev.fadeOut(0.2);
+      }
+      next.reset().fadeIn(0.2).play();
+      this.activeAction = next;
+      this.activeClipIndex = index;
+    }
+  },
+  getAnimationTime() {
+    return this.activeAction ? this.activeAction.time : 0;
+  },
+  getAnimationDuration() {
+    return this.activeAction ? this.activeAction.getClip().duration : 0;
+  },
   unregister() {
+    if (this.mixer) {
+      this.mixer.stopAllAction();
+      try {
+        const root = this.mixer.getRoot();
+        if (root) this.mixer.uncacheRoot(root);
+      } catch (e) {
+        // ignore
+      }
+    }
     this.gl = null;
     this.scene = null;
     this.camera = null;
     this.modelGroup = null;
+    this.mixer = null;
+    this.actions = [];
+    this.activeAction = null;
+    this.activeClipIndex = 0;
     this.notify();
   },
   subscribe(listener: () => void) {

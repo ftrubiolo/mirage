@@ -25,6 +25,7 @@ import {
   ToolbarItemWrapper,
   VariantPickerItem,
   ModelStatsItem,
+  AnimationControlsItem,
   isToolbarSpacer,
   TOGGLEABLE_TOOLBAR_ITEMS,
   ITEMS_WITH_TEXT,
@@ -122,6 +123,8 @@ export const ViewportStatusBar: React.FC = () => {
         return <LightingIntensityItem />;
       case 'snapshot-button':
         return <SnapshotButtonItem />;
+      case 'animation-controls':
+        return <AnimationControlsItem compact={isCompact} iconOnly={isIconOnly} />;
       default:
         return null;
     }

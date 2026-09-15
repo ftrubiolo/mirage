@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { viewportBridge } from '../utils/viewportBridge';
 
 export type EnvironmentPreset =
   | 'city'
@@ -45,6 +46,7 @@ export const DEFAULT_TOOLBAR_ITEMS: string[] = [
 
 export const DEFAULT_STATUSBAR_ITEMS: string[] = [
   'variant-picker',
+  'animation-controls',
   'spacer-sb-1',
   'model-stats'
 ];
@@ -180,6 +182,27 @@ interface ViewportState {
   moveItemToOtherBar: (itemId: string, currentBar: 'toolbar' | 'statusbar') => void;
   resetAllBars: () => void;
 
+  // Animation Playback State & Actions
+  hasAnimations: boolean;
+  animationClips: Array<{ name: string; duration: number }>;
+  activeAnimationIndex: number;
+  isAnimationPlaying: boolean;
+  animationCurrentTime: number;
+  animationDuration: number;
+  animationPlaybackSpeed: number;
+  isAnimationLooping: boolean;
+
+  setAnimations: (clips: Array<{ name: string; duration: number }>) => void;
+  playAnimation: () => void;
+  pauseAnimation: () => void;
+  toggleAnimationPlayback: () => void;
+  seekAnimation: (time: number) => void;
+  setActiveAnimationIndex: (index: number) => void;
+  setAnimationPlaybackSpeed: (speed: number) => void;
+  toggleAnimationLoop: () => void;
+  setAnimationCurrentTime: (time: number) => void;
+  resetAnimationState: () => void;
+
   // File Persistence
   applyPersistedSettings: (settings: ViewportPersistedSettings) => void;
   getPersistableSettings: () => ViewportPersistedSettings;
@@ -237,6 +260,92 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
   // Transform Gizmo initial state
   transformGizmoMode: 'none',
   setTransformGizmoMode: (mode: TransformGizmoMode) => set({ transformGizmoMode: mode }),
+
+  // Animation playback initial state
+  hasAnimations: false,
+  animationClips: [],
+  activeAnimationIndex: 0,
+  isAnimationPlaying: true,
+  animationCurrentTime: 0,
+  animationDuration: 0,
+  animationPlaybackSpeed: 1.0,
+  isAnimationLooping: true,
+
+  setAnimations: (clips) => {
+    const hasAnimations = clips.length > 0;
+    const duration = hasAnimations ? clips[0].duration : 0;
+    set({
+      hasAnimations,
+      animationClips: clips,
+      activeAnimationIndex: 0,
+      isAnimationPlaying: hasAnimations,
+      animationCurrentTime: 0,
+      animationDuration: duration
+    });
+  },
+
+  playAnimation: () => {
+    viewportBridge.playAnimation();
+    set({ isAnimationPlaying: true });
+  },
+
+  pauseAnimation: () => {
+    viewportBridge.pauseAnimation();
+    set({ isAnimationPlaying: false });
+  },
+
+  toggleAnimationPlayback: () => {
+    const next = !get().isAnimationPlaying;
+    if (next) {
+      viewportBridge.playAnimation();
+    } else {
+      viewportBridge.pauseAnimation();
+    }
+    set({ isAnimationPlaying: next });
+  },
+
+  seekAnimation: (time) => {
+    viewportBridge.seekAnimation(time);
+    set({ animationCurrentTime: time });
+  },
+
+  setActiveAnimationIndex: (index) => {
+    const clips = get().animationClips;
+    if (index >= 0 && index < clips.length) {
+      viewportBridge.setActiveClip(index);
+      set({
+        activeAnimationIndex: index,
+        animationCurrentTime: 0,
+        animationDuration: clips[index].duration
+      });
+    }
+  },
+
+  setAnimationPlaybackSpeed: (speed) => {
+    viewportBridge.setAnimationSpeed(speed);
+    set({ animationPlaybackSpeed: speed });
+  },
+
+  toggleAnimationLoop: () => {
+    const next = !get().isAnimationLooping;
+    viewportBridge.setAnimationLoop(next);
+    set({ isAnimationLooping: next });
+  },
+
+  setAnimationCurrentTime: (time) => set({ animationCurrentTime: time }),
+
+  resetAnimationState: () => {
+    set({
+      hasAnimations: false,
+      animationClips: [],
+      activeAnimationIndex: 0,
+      isAnimationPlaying: false,
+      animationCurrentTime: 0,
+      animationDuration: 0,
+      animationPlaybackSpeed: 1.0,
+      isAnimationLooping: true
+    });
+  },
 
   toggleViewportTheme: () => {
     set((state) => ({ viewportTheme: state.viewportTheme === 'dark' ? 'light' : 'dark' }));
@@ -659,3 +768,8 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
     };
   }
 }));
+
+viewportBridge.onAnimationFinished = () => {
+  useViewportStore.getState().pauseAnimation();
+};
+

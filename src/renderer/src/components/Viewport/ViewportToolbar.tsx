@@ -28,6 +28,7 @@ import {
   CompactToolbarDrawer,
   VariantPickerItem,
   ModelStatsItem,
+  AnimationControlsItem,
   isToolbarSpacer,
   TOGGLEABLE_TOOLBAR_ITEMS,
   ITEMS_WITH_TEXT,
@@ -129,6 +130,8 @@ export const ViewportToolbar: React.FC = () => {
         return <VariantPickerItem compact={isCompact} iconOnly={isIconOnly} />;
       case 'model-stats':
         return <ModelStatsItem compact={isCompact} iconOnly={isIconOnly} />;
+      case 'animation-controls':
+        return <AnimationControlsItem compact={isCompact} iconOnly={isIconOnly} />;
       default:
         return null;
     }

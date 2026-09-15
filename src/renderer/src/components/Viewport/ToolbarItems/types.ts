@@ -11,7 +11,8 @@ export type StandardToolbarItemId =
   | 'lighting-intensity'
   | 'snapshot-button'
   | 'variant-picker'
-  | 'model-stats';
+  | 'model-stats'
+  | 'animation-controls';
 
 export type StandardBarItemId = StandardToolbarItemId;
 export type ToolbarItemId = StandardToolbarItemId | string;
@@ -39,7 +40,8 @@ export const TOOLBAR_ITEM_NAMES: Record<StandardToolbarItemId, string> = {
   'lighting-intensity': 'Intensidad de Luz',
   'snapshot-button': 'Captura PNG',
   'variant-picker': 'Selector de Variantes',
-  'model-stats': 'Estadísticas del Modelo'
+  'model-stats': 'Estadísticas del Modelo',
+  'animation-controls': 'Control de Animación'
 };
 
 export interface ToggleableToolbarItem {
@@ -60,7 +62,8 @@ export const TOGGLEABLE_TOOLBAR_ITEMS: ToggleableToolbarItem[] = [
   { id: 'lighting-intensity', label: 'Intensidad de Luz' },
   { id: 'snapshot-button', label: 'Captura PNG' },
   { id: 'variant-picker', label: 'Selector de Variantes' },
-  { id: 'model-stats', label: 'Estadísticas del Modelo' }
+  { id: 'model-stats', label: 'Estadísticas del Modelo' },
+  { id: 'animation-controls', label: 'Control de Animación' }
 ];
 
 export const ITEMS_WITH_TEXT: ToggleableToolbarItem[] = [
@@ -69,7 +72,8 @@ export const ITEMS_WITH_TEXT: ToggleableToolbarItem[] = [
   { id: 'environment-hdri', label: 'Entorno HDRI' },
   { id: 'projection-toggle', label: 'Modo Cámara (ORTO/PERSP)' },
   { id: 'variant-picker', label: 'Selector de Variantes' },
-  { id: 'model-stats', label: 'Estadísticas del Modelo' }
+  { id: 'model-stats', label: 'Estadísticas del Modelo' },
+  { id: 'animation-controls', label: 'Control de Animación' }
 ];
 
 export const isItemWithText = (id: string): boolean => {

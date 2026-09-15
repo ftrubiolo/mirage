@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { GripHorizontal, ArrowDownToLine, ArrowUpToLine } from 'lucide-react';
+import { GripHorizontal, ArrowDownToLine } from 'lucide-react';
 import { useViewportStore } from '../../../store/viewportStore';
 
 interface CanvasWidgetContainerProps {
@@ -163,35 +163,6 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
     window.addEventListener('pointerup', handlePointerUp);
   };
 
-  // HTML5 drag handle from header grip to toolbar/statusbar
-  const handleGripDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.setData('text/plain', id);
-    e.dataTransfer.setData('application/x-mirage-bar', 'toolbar');
-    e.dataTransfer.effectAllowed = 'move';
-
-    try {
-      if (typeof document !== 'undefined' && e.dataTransfer.setDragImage && cardRef.current) {
-        const clone = cardRef.current.cloneNode(true) as HTMLElement;
-        clone.style.position = 'fixed';
-        clone.style.top = '-9999px';
-        clone.style.left = '-9999px';
-        clone.style.pointerEvents = 'none';
-        clone.style.zIndex = '999999';
-        clone.style.opacity = '0.92';
-        clone.style.transform = 'none';
-        clone.style.transition = 'none';
-        clone.style.boxShadow = '0 12px 28px rgba(0,0,0,0.6), 0 0 0 1px #d94e34';
-        clone.style.borderRadius = '2px';
-        clone.style.backgroundColor = '#181816';
-        document.body.appendChild(clone);
-        e.dataTransfer.setDragImage(clone, 60, 14);
-        setTimeout(() => clone.remove(), 0);
-      }
-    } catch {
-      // Ignore if setDragImage is unsupported
-    }
-  };
-
   const snapClass =
     isSnapped.left || isSnapped.right || isSnapped.top || isSnapped.bottom
       ? 'border-action shadow-2xl'
@@ -199,13 +170,14 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
 
   const dockIndicatorClass =
     dockTarget === 'toolbar' || dockTarget === 'statusbar'
-      ? 'ring-2 ring-action ring-offset-1 ring-offset-surface-lowest animate-pulse'
+      ? 'border-action ring-1 ring-action'
       : '';
 
   return (
     <div
       ref={cardRef}
       data-canvas-widget={id}
+      onDragStart={(e) => e.preventDefault()}
       style={{
         transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
         left: 0,
@@ -213,32 +185,13 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
       }}
       className={`absolute z-30 select-none rounded-xs border bg-surface-lowest/95 backdrop-blur-md text-ink-primary transition-shadow duration-100 ${snapClass} ${dockIndicatorClass}`}
     >
-      {/* Dock Back Indicator Banner (when dragged near top/bottom bar) */}
-      {dockTarget && (
-        <div className="flex items-center justify-center gap-1.5 py-1 px-2 bg-action text-white text-[10px] font-mono font-bold tracking-wider uppercase animate-in fade-in duration-75">
-          {dockTarget === 'toolbar' ? (
-            <>
-              <ArrowUpToLine size={11} />
-              <span>Soltar para anclar a la barra superior</span>
-            </>
-          ) : (
-            <>
-              <ArrowDownToLine size={11} />
-              <span>Soltar para anclar a la barra de estado</span>
-            </>
-          )}
-        </div>
-      )}
-
       {/* Widget Header & Drag Handle */}
       <div
         onPointerDown={handlePointerDown}
         className="flex items-center justify-between h-7 px-2 border-b border-hairline bg-surface-container/60 cursor-grab active:cursor-grabbing text-xs"
       >
         <div
-          draggable
-          onDragStart={handleGripDragStart}
-          title="Arrastrar para mover o anclar en las barras"
+          title="Arrastrar para mover (o acercar al borde para anclar)"
           className="flex items-center gap-1.5 min-w-0 cursor-grab active:cursor-grabbing hover:text-ink-primary"
         >
           <GripHorizontal size={13} className="text-ink-tertiary hover:text-action shrink-0" />

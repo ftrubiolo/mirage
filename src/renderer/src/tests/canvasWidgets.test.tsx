@@ -14,6 +14,9 @@ import { CanvasEnvironmentWidget } from '../components/Viewport/Widgets/CanvasEn
 import { CanvasCameraWidget } from '../components/Viewport/Widgets/CanvasCameraWidget';
 import { CanvasChannelWidget } from '../components/Viewport/Widgets/CanvasChannelWidget';
 import { CanvasWidgetContainer } from '../components/Viewport/Widgets/CanvasWidgetContainer';
+import { ToolbarItemWrapper } from '../components/Viewport/ToolbarItems/ToolbarItemWrapper';
+import { LightingIntensityItem } from '../components/Viewport/ToolbarItems/LightingIntensityItem';
+import { FitModelItem } from '../components/Viewport/ToolbarItems/FitModelItem';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -163,10 +166,9 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         stage.dispatchEvent(dragEnterEv);
       });
 
-      // Must NOT show external file import modal
+      // Must NOT show external file import modal or widget drop indicator
       expect(container.textContent).not.toContain('SOLTAR EN VISOR 3D');
-      // Instead shows canvas widget drop indicator
-      expect(container.textContent).toContain('Soltar para anclar widget');
+      expect(container.textContent).not.toContain('Soltar para anclar widget');
     });
   });
 
@@ -410,8 +412,9 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         window.dispatchEvent(new PointerEvent('pointermove', { clientX: 200, clientY: 30 }));
       });
 
-      // Banner should show docking feedback
-      expect(container.textContent).toContain('Soltar para anclar a la barra superior');
+      // Card should have dock highlight class
+      const card = container.querySelector('[data-canvas-widget="model-stats"]') as HTMLDivElement;
+      expect(card.className).toContain('ring-action');
 
       // Release pointer
       act(() => {
@@ -452,8 +455,9 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         window.dispatchEvent(new PointerEvent('pointermove', { clientX: 200, clientY: window.innerHeight - 30 }));
       });
 
-      // Banner should show docking feedback
-      expect(container.textContent).toContain('Soltar para anclar a la barra de estado');
+      // Card should have dock highlight class
+      const card = container.querySelector('[data-canvas-widget="animation-controls"]') as HTMLDivElement;
+      expect(card.className).toContain('ring-action');
 
       // Release pointer
       act(() => {
@@ -463,6 +467,52 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       // Widget should be docked into statusbar and removed from canvasWidgets
       expect(useViewportStore.getState().canvasWidgets).toEqual([]);
       expect(useViewportStore.getState().statusBarItems).toContain('animation-controls');
+    });
+  });
+
+  describe('Toolbar Item Dragging vs Range Slider Scrubbing', () => {
+    it('allows dragging buttons while keeping range sliders protected from drag', () => {
+      act(() => {
+        root.render(
+          <div>
+            <ToolbarItemWrapper itemId="fit-model" index={0} bar="toolbar">
+              <FitModelItem />
+            </ToolbarItemWrapper>
+            <ToolbarItemWrapper itemId="lighting-intensity" index={1} bar="toolbar">
+              <LightingIntensityItem />
+            </ToolbarItemWrapper>
+          </div>
+        );
+      });
+
+      // Button wrapper should be draggable
+      const fitWrapper = container.querySelector('[data-toolbar-item="fit-model"]') as HTMLDivElement;
+      expect(fitWrapper.getAttribute('draggable')).toBe('true');
+
+      const button = fitWrapper.querySelector('button') as HTMLButtonElement;
+      expect(button).toBeTruthy();
+
+      // Triggering pointer down on button keeps it draggable
+      act(() => {
+        button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      });
+      expect(fitWrapper.getAttribute('draggable')).toBe('true');
+
+      // Slider wrapper: interacting with input[type="range"] disables draggable synchronously
+      const lightWrapper = container.querySelector('[data-toolbar-item="lighting-intensity"]') as HTMLDivElement;
+      const rangeInput = lightWrapper.querySelector('input[type="range"]') as HTMLInputElement;
+      expect(rangeInput).toBeTruthy();
+
+      act(() => {
+        rangeInput.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      });
+      expect(lightWrapper.getAttribute('draggable')).toBe('false');
+
+      // Releasing pointer restores draggable
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+      });
+      expect(lightWrapper.getAttribute('draggable')).toBe('true');
     });
   });
 });

@@ -290,7 +290,6 @@ export const Canvas3D: React.FC = React.memo(() => {
   }, [cameraZoomAction]);
 
   const [isDragOverFile, setIsDragOverFile] = useState(false);
-  const [isDragOverBarItem, setIsDragOverBarItem] = useState(false);
   const dragCounterRef = useRef(0);
   const [stageBounds, setStageBounds] = useState({ width: 1000, height: 800 });
 
@@ -316,7 +315,6 @@ export const Canvas3D: React.FC = React.memo(() => {
     const handleGlobalDragReset = () => {
       dragCounterRef.current = 0;
       setIsDragOverFile(false);
-      setIsDragOverBarItem(false);
     };
     window.addEventListener('dragend', handleGlobalDragReset);
     window.addEventListener('drop', handleGlobalDragReset);
@@ -333,10 +331,6 @@ export const Canvas3D: React.FC = React.memo(() => {
     const types = e.dataTransfer?.types ? Array.from(e.dataTransfer.types) : [];
     if (types.includes('Files')) {
       setIsDragOverFile(true);
-      setIsDragOverBarItem(false);
-    } else if (types.includes('application/x-mirage-bar') || types.includes('text/plain')) {
-      setIsDragOverBarItem(true);
-      setIsDragOverFile(false);
     }
   };
 
@@ -356,7 +350,6 @@ export const Canvas3D: React.FC = React.memo(() => {
     if (dragCounterRef.current <= 0) {
       dragCounterRef.current = 0;
       setIsDragOverFile(false);
-      setIsDragOverBarItem(false);
     }
   };
 
@@ -364,7 +357,6 @@ export const Canvas3D: React.FC = React.memo(() => {
     e.preventDefault();
     dragCounterRef.current = 0;
     setIsDragOverFile(false);
-    setIsDragOverBarItem(false);
 
     // 1. External OS File Drop
     if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
@@ -417,18 +409,6 @@ export const Canvas3D: React.FC = React.memo(() => {
                   Auto-asignación de mapas PBR (_baseColor, _normal, _orm...) o modelo .glb
                 </span>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Visual Drop Zone Indicator for Canvas Floating Widgets */}
-        {isDragOverBarItem && (
-          <div className="absolute inset-0 z-40 pointer-events-none flex items-center justify-center bg-action/5 backdrop-blur-[2px] border-2 border-dashed border-action m-3 rounded-xs animate-in fade-in duration-100">
-            <div className="px-4 py-2.5 rounded-xs bg-surface-lowest/95 border border-action shadow-xl flex items-center gap-2 text-action">
-              <Upload className="w-4 h-4" />
-              <span className="text-xs font-mono font-bold uppercase tracking-wider">
-                Soltar para anclar widget flotante en el visor
-              </span>
             </div>
           </div>
         )}

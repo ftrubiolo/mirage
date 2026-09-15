@@ -18,8 +18,19 @@ export const LightingIntensityItem: React.FC = () => {
         max="2.5"
         step="0.1"
         value={environmentIntensity}
-        onMouseDown={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
+        draggable={false}
+        onDragStart={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          (e.target as HTMLElement).closest('[data-toolbar-item]')?.setAttribute('draggable', 'false');
+        }}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          (e.target as HTMLElement).closest('[data-toolbar-item]')?.setAttribute('draggable', 'false');
+        }}
         onChange={(e) => setEnvironmentIntensity(parseFloat(e.target.value))}
         data-interactive="true"
         className="w-14 sm:w-16 h-1 bg-surface-container rounded-none appearance-none cursor-pointer accent-action"

@@ -135,11 +135,20 @@ export const AnimationControlsItem: React.FC<AnimationControlsItemProps> = ({
               max={duration || 1}
               step={0.01}
               value={currentTime}
+              draggable={false}
+              onDragStart={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
               onMouseDown={(e) => {
                 e.stopPropagation();
                 setIsScrubbing(true);
+                (e.target as HTMLElement).closest('[data-toolbar-item]')?.setAttribute('draggable', 'false');
               }}
-              onPointerDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                (e.target as HTMLElement).closest('[data-toolbar-item]')?.setAttribute('draggable', 'false');
+              }}
               onMouseUp={() => setIsScrubbing(false)}
               onChange={handleSliderChange}
               data-interactive="true"

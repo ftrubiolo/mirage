@@ -57,6 +57,11 @@ export const CanvasLightingWidget: React.FC = () => {
           max="3.0"
           step="0.1"
           value={environmentIntensity}
+          draggable={false}
+          onDragStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
           onChange={(e) => setEnvironmentIntensity(parseFloat(e.target.value))}

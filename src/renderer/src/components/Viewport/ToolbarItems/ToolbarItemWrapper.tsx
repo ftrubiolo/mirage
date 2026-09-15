@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useViewportStore } from '../../../store/viewportStore';
 import { isToolbarSpacer, TOOLBAR_ITEM_NAMES } from './types';
 
@@ -18,32 +18,61 @@ export const ToolbarItemWrapper: React.FC<ToolbarItemWrapperProps> = ({
 }) => {
   const toolbarItems = useViewportStore((s) => s.toolbarItems);
   const moveBarItem = useViewportStore((s) => s.moveBarItem);
-
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const isScrubbingRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [canDrag, setCanDrag] = useState(true);
   const [dropIndicator, setDropIndicator] = useState<'before' | 'after' | null>(null);
   const dropPositionRef = useRef<'before' | 'after'>('before');
 
   const isSpacer = isToolbarSpacer(itemId);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // Synchronously disable dragging only when interacting with form inputs (like range sliders)
+  const handlePointerDown = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement;
-    // Don't drag if clicking interactive inputs, sliders, selects, or interactive controls
-    if (target.closest('input, button, select, [data-interactive="true"]')) {
-      setCanDrag(false);
+    const isSliderOrInput = Boolean(target.closest('input, select, textarea'));
+    if (isSliderOrInput) {
+      isScrubbingRef.current = true;
+      wrapperRef.current?.setAttribute('draggable', 'false');
     } else {
-      setCanDrag(true);
+      isScrubbingRef.current = false;
+      wrapperRef.current?.setAttribute('draggable', 'true');
     }
   };
 
-  const handleMouseUp = () => {
-    setCanDrag(true);
+  const handlePointerOver = (e: React.PointerEvent) => {
+    const target = e.target as HTMLElement;
+    const isSliderOrInput = Boolean(target.closest('input, select, textarea'));
+    if (isSliderOrInput) {
+      wrapperRef.current?.setAttribute('draggable', 'false');
+    } else if (!isScrubbingRef.current) {
+      wrapperRef.current?.setAttribute('draggable', 'true');
+    }
   };
 
+  const handlePointerOut = (e: React.PointerEvent) => {
+    if (!isScrubbingRef.current) {
+      wrapperRef.current?.setAttribute('draggable', 'true');
+    }
+  };
+
+  // Ensure draggable is restored after mouse is released anywhere
+  useEffect(() => {
+    const handleGlobalPointerUp = () => {
+      isScrubbingRef.current = false;
+      wrapperRef.current?.setAttribute('draggable', 'true');
+    };
+    window.addEventListener('pointerup', handleGlobalPointerUp);
+    window.addEventListener('mouseup', handleGlobalPointerUp);
+    return () => {
+      window.removeEventListener('pointerup', handleGlobalPointerUp);
+      window.removeEventListener('mouseup', handleGlobalPointerUp);
+    };
+  }, []);
+
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    // Extra safety guard: never drag if target is an interactive input
+    // Never drag if target is a range slider or text input
     const target = e.target as HTMLElement;
-    if (target.closest('input, button, select, [data-interactive="true"]')) {
+    if (target.closest('input, select, textarea')) {
       e.preventDefault();
       return;
     }
@@ -125,9 +154,11 @@ export const ToolbarItemWrapper: React.FC<ToolbarItemWrapperProps> = ({
 
   return (
     <div
-      draggable={canDrag}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
+      ref={wrapperRef}
+      draggable
+      onPointerDown={handlePointerDown}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}

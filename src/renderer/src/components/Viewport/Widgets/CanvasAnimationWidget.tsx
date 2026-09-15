@@ -102,6 +102,11 @@ export const CanvasAnimationWidget: React.FC = () => {
           max={duration || 1}
           step={0.01}
           value={currentTime}
+          draggable={false}
+          onDragStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
           onMouseDown={(e) => {
             e.stopPropagation();
             setIsScrubbing(true);

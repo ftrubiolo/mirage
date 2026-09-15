@@ -91,6 +91,11 @@ export const CanvasCameraWidget: React.FC = () => {
             max={90}
             step={1}
             value={cameraFov}
+            draggable={false}
+            onDragStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onMouseDown={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
             onChange={(e) => setCameraFov(parseInt(e.target.value, 10))}

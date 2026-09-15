@@ -18,43 +18,44 @@ The defining architectural constraint is that **the renderer parses untrusted bi
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐
-│ MAIN PROCESS  (Node, full privileges)                          ~2.9k LOC  │
+│ MAIN PROCESS  (Node, full privileges)                          ~3.1k LOC  │
 │                                                                           │
 │  index.ts            window lifecycle · CSP · single-instance lock ·      │
 │                      openExternal allowlist · graceful teardown           │
 │  accessPolicy.ts     ⭐ filesystem trust boundary (approved roots)         │
 │  ipcSchemas.ts       ⭐ zod schemas for every privileged IPC payload       │
-│  ipcHandlers.ts      43 ipcMain channels: containment + validation        │
+│  ipcHandlers.ts      44 ipcMain channels: containment + validation        │
 │  protocol.ts         local-asset:// streaming, root-confined              │
 │  settingsService.ts  atomic settings (mutex + tmp/rename + debounce)      │
 │  vault.ts            API keys via safeStorage, atomic, corruption-safe    │
-│  texturePacker.ts    sharp/libvips in a child process                     │
+│  thumbnailService.ts ⭐ in-process native sharp thumbnail engine & cache   │
+│  texturePacker.ts    sharp/libvips worker (system node preference)        │
 │  fileWatcher.ts      chokidar live-reload for the active model            │
-│  platform.ts         XDG paths, OS detection, file-manager launcher       │
+│  platform.ts         XDG data & cache paths, OS detection, explorer       │
 │  mcp/                MCP client manager + scoped environment resolver     │
 └───────────────────────────────────────────────────────────────────────────┘
                                     ▲
                                     │ contextBridge (sandboxed, no Node)
-                                    │ 39 typed methods · no business logic
+                                    │ 45 typed methods · no business logic
                                     ▼
 ┌───────────────────────────────────────────────────────────────────────────┐
-│ PRELOAD                                                     ~180 LOC      │
-│  index.ts   window.electronAPI — 44 typed methods, flat 1:1 forwarders     │
+│ PRELOAD                                                     ~200 LOC      │
+│  index.ts   window.electronAPI — 45 typed methods, flat 1:1 forwarders     │
 └───────────────────────────────────────────────────────────────────────────┘
                                     ▲
                                     │  window.electronAPI
                                     ▼
 ┌───────────────────────────────────────────────────────────────────────────┐
-│ RENDERER  (Chromium, sandboxed, CSP in production)            ~24k LOC    │
+│ RENDERER  (Chromium, sandboxed, CSP in production)            ~27k LOC    │
 │                                                                           │
 │  views/      6 files · top-level route views (Hub, Workbench, Library, …) │
-│  layouts/    1 file  · application navigation chrome (TopNav)             │
+│  layouts/    2 files · application navigation chrome (TopNav, NavSidebar) │
 │  store/      8 files · one Zustand store per domain + orchestration       │
-│  utils/     12 files · pbrController, viewportBridge, mapSlotNaming, …    │
+│  utils/     15 files · pbrController, viewportBridge, glbValidator, …     │
 │  agent/      3 files · tool registry, provider registry, scene serializer │
 │  components/ 70+ files · domain components (Viewport, Staging, Export, …) │
 │  components/UI/ 19 files · design-system primitives (Button, Modal, …)    │
-│  tests/     15 files · 345 tests (vitest + happy-dom)                     │
+│  tests/     27 files · 472 tests (vitest + happy-dom)                     │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -76,10 +77,10 @@ The main process holds an explicit set of **approved roots**, each with a scope:
 
 | Scope | Meaning | Granted by |
 | --- | --- | --- |
-| `read` | may be read | open dialog, dropped asset, restored from a previous session |
-| `readwrite` | may be read and written | app data dir, temp dir, **save** dialog |
+| `read` | may be read | open dialog, dropped asset, restored from a previous session, app resources |
+| `readwrite` | may be read and written | app data dir, app cache dir, temp dir, **save** dialog |
 
-Roots are seeded at startup with the application's own data directory, `os.tmpdir()/mirage`, and the bundled `resources/` (read-only). Everything else requires a **user gesture**:
+Roots are seeded at startup with the application's own data directory, the OS cache directory (`~/.cache/mirage` on Linux, `%LOCALAPPDATA%\mirage\cache` on Windows), `os.tmpdir()/mirage`, and the bundled `resources/` (read-only). Everything else requires a **user gesture**:
 
 - `dialog:openFile` / `dialog:openDirectory` grant `read` on the chosen location.
 - `dialog:saveFile` grants `readwrite` on the chosen file's folder.
@@ -92,17 +93,16 @@ Enforcement points:
 | Primitive | Enforced by |
 | --- | --- |
 | `local-asset://` | `protocol.ts` → `canRead()`, returns **403** otherwise |
-| `fs:readBinaryFile`, `fs:getFileInfo`, `watcher:watch` | `assertReadable()` |
+| `fs:readBinaryFile`, `fs:getFileInfo`, `watcher:watch`, `thumbnail:get` | `assertReadable()` |
 | `fs:writeFile`, `fs:writeBinaryFile`, `texture:*` outputs | `assertWritable()` |
 | `library:*` | `assertSafeSlug()` + `safeJoin()` |
 | `shell:openPath` | `assertReadable()` |
 
-Two details matter:
+Three details matter:
 
 - **Symlinks are resolved.** `resolveReal()` calls `fs.realpath`, falling back to resolving the deepest existing ancestor, so a symlink inside an approved root cannot be used to escape it.
 - **Containment is not a string prefix test.** `isInside()` uses `path.relative`, so `/data/models-evil` is not treated as a child of `/data/models`.
-
-The policy is persisted to `<dataDir>/access.json`, but **restored grants are always downgraded to `read`** — a stale file can never widen write access.
+- **Clean persistence & downgrading.** The policy persists user-approved directories to `<dataDir>/access.json`. Restored grants are always downgraded to `read` (a stale file can never widen write access). Internal roots (`app-data`, `app-cache`, `app-temp`, `app-resources`) and ephemeral AppImage mounts (`/tmp/.mount_*`) are excluded from disk persistence as they are dynamically registered afresh on every launch. Compounding `restored:` prefixes are cleanly stripped via `cleanSourceTag()`, and any subsequent user gesture on a restored path promotes it back to an active gesture tag.
 
 ### 3.3 Known limitation
 
@@ -144,10 +144,10 @@ MCP servers are third-party executables. Three controls apply:
 
 | Store | Owns |
 | --- | --- |
-| `modelStore` | the loaded GLB: path, URL, byte size, geometry stats, unit scale/type, loading flag |
-| `pbrMaterialStore` | material parameters and the 12 texture map slots, slot enablement, ORM mode, debug channel |
+| `modelStore` | the loaded GLB: path, URL, byte size, geometry stats, unit scale/type, model rotation, auto-grounding, multi-material manifest |
+| `pbrMaterialStore` | material parameters, multi-material states (`materialsState`), active material target, 12 texture map slots, slot enablement, ORM mode, debug channel, advanced PBR factors (clearcoat, transmission, sheen, IOR) |
 | `variantStore` | finish variants, per-slot texture variant pools, which variant is active per slot |
-| `viewportStore` | camera, lights, environment, grid/dimension toggles |
+| `viewportStore` | camera, lights, environment, grid/dimension toggles, transform gizmo (translate/rotate/scale), toolbar items customization and ordering, status bar toggles |
 | `appStore` | current view, theme, library path, active entry, sidebar sizing, modal flags |
 | `agentStore` | AI providers, chat sessions, streaming state, pending approvals |
 
@@ -254,14 +254,24 @@ The main canvas stays mounted while other views are shown (so camera and materia
 - Texture cache keys include a `?v=<timestamp>` cache-buster, so re-dropping a file creates a new entry rather than reusing a stale one. `invalidateTexture(url)` disposes entries matching the query-stripped URL.
 - A lost WebGL context is handled: `webglcontextlost` calls `preventDefault()` (without it the context is never restorable) and shows a recovery panel; `webglcontextrestored` clears it.
 
-### 5.5 Texture processing
+### 5.5 Texture & thumbnail processing
 
-Two engines exist for channel packing, and the split is intentional:
+Mirage separates texture processing into distinct engines tailored for specific throughput, concurrency, and platform requirements:
 
-- `utils/canvasOrmPacker.ts` / `canvasTextureProcessor.ts` — in-renderer HTML5 Canvas, GPU-accelerated, no native dependency. The default path.
-- `main/texturePacker.ts` — native `sharp`/libvips in a child process spawned with `ELECTRON_RUN_AS_NODE=1` (running sharp inside Electron collides with GLib/libvips on Linux). Used by the modal's fallback and for large jobs.
+1. **High-Performance In-Process Thumbnails (`main/thumbnailService.ts`)**:
+   - Generates `.webp` thumbnails asynchronously in the main process using `@janhapke/sharp-electron` executed on Node's background libuv threadpool (~3–5 ms latency, 0 child-process spawn overhead).
+   - Standard `@img/sharp-libvips` collides with Electron's dynamically linked host `glib-2.0` on Linux, triggering fatal GObject assertions; `@janhapke/sharp-electron` bundles a patched build that resolves this symbol clash.
+   - Enforces a concurrency limiter (max 4 concurrent tasks) to avoid CPU starvation.
+   - Employs both main-process and renderer-process (`ThumbnailImage.tsx`) in-flight request deduplication maps to prevent duplicate work across identical textures.
+   - Standardizes on OS cache conventions (`getThumbnailsCacheDir()`: `~/.cache/mirage/thumbnails` on Linux, `%LOCALAPPDATA%\mirage\cache\thumbnails` on Windows) and registers the cache in `accessPolicy` for immediate `local-asset://` streaming.
 
-The worker reports success only if it produced a non-empty output file; an unparseable worker response is verified against the filesystem rather than assumed successful.
+2. **Multi-Threaded Channel Packing (`main/texturePacker.ts`)**:
+   - Executes heavy ORM packing (`sharpWorker.cjs`) in a child process.
+   - Detects and prefers the host system's clean `node` binary (`getNodeExecutable()`), falling back to `process.execPath` with `ELECTRON_RUN_AS_NODE=1` only when standalone Node is absent.
+   - Reports success only if a non-empty output file is produced; unparseable worker responses are verified directly against the filesystem.
+
+3. **In-Renderer Canvas Engine (`utils/canvasOrmPacker.ts`)**:
+   - Hardware-accelerated HTML5 Canvas packing inside the renderer with 0 native dependencies, serving as a reliable fallback.
 
 ---
 
@@ -389,7 +399,7 @@ const { a, b } = useModelStore((s) => ({ a: s.a, b: s.b }));
 
 ```bash
 npm run typecheck   # tsc --noEmit — must exit 0
-npm test            # vitest run — 15 files, 345 tests
+npm test            # vitest run — 27 files, 472 tests
 npm run build       # electron-vite build
 ```
 
@@ -397,7 +407,7 @@ The suite is behavioural, not structural: it drives real modules, real DOM eleme
 
 For rules a regex cannot judge (whether a `rounded-full` is a justified circle), that file uses a **ratchet**: the known count may not grow. Lowering it is an improvement; raising it fails.
 
-Note that `vitest` runs with `happy-dom` project-wide, so main-process modules are only reachable via `vi.mock('electron', …)`. `ipcHandlers.ts`, `protocol.ts`, `texturePacker.ts`, `fileWatcher.ts` and `vault.ts` currently have **no** coverage — the highest-value place to add tests next.
+Note that `vitest` runs with `happy-dom` project-wide, so main-process modules are tested via `vi.mock('electron', …)`. `accessPolicy.ts` and `thumbnailService.ts` now have comprehensive automated test suites (`tests/accessPolicy.test.ts`, `tests/thumbnailService.test.ts`, `tests/thumbnailPipeline.test.tsx`), while `protocol.ts`, `texturePacker.ts`, `fileWatcher.ts` and `vault.ts` are candidates for further end-to-end integration coverage.
 
 ---
 

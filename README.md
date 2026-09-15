@@ -28,7 +28,8 @@
 ### 🎮 Real-Time 3D Viewport
 - **High-Fidelity Rendering**: Physically-based rendering powered by Three.js and React Three Fiber with studio HDR environment lighting and soft contact shadows.
 - **HDR Environments**: Defaults to the bundled `city.hdr` served through the `local-asset://` protocol, with additional environment presets and custom HDR loading, plus adjustable key/fill/ambient lights, sun azimuth and elevation, contact shadows, and an engineering ground grid.
-- **Dynamic 3D Dimensions**: Real-time architectural bounding-box dimension guides that track the camera with instant unit conversion (`m`, `cm`, `mm`, `in`).
+- **Dynamic 3D Dimensions & Gizmos**: Real-time architectural bounding-box dimension guides that track the camera with instant unit conversion (`m`, `cm`, `mm`, `in`), paired with interactive transform gizmos (translate, rotate, scale).
+- **Viewport Status Bar & Modular Toolbars**: Bottom status bar displaying real-time vertex/triangle counts and projection/wireframe toggles, paired with modular, reorderable toolbar items (`ToolbarItems/`).
 - **PBR Debug Channel Inspector**: Inspect isolated material passes with one click:
   - **Lit**: Final realistic PBR render.
   - **Albedo**: Unlit diffuse / base color.
@@ -41,6 +42,8 @@
 - **Live Reload**: The active `.glb` is watched on disk; replacing it on disk refreshes the viewport without restarting the app.
 
 ### 🎨 Comprehensive PBR Material Studio
+- **Multi-Material Mesh Support**: Inspect and fine-tune materials independently across multi-mesh models, with dedicated modular sub-sections (`SurfaceMapsSection`, `PbrMicroGeometrySection`, `AdvancedPbrSection`, `EmissiveSection`, `GeometryStudio`).
+- **Model Manifest & Transform Controls**: Inspect geometry hierarchy, bounding dimensions, and per-mesh material slots with real-time model rotation, auto-grounding, and reset capabilities.
 - **BaseColor & Colorway Manager**: Live slot for diffuse maps with support for multiple colorway swatches and instant variant switching.
 - **Normal Mapping**: Interactive tangent-space normal slot with dynamic depth scaling and DirectX green channel (`Invert Y`) toggle.
 - **Micro-Geometry Control (ORM)**:
@@ -56,8 +59,11 @@
   - **Displacement**: Real-time vertex height displacement scaling.
 - **Non-Destructive Binary Cache**: Toggle between applying only your active slot overrides or falling back to the textures embedded directly inside the `.glb` binary.
 
-### ⚡ Built-in Texture Pipeline
-- **Multi-threaded Channel Packing**: Seamlessly merge individual AO, Roughness, and Metalness maps into a single production-ready `.webp` ORM texture using native `sharp` (libvips) in an isolated worker process.
+### ⚡ Built-in Texture & Thumbnail Pipeline
+- **High-Performance In-Process Thumbnails**: Generates `.webp` texture and variant thumbnails asynchronously in the main process via `@janhapke/sharp-electron` on Node's libuv threadpool (3–5 ms latency), eliminating child process spawn overhead and avoiding Linux GLib symbol clashes.
+- **In-Flight Request Deduplication & Concurrency Limiter**: Eliminates duplicate operations when multiple cards render identical textures, throttled to 4 concurrent background tasks.
+- **Standardized OS Cache**: Thumbnails persist in standard OS cache paths (`$XDG_CACHE_HOME/mirage/thumbnails` on Linux, `%LOCALAPPDATA%\mirage\cache\thumbnails` on Windows, `~/Library/Caches/mirage/thumbnails` on macOS), registered in `accessPolicy` for immediate `local-asset://` streaming.
+- **Multi-threaded Channel Packing**: Seamlessly merge individual AO, Roughness, and Metalness maps into a single production-ready `.webp` ORM texture using native `sharp` (libvips) in a worker process preferring the system Node runtime.
 - **Normal & Roughness Utilities**: Flip normal-map green channel, invert roughness, and resize/convert any map to WebP at a target resolution and quality.
 - **Canvas Fallback**: In-memory HTML5 Canvas packing fallback ensures reliability across all operating system environments.
 
@@ -158,9 +164,9 @@ Current state, verified on this checkout:
 | Gate | Command | Result |
 | :--- | :--- | :--- |
 | Type check | `npx tsc --noEmit` | Clean (exit 0) |
-| Tests | `npx vitest run` | **15 files, 345 tests, all passing** |
+| Tests | `npx vitest run` | **27 files, 472 tests, all passing** |
 
-The suite covers the PBR controller, model and variant stores, GLB validation, path-safety utilities, colour conversion, settings persistence, the Sera package exporter, sidebar resize math, platform explorer integration, and the command manager — plus adversarial suites for graphics state and shortcut handling, and a design-system compliance suite that enforces [`DESIGN.md`](DESIGN.md).
+The suite covers the PBR controller, multi-material staging, model and variant stores, GLB validation, AR bake pipeline, thumbnail service and pipeline, path-safety utilities, colour conversion, settings persistence, the Sera package exporter, sidebar resize math, platform explorer integration, and the command manager — plus adversarial suites for graphics state and shortcut handling, and a design-system compliance suite that enforces [`DESIGN.md`](DESIGN.md).
 
 ### Production Builds
 
@@ -200,15 +206,16 @@ mirage/
 │   └── scripts/              # sharpWorker.cjs — isolated libvips worker
 ├── src/
 │   ├── main/                 # Electron main process (all privileged work)
-│   │   ├── accessPolicy.ts   # Approved filesystem roots, path containment
+│   │   ├── accessPolicy.ts   # Approved filesystem roots, path containment, whitelist persistence
 │   │   ├── fileWatcher.ts    # chokidar live-reload of the active .glb
 │   │   ├── index.ts          # Window creation, CSP, lifecycle, single instance
-│   │   ├── ipcHandlers.ts    # Dialogs, fs, library, vault, MCP, provider HTTP
+│   │   ├── ipcHandlers.ts    # Dialogs, fs, library, vault, MCP, provider HTTP, thumbnails
 │   │   ├── ipcSchemas.ts     # Zod schemas for every privileged IPC payload
-│   │   ├── platform.ts       # OS data paths, Wayland flags, explorer integration
+│   │   ├── platform.ts       # OS data & cache paths, Wayland flags, explorer integration
 │   │   ├── protocol.ts       # local-asset:// streaming, root-confined
 │   │   ├── settingsService.ts # Atomic settings.json persistence
-│   │   ├── texturePacker.ts  # Spawns the sharp worker process
+│   │   ├── texturePacker.ts  # Spawns the sharp worker process (system node preference)
+│   │   ├── thumbnailService.ts # Native in-process sharp thumbnail engine, threadpool & caching
 │   │   ├── vault.ts          # safeStorage-encrypted API-key vault
 │   │   └── mcp/              # MCP client manager + login-shell env resolver
 │   ├── preload/              # contextBridge API surface (window.electronAPI)
@@ -216,11 +223,11 @@ mirage/
 │       ├── index.html        # Shell (Montserrat / Manrope / JetBrains Mono)
 │       └── src/
 │           ├── views/        # Route views: Hub, Workbench, Library, EntryDetail, Settings, AgentStudio
-│           ├── layouts/      # Application chrome & navigation shell (TopNav)
+│           ├── layouts/      # Application navigation chrome: TopNav and NavSidebar
 │           ├── components/
 │           │   ├── UI/       # 19 Design-system primitives: Button, Modal, ContextMenu, StatusBadge…
-│           │   ├── Viewport/ # R3F canvas, camera, dimension lines, unified ContextMenu
-│           │   ├── Staging/  # PBR maps studio, ORM packer, drop zones, slot modals
+│           │   ├── Viewport/ # R3F canvas, camera, dimension lines, gizmos, ViewportStatusBar, ToolbarItems/
+│           │   ├── Staging/  # Modular PBR studio (Geometry, SurfaceMaps, MicroGeometry, Advanced, Emissive), manifest cards
 │           │   ├── Library/  # Catalogue: variants, modals, technical sheet
 │           │   ├── Export/   # Export studio: poster, GLB/USDZ, ZIP, texture pipeline
 │           │   ├── Agent/    # AI Agent Studio: chat, approvals, sessions, stats
@@ -230,9 +237,9 @@ mirage/
 │           ├── hooks/        # useResizableSidebar (pure resize math + hook)
 │           ├── store/        # Zustand: app, model, pbrMaterial, variant, viewport, agent
 │           ├── styles/       # globals.css — the design token layer
-│           ├── tests/        # Vitest suite (15 files, 345 tests)
+│           ├── tests/        # Vitest suite (27 files, 472 tests)
 │           ├── types/        # Config, library, and agent contracts
-│           └── utils/        # PBR controller, viewport bridge, mapSlotNaming, command manager
+│           └── utils/        # PBR controller, viewport bridge, glbValidator, arBakePipeline, mapSlotNaming, command manager
 ├── package.json
 └── electron.vite.config.ts
 ```

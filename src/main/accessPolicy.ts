@@ -1,7 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { getMirageDataDir } from './platform';
+import { getMirageDataDir, getMirageCacheDir } from './platform';
 
 /**
  * Filesystem access policy for the main process.
@@ -95,22 +95,45 @@ export async function resolveReal(target: string): Promise<string> {
   }
 }
 
+function isInternalSource(source: string): boolean {
+  return source.startsWith('app-') || source.endsWith('app-resources');
+}
+
+function isEphemeralPath(targetPath: string): boolean {
+  return targetPath.includes('/.mount_') || targetPath.includes('\\.mount_');
+}
+
+function cleanSourceTag(source?: string): string {
+  if (!source) return 'unknown';
+  const stripped = source.replace(/^(restored:)+/, '');
+  return stripped.length > 0 ? stripped : 'unknown';
+}
+
 function addRootSync(rootPath: string, scope: RootScope, source: string): void {
   const normalized = path.resolve(rootPath);
   const existing = roots.find((r) => samePath(r.path, normalized));
 
   if (existing) {
+    let changed = false;
     // Never downgrade a readwrite grant to read.
     if (scope === 'readwrite' && existing.scope === 'read') {
       existing.scope = 'readwrite';
       existing.source = source;
+      changed = true;
+    } else if (existing.source.startsWith('restored:') && !source.startsWith('restored:')) {
+      existing.source = source;
+      changed = true;
+    }
+    if (changed && !isInternalSource(existing.source) && !isEphemeralPath(existing.path)) {
       schedulePersist();
     }
     return;
   }
 
   roots.push({ path: normalized, scope, source });
-  schedulePersist();
+  if (!isInternalSource(source) && !isEphemeralPath(normalized)) {
+    schedulePersist();
+  }
 }
 
 /**
@@ -126,6 +149,7 @@ export function approveDirectory(dirPath: string, scope: RootScope, source: stri
  */
 export function grantInternalRoots(): void {
   addRootSync(getMirageDataDir(), 'readwrite', 'app-data');
+  addRootSync(getMirageCacheDir(), 'readwrite', 'app-cache');
   addRootSync(path.join(os.tmpdir(), 'mirage'), 'readwrite', 'app-temp');
 
   const resourceCandidates = [
@@ -143,6 +167,15 @@ export function getApprovedRoots(): ApprovedRoot[] {
   return roots.map((r) => ({ ...r }));
 }
 
+export function _resetAccessPolicyForTesting(): void {
+  roots = [];
+  initialized = false;
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+  }
+}
+
 function schedulePersist(): void {
   if (persistTimer) clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
@@ -155,7 +188,18 @@ async function persistRoots(): Promise<void> {
   try {
     const dir = getMirageDataDir();
     await fs.mkdir(dir, { recursive: true });
-    const payload = JSON.stringify({ version: 1, roots }, null, 2);
+
+    // Only persist user-granted roots; internal app roots and temporary AppImage mounts
+    // are automatically granted fresh on every startup by grantInternalRoots().
+    const persistable = roots
+      .filter((r) => !isInternalSource(r.source) && !isEphemeralPath(r.path))
+      .map((r) => ({
+        path: r.path,
+        scope: r.scope,
+        source: cleanSourceTag(r.source)
+      }));
+
+    const payload = JSON.stringify({ version: 1, roots: persistable }, null, 2);
     const tmp = path.join(dir, 'access.json.tmp');
     await fs.writeFile(tmp, payload, 'utf-8');
     await fs.rename(tmp, accessFilePath());
@@ -181,9 +225,14 @@ export async function initAccessPolicy(): Promise<void> {
     if (parsed?.version === 1 && Array.isArray(parsed.roots)) {
       for (const root of parsed.roots) {
         if (!root?.path || typeof root.path !== 'string') continue;
+        if (isEphemeralPath(root.path)) continue;
+
+        const cleanSource = cleanSourceTag(root.source);
+        if (isInternalSource(cleanSource)) continue;
+
         // Downgrade anything restored from disk to read-only. Persisted write
         // grants are re-established by the next save dialog instead.
-        addRootSync(root.path, 'read', `restored:${root.source || 'unknown'}`);
+        addRootSync(root.path, 'read', `restored:${cleanSource}`);
       }
     }
   } catch {

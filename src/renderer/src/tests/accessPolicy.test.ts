@@ -21,7 +21,10 @@ import {
   canRead,
   isInside,
   resolveAdjacentAsset,
-  safeJoin
+  safeJoin,
+  initAccessPolicy,
+  getApprovedRoots,
+  _resetAccessPolicyForTesting
 } from '../../../main/accessPolicy';
 
 /**
@@ -35,6 +38,7 @@ describe('accessPolicy — filesystem trust boundary', () => {
   let outsideDir: string;
 
   beforeEach(async () => {
+    _resetAccessPolicyForTesting();
     sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'mirage-access-'));
     approvedDir = path.join(sandbox, 'approved');
     outsideDir = path.join(sandbox, 'outside');
@@ -218,6 +222,64 @@ describe('accessPolicy — filesystem trust boundary', () => {
     it('rejects non-string input', async () => {
       expect(await approveDroppedAsset(null)).toBe(false);
       expect(await approveDroppedAsset(42)).toBe(false);
+    });
+  });
+
+  describe('initAccessPolicy and root sanitization', () => {
+    let originalXdgDataHome: string | undefined;
+
+    beforeEach(() => {
+      originalXdgDataHome = process.env.XDG_DATA_HOME;
+      process.env.XDG_DATA_HOME = sandbox;
+    });
+
+    afterEach(() => {
+      process.env.XDG_DATA_HOME = originalXdgDataHome;
+    });
+
+    it('sanitizes compounding restored prefixes and ignores ephemeral/internal roots', async () => {
+      const dataDir = path.join(sandbox, 'mirage');
+      await fs.mkdir(dataDir, { recursive: true });
+      const accessFile = path.join(dataDir, 'access.json');
+
+      const mockAccessJson = {
+        version: 1,
+        roots: [
+          {
+            path: '/tmp/.mount_Mirage123/resources/resources',
+            scope: 'read',
+            source: 'restored:restored:app-resources'
+          },
+          {
+            path: path.join(sandbox, 'app-data-dummy'),
+            scope: 'readwrite',
+            source: 'app-data'
+          },
+          {
+            path: approvedDir,
+            scope: 'read',
+            source: 'restored:restored:restored:open-dialog'
+          }
+        ]
+      };
+      await fs.writeFile(accessFile, JSON.stringify(mockAccessJson));
+
+      await initAccessPolicy();
+
+      const roots = getApprovedRoots();
+      // Should not contain ephemeral AppImage mount
+      expect(roots.some((r) => r.path.includes('.mount_'))).toBe(false);
+
+      // Approved dir should have clean restored source
+      const userRoot = roots.find((r) => r.path === approvedDir);
+      expect(userRoot).toBeDefined();
+      expect(userRoot?.source).toBe('restored:open-dialog');
+
+      // Live user action should promote restored root
+      approveDirectory(approvedDir, 'read', 'open-dialog');
+      const updatedRoots = getApprovedRoots();
+      const updatedUserRoot = updatedRoots.find((r) => r.path === approvedDir);
+      expect(updatedUserRoot?.source).toBe('open-dialog');
     });
   });
 });

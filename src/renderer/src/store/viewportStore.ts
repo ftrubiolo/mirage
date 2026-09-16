@@ -57,6 +57,13 @@ export interface CanvasWidget {
   y: number;
 }
 
+export interface BarDropTarget {
+  bar: 'toolbar' | 'statusbar';
+  targetItemId?: string;
+  position: 'before' | 'after';
+  targetIndex?: number;
+}
+
 export interface ViewportPersistedSettings {
   viewportTheme?: 'dark' | 'light';
   environmentPreset?: EnvironmentPreset;
@@ -178,9 +185,11 @@ interface ViewportState {
   resetStatusBarItems: () => void;
 
   // Cross-Bar Actions
+  barDropTarget: BarDropTarget | null;
+  setBarDropTarget: (target: BarDropTarget | null) => void;
   moveBarItem: (
     itemId: string,
-    sourceBar: 'toolbar' | 'statusbar',
+    sourceBar: 'toolbar' | 'statusbar' | 'canvas',
     targetBar: 'toolbar' | 'statusbar',
     targetIndex?: number,
     targetItemId?: string,
@@ -656,16 +665,19 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
   },
 
   // Cross-Bar Actions
+  barDropTarget: null,
+  setBarDropTarget: (target) => set({ barDropTarget: target }),
+
   moveBarItem: (itemId, sourceBar, targetBar, targetIndex, targetItemId, position = 'before') => {
     set((state) => {
       const nextToolbar = [...state.toolbarItems];
       const nextStatusBar = [...state.statusBarItems];
 
-      // Remove from source
+      // Remove from source if toolbar or statusbar
       if (sourceBar === 'toolbar') {
         const fromIdx = nextToolbar.indexOf(itemId);
         if (fromIdx !== -1) nextToolbar.splice(fromIdx, 1);
-      } else {
+      } else if (sourceBar === 'statusbar') {
         const fromIdx = nextStatusBar.indexOf(itemId);
         if (fromIdx !== -1) nextStatusBar.splice(fromIdx, 1);
       }
@@ -702,7 +714,8 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
       return {
         toolbarItems: nextToolbar,
         statusBarItems: nextStatusBar,
-        canvasWidgets: nextCanvasWidgets
+        canvasWidgets: nextCanvasWidgets,
+        barDropTarget: null
       };
     });
     requestSaveSettings();
@@ -723,7 +736,8 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
       canvasWidgets: [],
       hiddenToolbarItems: [],
       hiddenStatusBarItems: [],
-      iconOnlyToolbarItems: []
+      iconOnlyToolbarItems: [],
+      barDropTarget: null
     });
     requestSaveSettings();
   },

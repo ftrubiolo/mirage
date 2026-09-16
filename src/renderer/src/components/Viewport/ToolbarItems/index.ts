@@ -18,3 +18,4 @@ export * from './useDropdownPlacement';
 export * from './VariantPickerItem';
 export * from './ModelStatsItem';
 export * from './AnimationControlsItem';
+export * from './BarItemRenderer';

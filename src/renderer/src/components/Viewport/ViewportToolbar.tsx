@@ -22,13 +22,10 @@ import {
   EnvironmentHdriItem,
   LightingIntensityItem,
   SnapshotButtonItem,
-  ToolbarSpacerItem,
   SidebarToggleItem,
   ToolbarItemWrapper,
   CompactToolbarDrawer,
-  VariantPickerItem,
-  ModelStatsItem,
-  AnimationControlsItem,
+  BarItemRenderer,
   isToolbarSpacer,
   TOGGLEABLE_TOOLBAR_ITEMS,
   ITEMS_WITH_TEXT,
@@ -94,47 +91,17 @@ export const ViewportToolbar: React.FC = () => {
     });
   };
 
+  const barDropTarget = useViewportStore((s) => s.barDropTarget);
   const visibleToolbarItems = toolbarItems.filter((id) => !hiddenToolbarItems.includes(id));
 
   const renderToolbarItem = (id: string) => {
-    if (isToolbarSpacer(id)) {
-      return <ToolbarSpacerItem id={id} />;
-    }
-
-    const isIconOnly = iconOnlyToolbarItems.includes(id);
-
-    switch (id) {
-      case 'channel-dropdown':
-        return <ChannelDropdownItem compact={isCompact} iconOnly={isIconOnly} />;
-      case 'overlays':
-        return <OverlaysItemGroup />;
-      case 'transform-gizmo':
-        return <TransformGizmoItem />;
-      case 'theme-toggle':
-        return <ThemeToggleItem />;
-      case 'camera-orientation':
-        return <CameraOrientationItem compact={isCompact} iconOnly={isIconOnly} />;
-      case 'projection-toggle':
-        return <ProjectionToggleItem iconOnly={isIconOnly} />;
-      case 'fit-model':
-        return <FitModelItem />;
-      case 'auto-rotate':
-        return <AutoRotateItem />;
-      case 'environment-hdri':
-        return <EnvironmentHdriItem compact={isCompact} iconOnly={isIconOnly} />;
-      case 'lighting-intensity':
-        return <LightingIntensityItem />;
-      case 'snapshot-button':
-        return <SnapshotButtonItem />;
-      case 'variant-picker':
-        return <VariantPickerItem compact={isCompact} iconOnly={isIconOnly} />;
-      case 'model-stats':
-        return <ModelStatsItem compact={isCompact} iconOnly={isIconOnly} />;
-      case 'animation-controls':
-        return <AnimationControlsItem compact={isCompact} iconOnly={isIconOnly} />;
-      default:
-        return null;
-    }
+    return (
+      <BarItemRenderer
+        id={id}
+        compact={isCompact}
+        iconOnly={iconOnlyToolbarItems.includes(id)}
+      />
+    );
   };
 
   const isTargetWithText = Boolean(contextMenu.targetItemId && isItemWithText(contextMenu.targetItemId));
@@ -153,7 +120,7 @@ export const ViewportToolbar: React.FC = () => {
 
       {/* Dynamic Reorderable Toolbar Items with Dynamic Expanding Spacers */}
       <div
-        className="flex-1 flex items-center gap-1 min-w-0 h-full"
+        className="flex-1 flex items-center gap-1 min-w-0 h-full relative"
         onDragOver={(e) => {
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
@@ -169,6 +136,9 @@ export const ViewportToolbar: React.FC = () => {
           }
         }}
       >
+        {visibleToolbarItems.length === 0 && barDropTarget?.bar === 'toolbar' && (
+          <div data-drop-indicator="empty" className="w-0.5 h-5 bg-action rounded-xs z-40 animate-in fade-in duration-75" />
+        )}
         {visibleToolbarItems.map((id, index) => (
           <ToolbarItemWrapper
             key={id}

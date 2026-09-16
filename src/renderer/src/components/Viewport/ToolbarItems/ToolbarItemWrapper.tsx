@@ -18,6 +18,7 @@ export const ToolbarItemWrapper: React.FC<ToolbarItemWrapperProps> = ({
 }) => {
   const toolbarItems = useViewportStore((s) => s.toolbarItems);
   const moveBarItem = useViewportStore((s) => s.moveBarItem);
+  const barDropTarget = useViewportStore((s) => s.barDropTarget);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const isScrubbingRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -25,6 +26,13 @@ export const ToolbarItemWrapper: React.FC<ToolbarItemWrapperProps> = ({
   const dropPositionRef = useRef<'before' | 'after'>('before');
 
   const isSpacer = isToolbarSpacer(itemId);
+
+  const isExternalTarget =
+    barDropTarget && barDropTarget.bar === bar && barDropTarget.targetItemId === itemId
+      ? barDropTarget.position
+      : null;
+
+  const activeDropIndicator = dropIndicator || isExternalTarget;
 
   // Synchronously disable dragging only when interacting with form inputs (like range sliders)
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -173,10 +181,10 @@ export const ToolbarItemWrapper: React.FC<ToolbarItemWrapperProps> = ({
       } ${isDragging ? 'opacity-40' : 'opacity-100'} transition-opacity duration-150`}
     >
       {/* Visual Drop Indicators */}
-      {dropIndicator === 'before' && (
+      {activeDropIndicator === 'before' && (
         <div data-drop-indicator="before" className="absolute -left-0.5 top-1 bottom-1 w-0.5 bg-action rounded-xs z-40 pointer-events-none animate-in fade-in duration-75" />
       )}
-      {dropIndicator === 'after' && (
+      {activeDropIndicator === 'after' && (
         <div data-drop-indicator="after" className="absolute -right-0.5 top-1 bottom-1 w-0.5 bg-action rounded-xs z-40 pointer-events-none animate-in fade-in duration-75" />
       )}
 

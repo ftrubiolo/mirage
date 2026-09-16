@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { GripHorizontal, ArrowDownToLine } from 'lucide-react';
-import { useViewportStore } from '../../../store/viewportStore';
+import { useViewportStore, BarDropTarget } from '../../../store/viewportStore';
+import { BarItemRenderer } from '../ToolbarItems/BarItemRenderer';
 
 interface CanvasWidgetContainerProps {
   id: string;
@@ -23,8 +25,11 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
 }) => {
   const updateCanvasWidgetPosition = useViewportStore((s) => s.updateCanvasWidgetPosition);
   const removeCanvasWidget = useViewportStore((s) => s.removeCanvasWidget);
+  const moveBarItem = useViewportStore((s) => s.moveBarItem);
+  const setBarDropTarget = useViewportStore((s) => s.setBarDropTarget);
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x, y });
   const [isSnapped, setIsSnapped] = useState<{ left: boolean; right: boolean; top: boolean; bottom: boolean }>({
     left: false,
@@ -33,6 +38,7 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
     bottom: false
   });
   const [dockTarget, setDockTarget] = useState<'toolbar' | 'statusbar' | null>(null);
+  const [isPopped, setIsPopped] = useState(false);
 
   const isDraggingRef = useRef(false);
   const dragStartOffset = useRef({ x: 0, y: 0 });
@@ -40,12 +46,25 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
   const cachedBounds = useRef({ width: 1000, height: 800 });
   const currentPosRef = useRef({ x, y });
   const dockTargetRef = useRef<'toolbar' | 'statusbar' | null>(null);
+  const activeSlotRef = useRef<{
+    bar: 'toolbar' | 'statusbar';
+    targetItemId?: string;
+    position: 'before' | 'after';
+    targetIndex?: number;
+  } | null>(null);
 
   // Sync prop changes when position changes externally
   useEffect(() => {
     setPos({ x, y });
     currentPosRef.current = { x, y };
   }, [x, y]);
+
+  // Clean up any lingering drop targets if unmounted while dragging
+  useEffect(() => {
+    return () => {
+      setBarDropTarget(null);
+    };
+  }, [setBarDropTarget]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement;
@@ -74,7 +93,10 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
       y: e.clientY - pos.y
     };
     dockTargetRef.current = null;
+    activeSlotRef.current = null;
     setDockTarget(null);
+    setIsPopped(false);
+    setBarDropTarget(null);
 
     const handlePointerMove = (moveEv: PointerEvent) => {
       if (!isDraggingRef.current || !cardRef.current) return;
@@ -87,67 +109,202 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
       const rawX = moveEv.clientX - dragStartOffset.current.x;
       const rawY = moveEv.clientY - dragStartOffset.current.y;
 
-      // Detect docking back to top toolbar or bottom statusbar
-      let activeDock: 'toolbar' | 'statusbar' | null = null;
-      if (moveEv.clientY <= 52 || rawY < -15) {
-        activeDock = 'toolbar';
-      } else if (moveEv.clientY >= window.innerHeight - 52 || rawY > maxH + 15) {
-        activeDock = 'statusbar';
+      // Detect if cursor is in top toolbar or bottom statusbar zone
+      const toolbarEl = document.querySelector('header[aria-label*="herramientas"]');
+      const statusbarEl = document.querySelector('footer[aria-label*="estado"]');
+
+      let activeBar: 'toolbar' | 'statusbar' | null = null;
+      if (toolbarEl) {
+        const tRect = toolbarEl.getBoundingClientRect();
+        const toolbarBottom = tRect.height > 0 ? tRect.bottom + 6 : 52;
+        if (moveEv.clientY <= toolbarBottom || rawY < -15) {
+          activeBar = 'toolbar';
+        }
+      } else if (moveEv.clientY <= 52 || rawY < -15) {
+        activeBar = 'toolbar';
       }
 
-      if (activeDock !== dockTargetRef.current) {
-        dockTargetRef.current = activeDock;
-        setDockTarget(activeDock);
+      if (!activeBar) {
+        if (statusbarEl) {
+          const sRect = statusbarEl.getBoundingClientRect();
+          const statusbarTop =
+            sRect.height > 0
+              ? sRect.top - 6
+              : containerBounds?.height
+                ? containerBounds.height - 52
+                : window.innerHeight - 52;
+          if (moveEv.clientY >= statusbarTop || rawY > maxH + 15) {
+            activeBar = 'statusbar';
+          }
+        } else if (
+          moveEv.clientY >= (containerBounds?.height ? containerBounds.height - 52 : window.innerHeight - 52) ||
+          rawY > maxH + 15
+        ) {
+          activeBar = 'statusbar';
+        }
       }
 
-      // Edge snapping with continuous edge sliding
-      const snapLeft = rawX <= SNAP_THRESHOLD;
-      const snapRight = rawX >= maxW - SNAP_THRESHOLD;
-      const snapTop = rawY <= SNAP_THRESHOLD;
-      const snapBottom = rawY >= maxH - SNAP_THRESHOLD;
+      // Transition to/from Popped Bar Drag State
+      if (activeBar) {
+        // Pop into compact bar item preview
+        if (!isPopped) {
+          setIsPopped(true);
+        }
 
-      let clampedX = rawX;
-      let clampedY = rawY;
+        // Hide full canvas widget card while dragging over bar
+        cardRef.current.style.opacity = '0';
+        cardRef.current.style.pointerEvents = 'none';
 
-      if (snapLeft) {
-        clampedX = 0;
-      } else if (snapRight) {
-        clampedX = maxW;
+        // Position compact preview directly under pointer
+        if (previewRef.current) {
+          previewRef.current.style.display = 'flex';
+          const pW = previewRef.current.offsetWidth || 80;
+          const pH = previewRef.current.offsetHeight || 28;
+          previewRef.current.style.transform = `translate3d(${moveEv.clientX - pW / 2}px, ${moveEv.clientY - pH / 2}px, 0)`;
+        }
+
+        // Compute drop slot in the target bar
+        const itemEls = Array.from(
+          document.querySelectorAll(`[data-bar="${activeBar}"][data-bar-item]`)
+        ) as HTMLElement[];
+
+        let targetItemId: string | undefined = undefined;
+        let position: 'before' | 'after' = 'before';
+        let targetIndex: number | undefined = undefined;
+
+        if (itemEls.length === 0) {
+          targetItemId = undefined;
+          position = 'before';
+          targetIndex = 0;
+        } else {
+          let found = false;
+          for (let i = 0; i < itemEls.length; i++) {
+            const el = itemEls[i];
+            const rect = el.getBoundingClientRect();
+            const itId = el.getAttribute('data-bar-item') || '';
+
+            if (moveEv.clientX < rect.left + rect.width / 2) {
+              targetItemId = itId;
+              position = 'before';
+              targetIndex = i;
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            const lastEl = itemEls[itemEls.length - 1];
+            targetItemId = lastEl.getAttribute('data-bar-item') || undefined;
+            position = 'after';
+            targetIndex = itemEls.length;
+          }
+        }
+
+        const nextSlot: BarDropTarget = {
+          bar: activeBar,
+          targetItemId,
+          position,
+          targetIndex
+        };
+
+        const prevSlot = activeSlotRef.current;
+        if (
+          !prevSlot ||
+          prevSlot.bar !== nextSlot.bar ||
+          prevSlot.targetItemId !== nextSlot.targetItemId ||
+          prevSlot.position !== nextSlot.position
+        ) {
+          activeSlotRef.current = nextSlot;
+          setBarDropTarget(nextSlot);
+        }
+
+        if (activeBar !== dockTargetRef.current) {
+          dockTargetRef.current = activeBar;
+          setDockTarget(activeBar);
+        }
+      } else {
+        // Cursor is inside canvas: restore widget card, hide bar preview, clear bar drop target
+        if (dockTargetRef.current || activeSlotRef.current) {
+          dockTargetRef.current = null;
+          activeSlotRef.current = null;
+          setDockTarget(null);
+          setBarDropTarget(null);
+        }
+
+        setIsPopped(false);
+        cardRef.current.style.opacity = '1';
+        cardRef.current.style.pointerEvents = 'auto';
+
+        if (previewRef.current) {
+          previewRef.current.style.display = 'none';
+        }
+
+        // Edge snapping with continuous edge sliding
+        const snapLeft = rawX <= SNAP_THRESHOLD;
+        const snapRight = rawX >= maxW - SNAP_THRESHOLD;
+        const snapTop = rawY <= SNAP_THRESHOLD;
+        const snapBottom = rawY >= maxH - SNAP_THRESHOLD;
+
+        let clampedX = rawX;
+        let clampedY = rawY;
+
+        if (snapLeft) {
+          clampedX = 0;
+        } else if (snapRight) {
+          clampedX = maxW;
+        }
+
+        if (snapTop) {
+          clampedY = 0;
+        } else if (snapBottom) {
+          clampedY = maxH;
+        }
+
+        // Final boundary clamp inside canvas
+        clampedX = Math.max(0, Math.min(maxW, clampedX));
+        clampedY = Math.max(0, Math.min(maxH, clampedY));
+
+        currentPosRef.current = { x: clampedX, y: clampedY };
+        cardRef.current.style.transform = `translate3d(${clampedX}px, ${clampedY}px, 0)`;
+
+        setIsSnapped({
+          left: snapLeft,
+          right: snapRight,
+          top: snapTop,
+          bottom: snapBottom
+        });
       }
-
-      if (snapTop) {
-        clampedY = 0;
-      } else if (snapBottom) {
-        clampedY = maxH;
-      }
-
-      // Final boundary clamp
-      clampedX = Math.max(0, Math.min(maxW, clampedX));
-      clampedY = Math.max(0, Math.min(maxH, clampedY));
-
-      currentPosRef.current = { x: clampedX, y: clampedY };
-
-      // Direct GPU transform update: 0 layout thrash, 60-144 FPS smooth
-      cardRef.current.style.transform = `translate3d(${clampedX}px, ${clampedY}px, 0)`;
-
-      setIsSnapped({
-        left: snapLeft,
-        right: snapRight,
-        top: snapTop,
-        bottom: snapBottom
-      });
     };
 
     const handlePointerUp = () => {
       if (isDraggingRef.current) {
         isDraggingRef.current = false;
+        setIsPopped(false);
+        setBarDropTarget(null);
 
-        if (dockTargetRef.current) {
+        if (previewRef.current) {
+          previewRef.current.style.display = 'none';
+        }
+
+        if (cardRef.current) {
+          cardRef.current.style.opacity = '1';
+          cardRef.current.style.pointerEvents = 'auto';
+        }
+
+        if (activeSlotRef.current) {
+          // Drop into exact chosen slot in bar
+          const slot = activeSlotRef.current;
+          activeSlotRef.current = null;
+          dockTargetRef.current = null;
+          setDockTarget(null);
+          moveBarItem(id, 'canvas', slot.bar, slot.targetIndex, slot.targetItemId, slot.position);
+        } else if (dockTargetRef.current) {
+          // Fallback dock if bar slot wasn't resolved
           const target = dockTargetRef.current;
           dockTargetRef.current = null;
           setDockTarget(null);
           removeCanvasWidget(id, target);
         } else {
+          // Commit position in canvas
           const finalX = currentPosRef.current.x;
           const finalY = currentPosRef.current.y;
           setPos({ x: finalX, y: finalY });
@@ -174,49 +331,73 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
       : '';
 
   return (
-    <div
-      ref={cardRef}
-      data-canvas-widget={id}
-      onDragStart={(e) => e.preventDefault()}
-      style={{
-        transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
-        left: 0,
-        top: 0
-      }}
-      className={`absolute z-30 select-none rounded-xs border bg-surface-lowest/95 backdrop-blur-md text-ink-primary transition-shadow duration-100 ${snapClass} ${dockIndicatorClass}`}
-    >
-      {/* Widget Header & Drag Handle */}
+    <>
       <div
-        onPointerDown={handlePointerDown}
-        className="flex items-center justify-between h-7 px-2 border-b border-hairline bg-surface-container/60 cursor-grab active:cursor-grabbing text-xs"
+        ref={cardRef}
+        data-canvas-widget={id}
+        onDragStart={(e) => e.preventDefault()}
+        style={{
+          transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
+          left: 0,
+          top: 0
+        }}
+        className={`absolute z-30 select-none rounded-xs border bg-surface-lowest/95 backdrop-blur-md text-ink-primary transition-shadow duration-100 ${snapClass} ${dockIndicatorClass}`}
       >
+        {/* Widget Header & Drag Handle */}
         <div
-          title="Arrastrar para mover (o acercar al borde para anclar)"
-          className="flex items-center gap-1.5 min-w-0 cursor-grab active:cursor-grabbing hover:text-ink-primary"
+          onPointerDown={handlePointerDown}
+          className="flex items-center justify-between h-7 px-2 border-b border-hairline bg-surface-container/60 cursor-grab active:cursor-grabbing text-xs"
         >
-          <GripHorizontal size={13} className="text-ink-tertiary hover:text-action shrink-0" />
-          <span className="font-mono text-[10px] uppercase font-bold tracking-wider text-ink-secondary truncate">
-            {title}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1 shrink-0 ml-2">
-          {/* Dock back to bar button */}
-          <button
-            type="button"
-            onClick={() => removeCanvasWidget(id)}
-            title="Anclar nuevamente a la barra"
-            className="flex items-center justify-center w-5 h-5 rounded-xs text-ink-tertiary hover:text-action hover:bg-surface-high/80 transition-colors"
+          <div
+            title="Arrastrar para mover (o arrastrar a las barras para anclar)"
+            className="flex items-center gap-1.5 min-w-0 cursor-grab active:cursor-grabbing hover:text-ink-primary"
           >
-            <ArrowDownToLine size={12} />
-          </button>
+            <GripHorizontal size={13} className="text-ink-tertiary hover:text-action shrink-0" />
+            <span className="font-mono text-[10px] uppercase font-bold tracking-wider text-ink-secondary truncate">
+              {title}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0 ml-2">
+            {/* Dock back to bar button */}
+            <button
+              type="button"
+              onClick={() => removeCanvasWidget(id)}
+              title="Anclar nuevamente a la barra"
+              className="flex items-center justify-center w-5 h-5 rounded-xs text-ink-tertiary hover:text-action hover:bg-surface-high/80 transition-colors"
+            >
+              <ArrowDownToLine size={12} />
+            </button>
+          </div>
+        </div>
+
+        {/* Widget Body */}
+        <div className="p-2.5">
+          {children}
         </div>
       </div>
 
-      {/* Widget Body */}
-      <div className="p-2.5">
-        {children}
-      </div>
-    </div>
+      {/* Popped Bar Drag Preview (Portal rendered directly to body to avoid overflow containment) */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={previewRef}
+            data-canvas-widget-drag-preview={id}
+            style={{
+              position: 'fixed',
+              left: 0,
+              top: 0,
+              zIndex: 999999,
+              pointerEvents: 'none',
+              display: isPopped ? 'flex' : 'none',
+              transform: 'none'
+            }}
+            className="items-center h-7 px-1.5 rounded-xs border border-action bg-surface-lowest/95 backdrop-blur-md shadow-2xl ring-1 ring-action/50 text-ink-primary select-none animate-in zoom-in-95 duration-75"
+          >
+            <BarItemRenderer id={id} compact={true} iconOnly={false} />
+          </div>,
+          document.body
+        )}
+    </>
   );
 };

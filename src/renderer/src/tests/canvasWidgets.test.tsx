@@ -515,4 +515,184 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       expect(lightWrapper.getAttribute('draggable')).toBe('true');
     });
   });
+
+  describe('Seamless Canvas-to-Bar Drag Transition', () => {
+    it('pops into compact bar preview and highlights insertion slot when dragged to toolbar', () => {
+      useViewportStore.getState().resetAllBars();
+      useViewportStore.getState().addCanvasWidget('model-stats', 200, 200);
+
+      act(() => {
+        root.render(
+          <div>
+            <header aria-label="Barra de herramientas del visor 3D">
+              <ToolbarItemWrapper itemId="fit-model" index={0} bar="toolbar">
+                <FitModelItem />
+              </ToolbarItemWrapper>
+              <ToolbarItemWrapper itemId="lighting-intensity" index={1} bar="toolbar">
+                <LightingIntensityItem />
+              </ToolbarItemWrapper>
+            </header>
+            <CanvasWidgetContainer
+              id="model-stats"
+              title="Metrología Geométrica"
+              x={200}
+              y={200}
+              containerBounds={{ width: 800, height: 600 }}
+            >
+              <CanvasMetrologyWidget />
+            </CanvasWidgetContainer>
+          </div>
+        );
+      });
+
+      // Mock getBoundingClientRect for header and items so slot calculation can test before/after
+      const header = container.querySelector('header') as HTMLElement;
+      header.getBoundingClientRect = () => ({
+        left: 0,
+        right: 800,
+        width: 800,
+        top: 0,
+        bottom: 36,
+        height: 36,
+        x: 0,
+        y: 0,
+        toJSON: () => {}
+      });
+
+      const fitWrapper = container.querySelector('[data-bar-item="fit-model"]') as HTMLElement;
+      const lightWrapper = container.querySelector('[data-bar-item="lighting-intensity"]') as HTMLElement;
+      fitWrapper.getBoundingClientRect = () => ({
+        left: 10,
+        right: 50,
+        width: 40,
+        top: 0,
+        bottom: 36,
+        height: 36,
+        x: 10,
+        y: 0,
+        toJSON: () => {}
+      });
+      lightWrapper.getBoundingClientRect = () => ({
+        left: 60,
+        right: 120,
+        width: 60,
+        top: 0,
+        bottom: 36,
+        height: 36,
+        x: 60,
+        y: 0,
+        toJSON: () => {}
+      });
+
+      const handle = container.querySelector('.cursor-grab') as HTMLDivElement;
+
+      // Start drag
+      act(() => {
+        handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 200, clientY: 200 }));
+      });
+
+      // Drag into toolbar zone at clientX = 20 (before midpoint of fit-model: 10 + 20 = 30)
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointermove', { clientX: 20, clientY: 20 }));
+      });
+
+      // Big canvas card should be hidden (popped)
+      const card = container.querySelector('[data-canvas-widget="model-stats"]') as HTMLDivElement;
+      expect(card.style.opacity).toBe('0');
+
+      // Compact preview should exist in document.body
+      const preview = document.querySelector('[data-canvas-widget-drag-preview="model-stats"]') as HTMLDivElement;
+      expect(preview).toBeTruthy();
+      expect(preview.style.display).not.toBe('none');
+
+      // Slot indicator should be active on fit-model
+      expect(useViewportStore.getState().barDropTarget).toEqual({
+        bar: 'toolbar',
+        targetItemId: 'fit-model',
+        position: 'before',
+        targetIndex: 0
+      });
+
+      // Dropping should insert model-stats at beginning
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointerup', { clientX: 20, clientY: 20 }));
+      });
+
+      expect(useViewportStore.getState().canvasWidgets).toEqual([]);
+      const fitIdx = useViewportStore.getState().toolbarItems.indexOf('fit-model');
+      expect(fitIdx).toBeGreaterThan(0);
+      expect(useViewportStore.getState().toolbarItems[fitIdx - 1]).toBe('model-stats');
+    });
+
+    it('cancels popped preview and restores canvas card when dragged back into canvas', () => {
+      useViewportStore.getState().resetAllBars();
+      useViewportStore.getState().addCanvasWidget('model-stats', 200, 200);
+
+      act(() => {
+        root.render(
+          <div>
+            <header aria-label="Barra de herramientas del visor 3D">
+              <ToolbarItemWrapper itemId="fit-model" index={0} bar="toolbar">
+                <FitModelItem />
+              </ToolbarItemWrapper>
+            </header>
+            <CanvasWidgetContainer
+              id="model-stats"
+              title="Metrología Geométrica"
+              x={200}
+              y={200}
+              containerBounds={{ width: 800, height: 600 }}
+            >
+              <CanvasMetrologyWidget />
+            </CanvasWidgetContainer>
+          </div>
+        );
+      });
+
+      const header = container.querySelector('header') as HTMLElement;
+      header.getBoundingClientRect = () => ({
+        left: 0,
+        right: 800,
+        width: 800,
+        top: 0,
+        bottom: 36,
+        height: 36,
+        x: 0,
+        y: 0,
+        toJSON: () => {}
+      });
+
+      const handle = container.querySelector('.cursor-grab') as HTMLDivElement;
+
+      // Start drag
+      act(() => {
+        handle.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 200, clientY: 200 }));
+      });
+
+      // Move into toolbar zone (clientY = 10 <= 36)
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointermove', { clientX: 20, clientY: 10 }));
+      });
+      const card = container.querySelector('[data-canvas-widget="model-stats"]') as HTMLDivElement;
+      expect(card.style.opacity).toBe('0');
+
+      // Move back down into canvas (clientY = 250)
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointermove', { clientX: 250, clientY: 250 }));
+      });
+
+      // Card should be visible again
+      expect(card.style.opacity).toBe('1');
+      expect(useViewportStore.getState().barDropTarget).toBeNull();
+
+      // Release in canvas
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointerup', { clientX: 250, clientY: 250 }));
+      });
+
+      // Widget remains on canvas at new position
+      expect(useViewportStore.getState().canvasWidgets.length).toBe(1);
+      expect(useViewportStore.getState().canvasWidgets[0].id).toBe('model-stats');
+    });
+  });
 });

@@ -106,6 +106,15 @@ export interface ViewportPersistedSettings {
   statusBarItems?: string[];
   hiddenStatusBarItems?: string[];
   canvasWidgets?: CanvasWidget[];
+  canvasEnvironmentMode?: 'list' | 'icons';
+  canvasTransformMode?: 'full' | 'compressed';
+  canvasTransformOrientation?: 'horizontal' | 'vertical';
+  autoRotateSpeed?: number;
+  canvasWidgetModes?: Record<string, 'full' | 'compressed'>;
+  canvasWidgetOrientations?: Record<string, 'horizontal' | 'vertical'>;
+  snapshotResolution?: '1080p' | '4k' | 'square' | 'viewport';
+  snapshotTransparent?: boolean;
+  snapshotFormat?: 'png' | 'webp';
 }
 
 interface ViewportState {
@@ -227,6 +236,33 @@ interface ViewportState {
 
   // Canvas Floating Widgets State & Actions
   canvasWidgets: CanvasWidget[];
+  canvasEnvironmentMode: 'list' | 'icons';
+  setCanvasEnvironmentMode: (mode: 'list' | 'icons') => void;
+  toggleCanvasEnvironmentMode: () => void;
+  canvasTransformMode: 'full' | 'compressed';
+  setCanvasTransformMode: (mode: 'full' | 'compressed') => void;
+  toggleCanvasTransformMode: () => void;
+  canvasTransformOrientation: 'horizontal' | 'vertical';
+  setCanvasTransformOrientation: (orientation: 'horizontal' | 'vertical') => void;
+  toggleCanvasTransformOrientation: () => void;
+  canvasWidgetModes: Record<string, 'full' | 'compressed'>;
+  canvasWidgetOrientations: Record<string, 'horizontal' | 'vertical'>;
+  getCanvasWidgetMode: (id: string) => 'full' | 'compressed';
+  setCanvasWidgetMode: (id: string, mode: 'full' | 'compressed') => void;
+  toggleCanvasWidgetMode: (id: string) => void;
+  getCanvasWidgetOrientation: (id: string) => 'horizontal' | 'vertical';
+  setCanvasWidgetOrientation: (id: string, orientation: 'horizontal' | 'vertical') => void;
+  toggleCanvasWidgetOrientation: (id: string) => void;
+  autoRotateSpeed: number;
+  setAutoRotateSpeed: (speed: number) => void;
+  toggleAutoRotateDirection: () => void;
+  snapshotResolution: '1080p' | '4k' | 'square' | 'viewport';
+  snapshotTransparent: boolean;
+  snapshotFormat: 'png' | 'webp';
+  setSnapshotResolution: (resolution: '1080p' | '4k' | 'square' | 'viewport') => void;
+  setSnapshotTransparent: (transparent: boolean) => void;
+  toggleSnapshotTransparent: () => void;
+  setSnapshotFormat: (format: 'png' | 'webp') => void;
   addCanvasWidget: (id: string, x: number, y: number) => void;
   removeCanvasWidget: (id: string, targetBar?: 'toolbar' | 'statusbar') => void;
   updateCanvasWidgetPosition: (id: string, x: number, y: number) => void;
@@ -550,10 +586,6 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
     set({ cameraFov: Math.max(15, Math.min(90, fov)) });
     requestSaveSettings();
   },
-  toggleOrthographic: () => {
-    set((state) => ({ isOrthographic: !state.isOrthographic }));
-    requestSaveSettings();
-  },
   setCameraFocalLength: (mm) => {
     const mapping: Record<number, number> = {
       24: 74,
@@ -565,17 +597,21 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
     set({ cameraFov: targetFov, isOrthographic: false });
     requestSaveSettings();
   },
+  toggleOrthographic: () => {
+    set((state) => ({ isOrthographic: !state.isOrthographic }));
+    requestSaveSettings();
+  },
   setIsOrthographic: (val) => {
     set({ isOrthographic: val });
     requestSaveSettings();
   },
+  triggerFitToModel: () =>
+    set((state) => ({ fitToModelCounter: state.fitToModelCounter + 1 })),
   focusOnPoint: (point) =>
     set((state) => ({
       focusPoint: point,
       focusPointCounter: state.focusPointCounter + 1
     })),
-  triggerFitToModel: () =>
-    set((state) => ({ fitToModelCounter: state.fitToModelCounter + 1 })),
 
   // Lighting Actions
   setLightingPreset: (preset) => {
@@ -891,6 +927,110 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
 
   // Canvas Floating Widgets Actions
   canvasWidgets: [],
+  canvasEnvironmentMode: 'icons', // Default compressed
+  setCanvasEnvironmentMode: (mode) => {
+    set({ canvasEnvironmentMode: mode });
+    requestSaveSettings();
+  },
+  toggleCanvasEnvironmentMode: () => {
+    set((state) => ({
+      canvasEnvironmentMode: state.canvasEnvironmentMode === 'list' ? 'icons' : 'list'
+    }));
+    requestSaveSettings();
+  },
+  canvasTransformMode: 'compressed', // Default compressed
+  setCanvasTransformMode: (mode) => {
+    set({ canvasTransformMode: mode });
+    requestSaveSettings();
+  },
+  toggleCanvasTransformMode: () => {
+    set((state) => ({
+      canvasTransformMode: state.canvasTransformMode === 'full' ? 'compressed' : 'full'
+    }));
+    requestSaveSettings();
+  },
+  canvasTransformOrientation: 'horizontal',
+  setCanvasTransformOrientation: (orientation) => {
+    set({ canvasTransformOrientation: orientation });
+    requestSaveSettings();
+  },
+  toggleCanvasTransformOrientation: () => {
+    set((state) => ({
+      canvasTransformOrientation:
+        state.canvasTransformOrientation === 'horizontal' ? 'vertical' : 'horizontal'
+    }));
+    requestSaveSettings();
+  },
+  autoRotateSpeed: 0.7,
+  setAutoRotateSpeed: (speed) => {
+    const sign = speed < 0 ? -1 : 1;
+    const mag = Math.max(0.1, Math.min(10, Math.abs(speed)));
+    set({ autoRotateSpeed: sign * mag });
+    requestSaveSettings();
+  },
+  toggleAutoRotateDirection: () => {
+    set((state) => ({ autoRotateSpeed: -state.autoRotateSpeed }));
+    requestSaveSettings();
+  },
+  snapshotResolution: '1080p',
+  snapshotTransparent: false,
+  snapshotFormat: 'png',
+  setSnapshotResolution: (resolution) => {
+    set({ snapshotResolution: resolution });
+    requestSaveSettings();
+  },
+  setSnapshotTransparent: (transparent) => {
+    set({ snapshotTransparent: transparent });
+    requestSaveSettings();
+  },
+  toggleSnapshotTransparent: () => {
+    set((state) => ({ snapshotTransparent: !state.snapshotTransparent }));
+    requestSaveSettings();
+  },
+  setSnapshotFormat: (format) => {
+    set({ snapshotFormat: format });
+    requestSaveSettings();
+  },
+  canvasWidgetModes: {},
+  canvasWidgetOrientations: {},
+  getCanvasWidgetMode: (id) => {
+    const state = get();
+    if (state.canvasWidgetModes[id]) return state.canvasWidgetModes[id];
+    if (id === 'transform-gizmo') return state.canvasTransformMode;
+    if (id === 'environment-hdri') return state.canvasEnvironmentMode === 'list' ? 'full' : 'compressed';
+    return 'compressed'; // Default compressed for ALL canvas widgets
+  },
+  setCanvasWidgetMode: (id, mode) => {
+    set((state) => ({
+      canvasWidgetModes: { ...state.canvasWidgetModes, [id]: mode },
+      ...(id === 'transform-gizmo' ? { canvasTransformMode: mode } : {}),
+      ...(id === 'environment-hdri' ? { canvasEnvironmentMode: mode === 'compressed' ? 'icons' : 'list' } : {})
+    }));
+    requestSaveSettings();
+  },
+  toggleCanvasWidgetMode: (id) => {
+    const current = get().getCanvasWidgetMode(id);
+    const next = current === 'full' ? 'compressed' : 'full';
+    get().setCanvasWidgetMode(id, next);
+  },
+  getCanvasWidgetOrientation: (id) => {
+    const state = get();
+    if (state.canvasWidgetOrientations[id]) return state.canvasWidgetOrientations[id];
+    if (id === 'transform-gizmo') return state.canvasTransformOrientation;
+    return 'horizontal';
+  },
+  setCanvasWidgetOrientation: (id, orientation) => {
+    set((state) => ({
+      canvasWidgetOrientations: { ...state.canvasWidgetOrientations, [id]: orientation },
+      ...(id === 'transform-gizmo' ? { canvasTransformOrientation: orientation } : {})
+    }));
+    requestSaveSettings();
+  },
+  toggleCanvasWidgetOrientation: (id) => {
+    const current = get().getCanvasWidgetOrientation(id);
+    const next = current === 'horizontal' ? 'vertical' : 'horizontal';
+    get().setCanvasWidgetOrientation(id, next);
+  },
   addCanvasWidget: (id, x, y) => {
     set((state) => {
       const nextToolbar = state.toolbarItems.filter((i) => i !== id);
@@ -1036,6 +1176,15 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
       statusBarItems: s.statusBarItems,
       hiddenStatusBarItems: s.hiddenStatusBarItems,
       canvasWidgets: s.canvasWidgets,
+      canvasEnvironmentMode: s.canvasEnvironmentMode,
+      canvasTransformMode: s.canvasTransformMode,
+      canvasTransformOrientation: s.canvasTransformOrientation,
+      autoRotateSpeed: s.autoRotateSpeed,
+      canvasWidgetModes: s.canvasWidgetModes,
+      canvasWidgetOrientations: s.canvasWidgetOrientations,
+      snapshotResolution: s.snapshotResolution,
+      snapshotTransparent: s.snapshotTransparent,
+      snapshotFormat: s.snapshotFormat
     };
   }
 }));

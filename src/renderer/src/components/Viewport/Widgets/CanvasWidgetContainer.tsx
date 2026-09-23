@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { GripHorizontal, ArrowDownToLine } from 'lucide-react';
+import { GripHorizontal, ArrowDownToLine, MoreHorizontal } from 'lucide-react';
 import { useViewportStore, BarDropTarget } from '../../../store/viewportStore';
 import { BarItemRenderer } from '../ToolbarItems/BarItemRenderer';
 
@@ -11,9 +11,24 @@ interface CanvasWidgetContainerProps {
   y: number;
   containerBounds?: { width: number; height: number };
   children: React.ReactNode;
+  headerActions?: React.ReactNode;
+  noPadding?: boolean;
+  verticalHeader?: boolean;
+  expandableHeader?: boolean;
+}
+
+interface CachedWidgetBox {
+  id: string;
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  width: number;
+  height: number;
 }
 
 const SNAP_THRESHOLD = 20;
+const SNAP_PROXIMITY = 40;
 
 export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
   id,
@@ -21,7 +36,11 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
   x,
   y,
   containerBounds,
-  children
+  children,
+  headerActions,
+  noPadding = false,
+  verticalHeader = false,
+  expandableHeader = false
 }) => {
   const updateCanvasWidgetPosition = useViewportStore((s) => s.updateCanvasWidgetPosition);
   const removeCanvasWidget = useViewportStore((s) => s.removeCanvasWidget);
@@ -31,11 +50,19 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ x, y });
-  const [isSnapped, setIsSnapped] = useState<{ left: boolean; right: boolean; top: boolean; bottom: boolean }>({
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(false);
+  const [isSnapped, setIsSnapped] = useState<{
+    left: boolean;
+    right: boolean;
+    top: boolean;
+    bottom: boolean;
+    widget: boolean;
+  }>({
     left: false,
     right: false,
     top: false,
-    bottom: false
+    bottom: false,
+    widget: false
   });
   const [dockTarget, setDockTarget] = useState<'toolbar' | 'statusbar' | null>(null);
   const [isPopped, setIsPopped] = useState(false);
@@ -44,6 +71,7 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
   const dragStartOffset = useRef({ x: 0, y: 0 });
   const cachedDimensions = useRef({ width: 260, height: 120 });
   const cachedBounds = useRef({ width: 1000, height: 800 });
+  const cachedOtherWidgets = useRef<CachedWidgetBox[]>([]);
   const currentPosRef = useRef({ x, y });
   const dockTargetRef = useRef<'toolbar' | 'statusbar' | null>(null);
   const activeSlotRef = useRef<{
@@ -76,15 +104,59 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
     // Cache dimensions and bounds once at drag start (prevents layout thrashing during pointermove)
     const card = cardRef.current;
     if (card) {
+      const cardRect = card.getBoundingClientRect();
+      const isVerticalCard = verticalHeader || card.classList.contains('w-[46px]');
+      const fallbackW = isVerticalCard ? 46 : 260;
       cachedDimensions.current = {
-        width: card.offsetWidth || 260,
-        height: card.offsetHeight || 120
+        width: card.offsetWidth || (cardRect.width > 0 ? cardRect.width : fallbackW),
+        height: card.offsetHeight || (cardRect.height > 0 ? cardRect.height : 120)
       };
       const parent = card.parentElement;
       cachedBounds.current = {
         width: containerBounds?.width || parent?.clientWidth || window.innerWidth,
         height: containerBounds?.height || parent?.clientHeight || window.innerHeight
       };
+
+      // Query and cache bounding boxes of all other canvas widgets
+      const otherBoxes: CachedWidgetBox[] = [];
+      const allWidgetEls = (parent || document).querySelectorAll('[data-canvas-widget]');
+      allWidgetEls.forEach((el) => {
+        const otherId = el.getAttribute('data-canvas-widget');
+        if (otherId && otherId !== id && el !== card) {
+          const htmlEl = el as HTMLElement;
+          const elRect = htmlEl.getBoundingClientRect();
+          const pRect = parent?.getBoundingClientRect();
+          const isOtherVertical = htmlEl.classList.contains('w-[46px]');
+          const fallbackOtherW = isOtherVertical ? 46 : 260;
+
+          const otherWidth = htmlEl.offsetWidth || (elRect.width > 0 ? elRect.width : fallbackOtherW);
+          const otherHeight = htmlEl.offsetHeight || (elRect.height > 0 ? elRect.height : 120);
+          let otherLeft = 0;
+          let otherTop = 0;
+
+          if (elRect.width > 0) {
+            otherLeft = elRect.left - (pRect?.left || 0);
+            otherTop = elRect.top - (pRect?.top || 0);
+          } else {
+            const storeWidget = useViewportStore.getState().canvasWidgets.find((w) => w.id === otherId);
+            if (storeWidget) {
+              otherLeft = storeWidget.x;
+              otherTop = storeWidget.y;
+            }
+          }
+
+          otherBoxes.push({
+            id: otherId,
+            left: otherLeft,
+            right: otherLeft + otherWidth,
+            top: otherTop,
+            bottom: otherTop + otherHeight,
+            width: otherWidth,
+            height: otherHeight
+          });
+        }
+      });
+      cachedOtherWidgets.current = otherBoxes;
     }
 
     isDraggingRef.current = true;
@@ -238,39 +310,115 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
           previewRef.current.style.display = 'none';
         }
 
-        // Edge snapping with continuous edge sliding
-        const snapLeft = rawX <= SNAP_THRESHOLD;
-        const snapRight = rawX >= maxW - SNAP_THRESHOLD;
-        const snapTop = rawY <= SNAP_THRESHOLD;
-        const snapBottom = rawY >= maxH - SNAP_THRESHOLD;
+        // Edge snapping & Widget-to-Widget snapping with magnetic alignment
+        let bestDistX = SNAP_THRESHOLD + 1;
+        let bestSnapX = rawX;
+        let snapLeft = false;
+        let snapRight = false;
+        let snappedWidgetX = false;
 
-        let clampedX = rawX;
-        let clampedY = rawY;
-
-        if (snapLeft) {
-          clampedX = 0;
-        } else if (snapRight) {
-          clampedX = maxW;
+        // 1. Screen boundaries (X)
+        const distScreenLeft = Math.abs(rawX - 0);
+        if (distScreenLeft <= SNAP_THRESHOLD && distScreenLeft < bestDistX) {
+          bestDistX = distScreenLeft;
+          bestSnapX = 0;
+          snapLeft = true;
         }
 
-        if (snapTop) {
-          clampedY = 0;
-        } else if (snapBottom) {
-          clampedY = maxH;
+        const distScreenRight = Math.abs(rawX - maxW);
+        if (distScreenRight <= SNAP_THRESHOLD && distScreenRight < bestDistX) {
+          bestDistX = distScreenRight;
+          bestSnapX = maxW;
+          snapRight = true;
+          snapLeft = false;
+        }
+
+        // 2. Widget-to-widget snapping (X)
+        for (const other of cachedOtherWidgets.current) {
+          const gapY = Math.max(0, Math.max(rawY - other.bottom, other.top - (rawY + cardH)));
+          if (gapY <= SNAP_PROXIMITY) {
+            const candidatesX = [
+              other.right,                                      // Attach to right: [other][dragged]
+              other.left - cardW,                               // Attach to left:  [dragged][other]
+              other.left,                                       // Align left edges
+              other.right - cardW,                              // Align right edges
+              other.left + Math.round((other.width - cardW) / 2) // Align horizontal center
+            ];
+
+            for (const candX of candidatesX) {
+              const dist = Math.abs(rawX - candX);
+              if (dist <= SNAP_THRESHOLD && dist < bestDistX) {
+                bestDistX = dist;
+                bestSnapX = candX;
+                snappedWidgetX = true;
+                snapLeft = false;
+                snapRight = false;
+              }
+            }
+          }
+        }
+
+        let bestDistY = SNAP_THRESHOLD + 1;
+        let bestSnapY = rawY;
+        let snapTop = false;
+        let snapBottom = false;
+        let snappedWidgetY = false;
+
+        // 1. Screen boundaries (Y)
+        const distScreenTop = Math.abs(rawY - 0);
+        if (distScreenTop <= SNAP_THRESHOLD && distScreenTop < bestDistY) {
+          bestDistY = distScreenTop;
+          bestSnapY = 0;
+          snapTop = true;
+        }
+
+        const distScreenBottom = Math.abs(rawY - maxH);
+        if (distScreenBottom <= SNAP_THRESHOLD && distScreenBottom < bestDistY) {
+          bestDistY = distScreenBottom;
+          bestSnapY = maxH;
+          snapBottom = true;
+          snapTop = false;
+        }
+
+        // 2. Widget-to-widget snapping (Y)
+        for (const other of cachedOtherWidgets.current) {
+          const gapX = Math.max(0, Math.max(rawX - other.right, other.left - (rawX + cardW)));
+          if (gapX <= SNAP_PROXIMITY) {
+            const candidatesY = [
+              other.bottom,                                       // Attach to bottom: [other] / [dragged]
+              other.top - cardH,                                  // Attach to top:    [dragged] / [other]
+              other.top,                                          // Align top edges
+              other.bottom - cardH,                               // Align bottom edges
+              other.top + Math.round((other.height - cardH) / 2)   // Align vertical center
+            ];
+
+            for (const candY of candidatesY) {
+              const dist = Math.abs(rawY - candY);
+              if (dist <= SNAP_THRESHOLD && dist < bestDistY) {
+                bestDistY = dist;
+                bestSnapY = candY;
+                snappedWidgetY = true;
+                snapTop = false;
+                snapBottom = false;
+              }
+            }
+          }
         }
 
         // Final boundary clamp inside canvas
-        clampedX = Math.max(0, Math.min(maxW, clampedX));
-        clampedY = Math.max(0, Math.min(maxH, clampedY));
+        const clampedX = Math.max(0, Math.min(maxW, bestSnapX));
+        const clampedY = Math.max(0, Math.min(maxH, bestSnapY));
 
         currentPosRef.current = { x: clampedX, y: clampedY };
         cardRef.current.style.transform = `translate3d(${clampedX}px, ${clampedY}px, 0)`;
 
+        const isSnappedToWidget = snappedWidgetX || snappedWidgetY;
         setIsSnapped({
           left: snapLeft,
           right: snapRight,
           top: snapTop,
-          bottom: snapBottom
+          bottom: snapBottom,
+          widget: isSnappedToWidget
         });
       }
     };
@@ -309,7 +457,7 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
           const finalY = currentPosRef.current.y;
           setPos({ x: finalX, y: finalY });
           updateCanvasWidgetPosition(id, finalX, finalY);
-          setIsSnapped({ left: false, right: false, top: false, bottom: false });
+          setIsSnapped({ left: false, right: false, top: false, bottom: false, widget: false });
         }
       }
       window.removeEventListener('pointermove', handlePointerMove);
@@ -321,8 +469,8 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
   };
 
   const snapClass =
-    isSnapped.left || isSnapped.right || isSnapped.top || isSnapped.bottom
-      ? 'border-action shadow-2xl'
+    isSnapped.left || isSnapped.right || isSnapped.top || isSnapped.bottom || isSnapped.widget
+      ? 'border-action ring-1 ring-action/50 shadow-2xl'
       : 'border-hairline shadow-2xl';
 
   const dockIndicatorClass =
@@ -335,44 +483,130 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
       <div
         ref={cardRef}
         data-canvas-widget={id}
+        data-snapped={isSnapped.widget ? 'widget' : isSnapped.left || isSnapped.right || isSnapped.top || isSnapped.bottom ? 'edge' : undefined}
         onDragStart={(e) => e.preventDefault()}
         style={{
           transform: `translate3d(${pos.x}px, ${pos.y}px, 0)`,
           left: 0,
           top: 0
         }}
-        className={`absolute z-30 select-none rounded-xs border bg-surface-lowest/95 backdrop-blur-md text-ink-primary transition-shadow duration-100 ${snapClass} ${dockIndicatorClass}`}
+        className={`absolute z-30 select-none rounded-none border bg-surface-lowest shadow-2xl text-ink-primary antialiased transition-shadow duration-100 ${snapClass} ${dockIndicatorClass} ${verticalHeader ? 'w-[46px]' : ''}`}
       >
         {/* Widget Header & Drag Handle */}
-        <div
-          onPointerDown={handlePointerDown}
-          className="flex items-center justify-between h-7 px-2 border-b border-hairline bg-surface-container/60 cursor-grab active:cursor-grabbing text-xs"
-        >
+        {verticalHeader ? (
           <div
-            title="Arrastrar para mover (o arrastrar a las barras para anclar)"
-            className="flex items-center gap-1.5 min-w-0 cursor-grab active:cursor-grabbing hover:text-ink-primary"
+            onPointerDown={handlePointerDown}
+            className="flex flex-col border-b border-hairline bg-surface-container/60 cursor-grab active:cursor-grabbing text-xs w-full"
           >
-            <GripHorizontal size={13} className="text-ink-tertiary hover:text-action shrink-0" />
-            <span className="font-mono text-[10px] uppercase font-bold tracking-wider text-ink-secondary truncate">
-              {title}
-            </span>
+            {/* Row 1: Drag handle + Expandable "..." button */}
+            <div className="flex items-center justify-between h-5 px-1.5">
+              <div
+                title={title ? `${title} (Arrastrar para mover)` : 'Arrastrar para mover'}
+                className="flex items-center cursor-grab active:cursor-grabbing hover:text-ink-primary"
+              >
+                <GripHorizontal size={11} className="text-ink-tertiary hover:text-action shrink-0" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsHeaderExpanded((prev) => !prev)}
+                title={isHeaderExpanded ? 'Ocultar opciones' : 'Mostrar opciones'}
+                aria-label={isHeaderExpanded ? 'Ocultar opciones' : 'Más opciones'}
+                className={`flex items-center justify-center w-4 h-4 rounded-none transition-colors cursor-pointer ${
+                  isHeaderExpanded
+                    ? 'text-action bg-surface-high/80'
+                    : 'text-ink-tertiary hover:text-action hover:bg-surface-high/80'
+                }`}
+              >
+                <MoreHorizontal size={12} />
+              </button>
+            </div>
+            {/* Row 2: Expanded actions row (Only visible when isHeaderExpanded === true) */}
+            {isHeaderExpanded && (
+              <div className="flex items-center justify-between h-4.5 px-1 border-t border-hairline/60 bg-surface-container/40 text-xs w-full animate-in slide-in-from-top-1 duration-100">
+                {headerActions}
+                <button
+                  type="button"
+                  onClick={() => removeCanvasWidget(id)}
+                  title="Anclar nuevamente a la barra"
+                  aria-label="Anclar nuevamente a la barra"
+                  className="flex items-center justify-center w-3.5 h-3.5 rounded-none text-ink-tertiary hover:text-action hover:bg-surface-high/80 transition-colors cursor-pointer"
+                >
+                  <ArrowDownToLine size={9} />
+                </button>
+              </div>
+            )}
           </div>
-
-          <div className="flex items-center gap-1 shrink-0 ml-2">
-            {/* Dock back to bar button */}
-            <button
-              type="button"
-              onClick={() => removeCanvasWidget(id)}
-              title="Anclar nuevamente a la barra"
-              className="flex items-center justify-center w-5 h-5 rounded-xs text-ink-tertiary hover:text-action hover:bg-surface-high/80 transition-colors"
+        ) : expandableHeader ? (
+          <div
+            onPointerDown={handlePointerDown}
+            className="flex items-center justify-between h-5 px-1.5 border-b border-hairline bg-surface-container/60 cursor-grab active:cursor-grabbing text-xs"
+          >
+            <div
+              title={title ? `${title} (Arrastrar para mover)` : 'Arrastrar para mover'}
+              className="flex items-center gap-1 cursor-grab active:cursor-grabbing hover:text-ink-primary"
             >
-              <ArrowDownToLine size={12} />
-            </button>
+              <GripHorizontal size={12} className="text-ink-tertiary hover:text-action shrink-0" />
+            </div>
+
+            <div className="flex items-center gap-0.5 shrink-0 ml-1">
+              {isHeaderExpanded && (
+                <div className="flex items-center gap-0.5 animate-in fade-in duration-100">
+                  {headerActions}
+                  <button
+                    type="button"
+                    onClick={() => removeCanvasWidget(id)}
+                    title="Anclar nuevamente a la barra"
+                    aria-label="Anclar nuevamente a la barra"
+                    className="flex items-center justify-center w-4 h-4 rounded-none text-ink-tertiary hover:text-action hover:bg-surface-high/80 transition-colors cursor-pointer"
+                  >
+                    <ArrowDownToLine size={10} />
+                  </button>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsHeaderExpanded((prev) => !prev)}
+                title={isHeaderExpanded ? 'Ocultar opciones' : 'Mostrar opciones'}
+                aria-label={isHeaderExpanded ? 'Ocultar opciones' : 'Más opciones'}
+                className={`flex items-center justify-center w-4 h-4 rounded-none transition-colors cursor-pointer ${
+                  isHeaderExpanded
+                    ? 'text-action bg-surface-high/80'
+                    : 'text-ink-tertiary hover:text-action hover:bg-surface-high/80'
+                }`}
+              >
+                <MoreHorizontal size={12} />
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div
+            onPointerDown={handlePointerDown}
+            className="flex items-center justify-between h-5 px-1.5 border-b border-hairline bg-surface-container/60 cursor-grab active:cursor-grabbing text-xs"
+          >
+            <div
+              title={title ? `${title} (Arrastrar para mover)` : 'Arrastrar para mover'}
+              className="flex items-center gap-1 cursor-grab active:cursor-grabbing hover:text-ink-primary"
+            >
+              <GripHorizontal size={12} className="text-ink-tertiary hover:text-action shrink-0" />
+            </div>
+
+            <div className="flex items-center gap-0.5 shrink-0 ml-1">
+              {headerActions}
+              {/* Dock back to bar button */}
+              <button
+                type="button"
+                onClick={() => removeCanvasWidget(id)}
+                title="Anclar nuevamente a la barra"
+                className="flex items-center justify-center w-4 h-4 rounded-none text-ink-tertiary hover:text-action hover:bg-surface-high/80 transition-colors cursor-pointer"
+              >
+                <ArrowDownToLine size={10} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Widget Body */}
-        <div className="p-2.5">
+        <div className={noPadding ? 'p-0' : 'p-2.5'}>
           {children}
         </div>
       </div>
@@ -392,7 +626,7 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
               display: isPopped ? 'flex' : 'none',
               transform: 'none'
             }}
-            className="items-center h-7 px-1.5 rounded-xs border border-action bg-surface-lowest/95 backdrop-blur-md shadow-2xl ring-1 ring-action/50 text-ink-primary select-none animate-in zoom-in-95 duration-75"
+            className="items-center h-7 px-1.5 rounded-none border border-action bg-surface-lowest shadow-2xl ring-1 ring-action/50 text-ink-primary select-none animate-in zoom-in-95 duration-75 antialiased"
           >
             <BarItemRenderer id={id} compact={true} iconOnly={false} />
           </div>,

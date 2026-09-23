@@ -14,6 +14,13 @@ import { CanvasEnvironmentWidget } from '../components/Viewport/Widgets/CanvasEn
 import { CanvasCameraWidget } from '../components/Viewport/Widgets/CanvasCameraWidget';
 import { CanvasChannelWidget } from '../components/Viewport/Widgets/CanvasChannelWidget';
 import { CanvasWidgetContainer } from '../components/Viewport/Widgets/CanvasWidgetContainer';
+import { CanvasWidgetRenderer } from '../components/Viewport/Widgets/CanvasWidgetRenderer';
+import { CanvasOverlaysWidget } from '../components/Viewport/Widgets/CanvasOverlaysWidget';
+import { CanvasProjectionWidget } from '../components/Viewport/Widgets/CanvasProjectionWidget';
+import { CanvasFitModelWidget } from '../components/Viewport/Widgets/CanvasFitModelWidget';
+import { CanvasAutoRotateWidget } from '../components/Viewport/Widgets/CanvasAutoRotateWidget';
+import { CanvasThemeWidget } from '../components/Viewport/Widgets/CanvasThemeWidget';
+import { CanvasSnapshotWidget } from '../components/Viewport/Widgets/CanvasSnapshotWidget';
 import { ToolbarItemWrapper } from '../components/Viewport/ToolbarItems/ToolbarItemWrapper';
 import { LightingIntensityItem } from '../components/Viewport/ToolbarItems/LightingIntensityItem';
 import { FitModelItem } from '../components/Viewport/ToolbarItems/FitModelItem';
@@ -31,6 +38,11 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
 
     useViewportStore.getState().resetAllBars();
     useViewportStore.getState().resetAnimationState();
+    useViewportStore.setState({
+      canvasTransformMode: 'full',
+      canvasTransformOrientation: 'horizontal',
+      canvasEnvironmentMode: 'list'
+    });
     useModelStore.getState().resetModel();
     useVariantStore.getState().resetVariants();
   });
@@ -116,6 +128,37 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       expect(useViewportStore.getState().statusBarItems).toEqual(DEFAULT_STATUSBAR_ITEMS);
       expect(useViewportStore.getState().toolbarItems).toEqual(DEFAULT_TOOLBAR_ITEMS);
     });
+
+    it('persists and restores canvasTransformMode, canvasTransformOrientation, and canvasEnvironmentMode', () => {
+      act(() => {
+        useViewportStore.getState().setCanvasTransformMode('compressed');
+        useViewportStore.getState().setCanvasTransformOrientation('vertical');
+        useViewportStore.getState().setCanvasEnvironmentMode('icons');
+      });
+
+      const persistable = useViewportStore.getState().getPersistableSettings();
+      expect(persistable.canvasTransformMode).toBe('compressed');
+      expect(persistable.canvasTransformOrientation).toBe('vertical');
+      expect(persistable.canvasEnvironmentMode).toBe('icons');
+
+      // Reset to defaults
+      act(() => {
+        useViewportStore.setState({
+          canvasTransformMode: 'full',
+          canvasTransformOrientation: 'horizontal',
+          canvasEnvironmentMode: 'list'
+        });
+      });
+
+      // Apply saved settings
+      act(() => {
+        useViewportStore.getState().applyPersistedSettings(persistable);
+      });
+
+      expect(useViewportStore.getState().canvasTransformMode).toBe('compressed');
+      expect(useViewportStore.getState().canvasTransformOrientation).toBe('vertical');
+      expect(useViewportStore.getState().canvasEnvironmentMode).toBe('icons');
+    });
   });
 
   describe('Canvas Drag Isolation & Anti-Stuck Reliability', () => {
@@ -184,7 +227,7 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         );
       });
 
-      expect(container.textContent).toContain('Estudio de Animación');
+      expect(container.querySelector('[title*="Estudio de Animación"]')).toBeTruthy();
       expect(container.textContent).toContain('04.50s');
       expect(container.querySelector('button[title*="Retroceder 0.1s"]')).toBeTruthy();
       expect(container.querySelector('button[title*="Avanzar 0.1s"]')).toBeTruthy();
@@ -276,6 +319,134 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       expect(container.textContent).toContain('Alinear base al piso');
     });
 
+    it('renders CanvasTransformWidget in compressed mode with only the 3 big buttons (no text, no margin)', () => {
+      useViewportStore.setState({ canvasTransformMode: 'compressed', canvasTransformOrientation: 'horizontal' });
+
+      act(() => {
+        root.render(
+          <CanvasWidgetContainer id="transform-gizmo" title="Manipulación 3D" x={50} y={50}>
+            <CanvasTransformWidget />
+          </CanvasWidgetContainer>
+        );
+      });
+
+      const compressedView = container.querySelector('[data-testid="canvas-transform-compressed"]');
+      expect(compressedView).not.toBeNull();
+      expect(container.querySelector('[data-testid="canvas-transform-full"]')).toBeNull();
+
+      // Exactly 3 big icon buttons, NO text
+      const buttons = compressedView?.querySelectorAll('button');
+      expect(buttons?.length).toBe(3);
+      expect(compressedView?.textContent).toBe(''); // No text labels!
+
+      // Verify no red dot indicator inside buttons
+      expect(compressedView?.querySelectorAll('span.bg-action').length).toBe(0);
+
+      // Check aria-labels
+      const cursorBtn = compressedView?.querySelector('button[aria-label="Cursor"]');
+      const moveBtn = compressedView?.querySelector('button[aria-label="Mover"]');
+      const rotateBtn = compressedView?.querySelector('button[aria-label="Rotar"]');
+      expect(cursorBtn).toBeDefined();
+      expect(moveBtn).toBeDefined();
+      expect(rotateBtn).toBeDefined();
+
+      // Default horizontal orientation
+      expect(compressedView?.getAttribute('data-orientation')).toBe('horizontal');
+
+      // Clicking Mover button updates transformGizmoMode
+      act(() => {
+        (moveBtn as HTMLButtonElement)?.click();
+      });
+
+      expect(useViewportStore.getState().transformGizmoMode).toBe('translate');
+      // Still no red dot indicator
+      expect(compressedView?.querySelectorAll('span.bg-action').length).toBe(0);
+
+      // Toggling orientation switches to vertical
+      act(() => {
+        useViewportStore.getState().toggleCanvasTransformOrientation();
+      });
+
+      expect(compressedView?.getAttribute('data-orientation')).toBe('vertical');
+    });
+
+    it('renders CanvasTransformWidget in vertical compressed mode with w-[46px] and no empty space', () => {
+      useViewportStore.setState({
+        canvasTransformMode: 'compressed',
+        canvasTransformOrientation: 'vertical'
+      });
+
+      act(() => {
+        root.render(<CanvasWidgetRenderer id="transform-gizmo" x={100} y={100} />);
+      });
+
+      const card = container.querySelector('[data-canvas-widget="transform-gizmo"]');
+      expect(card).not.toBeNull();
+      expect(card?.classList.contains('w-[46px]')).toBe(true);
+
+      const compressedView = container.querySelector('[data-testid="canvas-transform-compressed"]');
+      expect(compressedView?.getAttribute('data-orientation')).toBe('vertical');
+
+      // Buttons have w-full to fill container width without empty space
+      const buttons = compressedView?.querySelectorAll('button');
+      expect(buttons?.length).toBe(3);
+      buttons?.forEach((btn) => {
+        expect(btn.classList.contains('w-full')).toBe(true);
+      });
+
+      // Expandable header: initially ONLY move handle and "..." icon are visible
+      expect(card?.querySelector('[title*="Arrastrar para mover"]')).not.toBeNull();
+      const moreBtn = card?.querySelector('button[aria-label="Más opciones"]') as HTMLButtonElement;
+      expect(moreBtn).not.toBeNull();
+
+      // Action buttons are NOT visible initially
+      expect(card?.querySelector('button[title*="Anclar nuevamente a la barra"]')).toBeNull();
+      expect(card?.querySelector('button[title*="orientación"]')).toBeNull();
+      expect(card?.querySelector('button[title*="coordenadas"]')).toBeNull();
+
+      // Click "..." to expand
+      act(() => {
+        moreBtn.click();
+      });
+
+      // Action buttons are NOW visible in the expanded row
+      expect(card?.querySelector('button[title*="Anclar nuevamente a la barra"]')).not.toBeNull();
+      expect(card?.querySelector('button[title*="orientación"]')).not.toBeNull();
+      expect(card?.querySelector('button[title*="coordenadas"]')).not.toBeNull();
+
+      // Click "..." to collapse again
+      act(() => {
+        moreBtn.click();
+      });
+
+      // Actions are collapsed again
+      expect(card?.querySelector('button[title*="Anclar nuevamente a la barra"]')).toBeNull();
+      expect(card?.querySelector('button[title*="orientación"]')).toBeNull();
+      expect(card?.querySelector('button[title*="coordenadas"]')).toBeNull();
+    });
+
+    it('toggles CanvasTransformWidget between full and compressed mode', () => {
+      useViewportStore.setState({ canvasTransformMode: 'full' });
+
+      act(() => {
+        root.render(
+          <CanvasWidgetContainer id="transform-gizmo" title="Manipulación 3D" x={50} y={50}>
+            <CanvasTransformWidget />
+          </CanvasWidgetContainer>
+        );
+      });
+
+      expect(container.querySelector('[data-testid="canvas-transform-full"]')).not.toBeNull();
+      expect(container.querySelector('[data-testid="canvas-transform-compressed"]')).toBeNull();
+
+      act(() => {
+        useViewportStore.getState().toggleCanvasTransformMode();
+      });
+
+      expect(container.querySelector('[data-testid="canvas-transform-compressed"]')).not.toBeNull();
+      expect(container.querySelector('[data-testid="canvas-transform-full"]')).toBeNull();
+    });
+
     it('renders CanvasLightingWidget with presets and intensity slider', () => {
       act(() => {
         root.render(
@@ -304,6 +475,59 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       expect(container.textContent).toContain('Mostrar cielo/fondo 3D');
       expect(container.textContent).toContain('Ciudad');
       expect(container.textContent).toContain('Almacén');
+    });
+
+    it('renders CanvasEnvironmentWidget in compressed mode with big icons only', () => {
+      useViewportStore.setState({ canvasEnvironmentMode: 'icons' });
+
+      act(() => {
+        root.render(
+          <CanvasWidgetContainer id="environment-hdri" title="Entornos HDRI" x={50} y={50}>
+            <CanvasEnvironmentWidget />
+          </CanvasWidgetContainer>
+        );
+      });
+
+      const compressedView = container.querySelector('[data-testid="canvas-env-compressed"]');
+      expect(compressedView).not.toBeNull();
+
+      // Check all 8 preset big-icon buttons exist
+      const presetButtons = compressedView?.querySelectorAll('button[aria-label]');
+      expect(presetButtons?.length).toBe(8);
+
+      const cityBtn = Array.from(presetButtons || []).find((b) => b.getAttribute('aria-label') === 'Ciudad');
+      const studioBtn = Array.from(presetButtons || []).find((b) => b.getAttribute('aria-label') === 'Estudio');
+      expect(cityBtn).toBeDefined();
+      expect(studioBtn).toBeDefined();
+
+      // Clicking a preset button updates environmentPreset
+      act(() => {
+        (studioBtn as HTMLButtonElement)?.click();
+      });
+
+      expect(useViewportStore.getState().environmentPreset).toBe('studio');
+    });
+
+    it('toggles between list and compressed icons mode via toggleCanvasEnvironmentMode', () => {
+      useViewportStore.setState({ canvasEnvironmentMode: 'list' });
+
+      act(() => {
+        root.render(
+          <CanvasWidgetContainer id="environment-hdri" title="Entornos HDRI" x={50} y={50}>
+            <CanvasEnvironmentWidget />
+          </CanvasWidgetContainer>
+        );
+      });
+
+      expect(container.querySelector('[data-testid="canvas-env-list"]')).not.toBeNull();
+      expect(container.querySelector('[data-testid="canvas-env-compressed"]')).toBeNull();
+
+      act(() => {
+        useViewportStore.getState().toggleCanvasEnvironmentMode();
+      });
+
+      expect(container.querySelector('[data-testid="canvas-env-compressed"]')).not.toBeNull();
+      expect(container.querySelector('[data-testid="canvas-env-list"]')).toBeNull();
     });
 
     it('renders CanvasCameraWidget with CAD orientation buttons and FOV', () => {
@@ -380,6 +604,103 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         id: 'model-stats',
         x: 0,
         y: 250
+      });
+    });
+
+    it('snaps widgets to each other (side-by-side and top-to-bottom) with magnetic alignment and highlights', () => {
+      // Widget A (overlays) already on canvas at (100, 100)
+      useViewportStore.getState().addCanvasWidget('overlays', 100, 100);
+      // Widget B (fit-model) on canvas at (300, 300)
+      useViewportStore.getState().addCanvasWidget('fit-model', 300, 300);
+
+      act(() => {
+        root.render(
+          <div style={{ width: 800, height: 600, position: 'relative' }}>
+            <CanvasWidgetRenderer id="overlays" x={100} y={100} containerBounds={{ width: 800, height: 600 }} />
+            <CanvasWidgetRenderer id="fit-model" x={300} y={300} containerBounds={{ width: 800, height: 600 }} />
+          </div>
+        );
+      });
+
+      const cardA = container.querySelector('[data-canvas-widget="overlays"]') as HTMLElement;
+      const cardB = container.querySelector('[data-canvas-widget="fit-model"]') as HTMLElement;
+      expect(cardA).toBeTruthy();
+      expect(cardB).toBeTruthy();
+      expect(cardA.className).toContain('rounded-none');
+      expect(cardA.className).not.toContain('rounded-xs');
+      expect(cardB.className).toContain('rounded-none');
+      expect(cardB.className).not.toContain('rounded-xs');
+
+      // Mock bounds for cardA: left=100, top=100, width=46, height=120, right=146, bottom=220
+      cardA.getBoundingClientRect = () => ({
+        left: 100,
+        right: 146,
+        top: 100,
+        bottom: 220,
+        width: 46,
+        height: 120,
+        x: 100,
+        y: 100,
+        toJSON: () => {}
+      });
+      cardB.getBoundingClientRect = () => ({
+        left: 300,
+        right: 346,
+        top: 300,
+        bottom: 420,
+        width: 46,
+        height: 120,
+        x: 300,
+        y: 300,
+        toJSON: () => {}
+      });
+
+      const handleB = cardB.querySelector('.cursor-grab') as HTMLDivElement;
+      expect(handleB).toBeTruthy();
+
+      // 1. Drag Card B near the right edge of Card A: rawX = 150 (near 146), rawY = 105 (near top=100)
+      act(() => {
+        handleB.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 300, clientY: 300 }));
+      });
+
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointermove', { clientX: 150, clientY: 105 }));
+      });
+
+      // Card B should snap flush to right edge of Card A (x=146) and align top edges (y=100)
+      expect(cardB.style.transform).toBe('translate3d(146px, 100px, 0)');
+      expect(cardB.getAttribute('data-snapped')).toBe('widget');
+      expect(cardB.className).toContain('border-action');
+
+      // Release pointer to persist snapped position
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointerup', { clientX: 150, clientY: 105 }));
+      });
+
+      const widgetBState = useViewportStore.getState().canvasWidgets.find((w) => w.id === 'fit-model');
+      expect(widgetBState).toEqual({ id: 'fit-model', x: 146, y: 100 });
+
+      // 2. Drag Card B below Card A: rawX = 104 (near left=100), rawY = 228 (near bottom=220)
+      act(() => {
+        handleB.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 146, clientY: 100 }));
+      });
+
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointermove', { clientX: 104, clientY: 228 }));
+      });
+
+      // Card B should snap below Card A (y=220) and align left edges (x=100)
+      expect(cardB.style.transform).toBe('translate3d(100px, 220px, 0)');
+      expect(cardB.getAttribute('data-snapped')).toBe('widget');
+
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointerup', { clientX: 104, clientY: 228 }));
+      });
+
+      expect(useViewportStore.getState().canvasWidgets.find((w) => w.id === 'fit-model')).toEqual({
+        id: 'fit-model',
+        x: 100,
+        y: 220
       });
     });
 
@@ -695,4 +1016,349 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       expect(useViewportStore.getState().canvasWidgets[0].id).toBe('model-stats');
     });
   });
+
+  describe('Dedicated Canvas Widgets (Overlays, Projection, FitModel, AutoRotate, Theme, Snapshot)', () => {
+    it('renders overlays in compressed mode by default and expands actions on clicking ...', () => {
+      act(() => {
+        root.render(<CanvasWidgetRenderer id="overlays" x={50} y={50} />);
+      });
+
+      // Default compressed rendering
+      const compressed = container.querySelector('[data-testid="canvas-overlays-compressed"]');
+      expect(compressed).toBeTruthy();
+
+      // Only Grip and "..." button are visible initially
+      expect(container.querySelector('button[aria-label="Más opciones"]')).toBeTruthy();
+      expect(container.querySelector('button[aria-label="Cambiar orientación"]')).toBeFalsy();
+
+      // Click "..." to expand header actions
+      const moreBtn = container.querySelector('button[aria-label="Más opciones"]') as HTMLButtonElement;
+      act(() => {
+        moreBtn.click();
+      });
+
+      // Now orientation and mode toggle buttons are visible
+      const orientBtn = container.querySelector('button[aria-label="Cambiar orientación"]') as HTMLButtonElement;
+      const modeBtn = container.querySelector('button[aria-label="Alternar modo de widget"]') as HTMLButtonElement;
+      expect(orientBtn).toBeTruthy();
+      expect(modeBtn).toBeTruthy();
+
+      // Toggle orientation to vertical
+      act(() => {
+        orientBtn.click();
+      });
+      expect(useViewportStore.getState().getCanvasWidgetOrientation('overlays')).toBe('vertical');
+      const card = container.querySelector('[data-canvas-widget="overlays"]') as HTMLElement;
+      expect(card.className).toContain('w-[46px]');
+
+      // Toggle mode to full using the freshly rendered button in the vertical header
+      const liveModeBtn = container.querySelector('button[aria-label="Alternar modo de widget"]') as HTMLButtonElement;
+      expect(liveModeBtn).toBeTruthy();
+      act(() => {
+        liveModeBtn.click();
+      });
+      expect(useViewportStore.getState().getCanvasWidgetMode('overlays')).toBe('full');
+      expect(container.querySelector('[data-testid="canvas-overlays-full"]')).toBeTruthy();
+    });
+
+    it('CanvasOverlaysWidget controls work in both compressed and full mode', () => {
+      // Test compressed mode toggles
+      act(() => {
+        root.render(<CanvasOverlaysWidget id="overlays" mode="compressed" orientation="horizontal" />);
+      });
+
+      const gridBtn = container.querySelector('button[aria-label="Grilla de taller"]') as HTMLButtonElement;
+      const dimBtn = container.querySelector('button[aria-label="Cotas y dimensiones 3D"]') as HTMLButtonElement;
+      const shadowBtn = container.querySelector('button[aria-label="Sombras de contacto"]') as HTMLButtonElement;
+      const wireBtn = container.querySelector('button[aria-label="Malla Wireframe"]') as HTMLButtonElement;
+
+      expect(gridBtn).toBeTruthy();
+      expect(dimBtn).toBeTruthy();
+      expect(shadowBtn).toBeTruthy();
+      expect(wireBtn).toBeTruthy();
+
+      const initialDim = useViewportStore.getState().showDimensions;
+      act(() => {
+        dimBtn.click();
+      });
+      expect(useViewportStore.getState().showDimensions).toBe(!initialDim);
+
+      const initialWire = useViewportStore.getState().showWireframe;
+      act(() => {
+        wireBtn.click();
+      });
+      expect(useViewportStore.getState().showWireframe).toBe(!initialWire);
+
+      // Test full mode slider and reset defaults
+      act(() => {
+        root.render(<CanvasOverlaysWidget id="overlays" mode="full" orientation="horizontal" />);
+      });
+
+      expect(container.querySelector('[data-testid="canvas-overlays-full"]')).toBeTruthy();
+      const slider = container.querySelector('input[type="range"]') as HTMLInputElement;
+      expect(slider).toBeTruthy();
+
+      act(() => {
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+        setter?.call(slider, '0.85');
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+        slider.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(useViewportStore.getState().contactShadowOpacity).toBeCloseTo(0.85);
+
+      const resetBtn = container.querySelector('button[title*="Restablecer"]') as HTMLButtonElement;
+      expect(resetBtn).toBeTruthy();
+      act(() => {
+        resetBtn.click();
+      });
+      expect(useViewportStore.getState().showGrid).toBe(true);
+      expect(useViewportStore.getState().showDimensions).toBe(false);
+      expect(useViewportStore.getState().contactShadowOpacity).toBe(0.4);
+    });
+
+    it('CanvasProjectionWidget toggles between perspective and orthographic with optical focal chips', () => {
+      act(() => {
+        root.render(<CanvasProjectionWidget id="projection-toggle" mode="compressed" orientation="horizontal" />);
+      });
+
+      const perspBtn = container.querySelector('button[aria-label="Perspectiva"]') as HTMLButtonElement;
+      const ortoBtn = container.querySelector('button[aria-label="Ortográfica"]') as HTMLButtonElement;
+      expect(perspBtn).toBeTruthy();
+      expect(ortoBtn).toBeTruthy();
+
+      act(() => {
+        ortoBtn.click();
+      });
+      expect(useViewportStore.getState().isOrthographic).toBe(true);
+
+      act(() => {
+        perspBtn.click();
+      });
+      expect(useViewportStore.getState().isOrthographic).toBe(false);
+
+      // Render full mode
+      act(() => {
+        root.render(<CanvasProjectionWidget id="projection-toggle" mode="full" orientation="horizontal" />);
+      });
+
+      expect(container.textContent).toContain('Campo de Visión (FOV)');
+      const chip85 = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('85mm'));
+      expect(chip85).toBeTruthy();
+      act(() => {
+        chip85?.click();
+      });
+      expect(useViewportStore.getState().cameraFov).toBe(24);
+      expect(useViewportStore.getState().isOrthographic).toBe(false);
+    });
+
+    it('CanvasFitModelWidget triggers fit, origin center, camera reset, and zoom actions', () => {
+      act(() => {
+        root.render(<CanvasFitModelWidget id="fit-model" mode="compressed" orientation="horizontal" />);
+      });
+
+      const fitBtn = container.querySelector('button[aria-label="Reencuadrar 1:1"]') as HTMLButtonElement;
+      const originBtn = container.querySelector('button[aria-label="Centrar al origen"]') as HTMLButtonElement;
+      const resetCamBtn = container.querySelector('button[aria-label="Restablecer cámara"]') as HTMLButtonElement;
+      expect(fitBtn).toBeTruthy();
+      expect(originBtn).toBeTruthy();
+      expect(resetCamBtn).toBeTruthy();
+
+      const prevFit = useViewportStore.getState().fitToModelCounter;
+      act(() => {
+        fitBtn.click();
+      });
+      expect(useViewportStore.getState().fitToModelCounter).toBe(prevFit + 1);
+
+      act(() => {
+        originBtn.click();
+      });
+      expect(useViewportStore.getState().focusPoint).toEqual([0, 0, 0]);
+
+      const prevReset = useViewportStore.getState().resetCameraCounter;
+      act(() => {
+        resetCamBtn.click();
+      });
+      expect(useViewportStore.getState().resetCameraCounter).toBe(prevReset + 1);
+
+      // Full mode zoom buttons
+      act(() => {
+        root.render(<CanvasFitModelWidget id="fit-model" mode="full" orientation="horizontal" />);
+      });
+
+      const zoomInBtn = container.querySelector('button[aria-label="Acercar"]') as HTMLButtonElement;
+      const zoomOutBtn = container.querySelector('button[aria-label="Alejar"]') as HTMLButtonElement;
+      const prevZoom = useViewportStore.getState().cameraZoomAction;
+
+      act(() => {
+        zoomInBtn.click();
+      });
+      expect(useViewportStore.getState().cameraZoomAction).toBe(prevZoom + 1);
+
+      act(() => {
+        zoomOutBtn.click();
+      });
+      expect(useViewportStore.getState().cameraZoomAction).toBe(prevZoom);
+    });
+
+    it('CanvasAutoRotateWidget controls turntable playback, signed direction, and speed presets', () => {
+      act(() => {
+        root.render(<CanvasAutoRotateWidget id="auto-rotate" mode="compressed" orientation="horizontal" />);
+      });
+
+      const playBtn = container.querySelector('button[aria-label="Reproducir o pausar giro"]') as HTMLButtonElement;
+      const dirBtn = container.querySelector('button[aria-label="Invertir sentido"]') as HTMLButtonElement;
+      const speedBtn = container.querySelector('button[aria-label="Alternar velocidad"]') as HTMLButtonElement;
+
+      expect(playBtn).toBeTruthy();
+      expect(dirBtn).toBeTruthy();
+      expect(speedBtn).toBeTruthy();
+
+      const prevAuto = useViewportStore.getState().autoRotate;
+      act(() => {
+        playBtn.click();
+      });
+      expect(useViewportStore.getState().autoRotate).toBe(!prevAuto);
+
+      const prevSpeed = useViewportStore.getState().autoRotateSpeed;
+      act(() => {
+        dirBtn.click();
+      });
+      expect(useViewportStore.getState().autoRotateSpeed).toBe(-prevSpeed);
+
+      act(() => {
+        speedBtn.click();
+      });
+      expect(Math.abs(useViewportStore.getState().autoRotateSpeed)).toBeGreaterThan(1);
+
+      // Full mode speed presets
+      act(() => {
+        root.render(<CanvasAutoRotateWidget id="auto-rotate" mode="full" orientation="horizontal" />);
+      });
+
+      const chip025 = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === '0.25x');
+      expect(chip025).toBeTruthy();
+      act(() => {
+        chip025?.click();
+      });
+      expect(Math.abs(useViewportStore.getState().autoRotateSpeed)).toBeCloseTo(0.25);
+    });
+
+    it('CanvasThemeWidget switches dark/light studio backdrop and toggles HDRI sky', () => {
+      act(() => {
+        root.render(<CanvasThemeWidget id="theme-toggle" mode="compressed" orientation="horizontal" />);
+      });
+
+      const darkBtn = container.querySelector('button[aria-label="Modo Oscuro"]') as HTMLButtonElement;
+      const lightBtn = container.querySelector('button[aria-label="Modo Claro"]') as HTMLButtonElement;
+
+      expect(darkBtn).toBeTruthy();
+      expect(lightBtn).toBeTruthy();
+
+      act(() => {
+        lightBtn.click();
+      });
+      expect(useViewportStore.getState().viewportTheme).toBe('light');
+
+      act(() => {
+        darkBtn.click();
+      });
+      expect(useViewportStore.getState().viewportTheme).toBe('dark');
+
+      // Full mode
+      act(() => {
+        root.render(<CanvasThemeWidget id="theme-toggle" mode="full" orientation="horizontal" />);
+      });
+
+      const skyBtn = (container.querySelector('button[type="button"]:has-text("ACTIVO"), button[type="button"]:has-text("SÓLIDO")') ||
+        Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('ACTIVO') || b.textContent?.includes('SÓLIDO'))) as HTMLButtonElement | undefined;
+      expect(skyBtn).toBeTruthy();
+
+      const prevSky = useViewportStore.getState().showEnvironmentBackground;
+      act(() => {
+        skyBtn?.click();
+      });
+      expect(useViewportStore.getState().showEnvironmentBackground).toBe(!prevSky);
+    });
+
+    it('CanvasSnapshotWidget provides instant capture, format selection, and transparency toggle', () => {
+      act(() => {
+        root.render(<CanvasSnapshotWidget id="snapshot-button" mode="compressed" orientation="horizontal" />);
+      });
+
+      const transBtn = container.querySelector('button[aria-label="Alternar fondo transparente"]') as HTMLButtonElement;
+      expect(transBtn).toBeTruthy();
+
+      const prevTrans = useViewportStore.getState().snapshotTransparent;
+      act(() => {
+        transBtn.click();
+      });
+      expect(useViewportStore.getState().snapshotTransparent).toBe(!prevTrans);
+
+      // Full mode
+      act(() => {
+        root.render(<CanvasSnapshotWidget id="snapshot-button" mode="full" orientation="horizontal" />);
+      });
+
+      // Select 4K resolution
+      const chip4k = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('4K UHD'));
+      expect(chip4k).toBeTruthy();
+      act(() => {
+        chip4k?.click();
+      });
+      expect(useViewportStore.getState().snapshotResolution).toBe('4k');
+
+      // Select WebP format
+      const webpBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'WEBP');
+      expect(webpBtn).toBeTruthy();
+      act(() => {
+        webpBtn?.click();
+      });
+      expect(useViewportStore.getState().snapshotFormat).toBe('webp');
+    });
+
+    it('persists and restores all canvas widget modes, orientations, autoRotateSpeed, and snapshot options', () => {
+      act(() => {
+        useViewportStore.getState().setCanvasWidgetMode('overlays', 'full');
+        useViewportStore.getState().setCanvasWidgetOrientation('overlays', 'vertical');
+        useViewportStore.getState().setCanvasWidgetMode('projection-toggle', 'compressed');
+        useViewportStore.getState().setAutoRotateSpeed(2.4);
+        useViewportStore.getState().setSnapshotResolution('square');
+        useViewportStore.getState().setSnapshotTransparent(true);
+        useViewportStore.getState().setSnapshotFormat('webp');
+      });
+
+      const persistable = useViewportStore.getState().getPersistableSettings();
+      expect(persistable.canvasWidgetModes?.['overlays']).toBe('full');
+      expect(persistable.canvasWidgetOrientations?.['overlays']).toBe('vertical');
+      expect(persistable.autoRotateSpeed).toBe(2.4);
+      expect(persistable.snapshotResolution).toBe('square');
+      expect(persistable.snapshotTransparent).toBe(true);
+      expect(persistable.snapshotFormat).toBe('webp');
+
+      // Reset store
+      act(() => {
+        useViewportStore.setState({
+          canvasWidgetModes: {},
+          canvasWidgetOrientations: {},
+          autoRotateSpeed: 0.7,
+          snapshotResolution: '1080p',
+          snapshotTransparent: false,
+          snapshotFormat: 'png'
+        });
+      });
+
+      // Apply settings
+      act(() => {
+        useViewportStore.getState().applyPersistedSettings(persistable);
+      });
+
+      expect(useViewportStore.getState().getCanvasWidgetMode('overlays')).toBe('full');
+      expect(useViewportStore.getState().getCanvasWidgetOrientation('overlays')).toBe('vertical');
+      expect(useViewportStore.getState().autoRotateSpeed).toBe(2.4);
+      expect(useViewportStore.getState().snapshotResolution).toBe('square');
+      expect(useViewportStore.getState().snapshotTransparent).toBe(true);
+      expect(useViewportStore.getState().snapshotFormat).toBe('webp');
+    });
+  });
 });
+

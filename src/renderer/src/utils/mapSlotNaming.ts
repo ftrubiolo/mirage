@@ -1,24 +1,58 @@
 import { SlotName } from '../store/pbrMaterialStore';
 import { MapVariantItem } from '../store/variantStore';
 
+export const sanitizeMaterialNameForFile = (matName?: string | null): string => {
+  if (!matName || matName === 'default') return '';
+  return matName
+    .trim()
+    .replace(/[/\\]/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_-]/g, '_');
+};
+
+export const matchMaterialFromFileName = (
+  fileNameOrPath: string,
+  availableMaterials: string[]
+): string | null => {
+  if (!availableMaterials || availableMaterials.length <= 1) return null;
+  const base = fileNameOrPath.split(/[\\/]/).pop() || fileNameOrPath;
+  const lowerBase = base.toLowerCase();
+
+  for (const mat of availableMaterials) {
+    if (!mat || mat === 'default') continue;
+    const cleanMat = sanitizeMaterialNameForFile(mat).toLowerCase();
+    if (cleanMat && (lowerBase.includes(cleanMat) || lowerBase.includes(mat.toLowerCase()))) {
+      return mat;
+    }
+  }
+  return null;
+};
+
 export const getNextSlotTargetType = (
   slot: SlotName,
   existingVariants: MapVariantItem[],
-  slug: string
+  slug: string,
+  materialName?: string | null
 ): string => {
+  const cleanMat = sanitizeMaterialNameForFile(materialName);
+  const prefix = cleanMat ? `${cleanMat}_${slot}` : slot;
+
   const hasBase = existingVariants.some((v) => {
     const fn = v.fileName || '';
     const name = v.name || '';
     return (
-      fn.startsWith(`${slug}_${slot}.`) ||
-      fn === `${slug}_${slot}` ||
-      name === `${slug}_${slot}` ||
-      name === slot
+      fn.startsWith(`${slug}_${prefix}.`) ||
+      fn === `${slug}_${prefix}` ||
+      fn.startsWith(`${prefix}.`) ||
+      fn === prefix ||
+      name === `${slug}_${prefix}` ||
+      name === prefix ||
+      (!cleanMat && name === slot)
     );
   });
 
-  if (!hasBase && existingVariants.length === 0) {
-    return slot;
+  if (!hasBase) {
+    return prefix;
   }
 
   let index = 2;
@@ -27,23 +61,27 @@ export const getNextSlotTargetType = (
       const fn = v.fileName || '';
       const name = v.name || '';
       return (
-        fn.startsWith(`${slug}_${slot}-${index}.`) ||
-        fn === `${slug}_${slot}-${index}` ||
-        name === `${slug}_${slot}-${index}` ||
-        name === `${slot}-${index}`
+        fn.startsWith(`${slug}_${prefix}-${index}.`) ||
+        fn === `${slug}_${prefix}-${index}` ||
+        fn.startsWith(`${prefix}-${index}.`) ||
+        fn === `${prefix}-${index}` ||
+        name === `${slug}_${prefix}-${index}` ||
+        name === `${prefix}-${index}` ||
+        (!cleanMat && name === `${slot}-${index}`)
       );
     })
   ) {
     index++;
   }
-  return `${slot}-${index}`;
+  return `${prefix}-${index}`;
 };
 
 export const getNextBaseColorTargetType = (
   existingVariants: MapVariantItem[],
-  slug: string
+  slug: string,
+  materialName?: string | null
 ): string => {
-  return getNextSlotTargetType('baseColor', existingVariants, slug);
+  return getNextSlotTargetType('baseColor', existingVariants, slug, materialName);
 };
 
 export const IMAGE_EXTENSIONS = new Set([

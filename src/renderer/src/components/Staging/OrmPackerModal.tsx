@@ -44,8 +44,11 @@ export const OrmPackerModal: React.FC = () => {
       }
 
       const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
-      const existingVariants = useVariantStore.getState().mapVariants['orm'] || [];
-      const targetType = getNextSlotTargetType('orm', existingVariants, activeSlug);
+      const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
+      const existingVariants = curMat
+        ? useVariantStore.getState().materialMapVariants[curMat]?.['orm'] || []
+        : useVariantStore.getState().mapVariants['orm'] || [];
+      const targetType = getNextSlotTargetType('orm', existingVariants, activeSlug, curMat);
       
       const defaultName = `${activeSlug}_${targetType}`;
       setNewName(defaultName);
@@ -70,11 +73,14 @@ export const OrmPackerModal: React.FC = () => {
   const handleBrowseOutput = async () => {
     try {
       const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
+      const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
       const libDir = await window.electronAPI.getLibraryPath();
       const sep = libDir.includes('\\') ? '\\' : '/';
       const entryDir = `${libDir}${sep}${activeSlug}`;
-      const existingVariants = mapVariants['orm'] || [];
-      const targetType = getNextSlotTargetType('orm', existingVariants, activeSlug);
+      const existingVariants = curMat
+        ? useVariantStore.getState().materialMapVariants[curMat]?.['orm'] || []
+        : mapVariants['orm'] || [];
+      const targetType = getNextSlotTargetType('orm', existingVariants, activeSlug, curMat);
       const defaultFileName = `${activeSlug}_${targetType}.webp`;
       const defaultPath = `${entryDir}${sep}${defaultFileName}`;
 
@@ -104,6 +110,7 @@ export const OrmPackerModal: React.FC = () => {
     }
 
     const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
+    const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
     let finalOutput = customOutputPath;
 
     if (!finalOutput) {
@@ -111,8 +118,10 @@ export const OrmPackerModal: React.FC = () => {
         const libDir = await window.electronAPI.getLibraryPath();
         const sep = libDir.includes('\\') ? '\\' : '/';
         const entryDir = `${libDir}${sep}${activeSlug}`;
-        const existingVariants = mapVariants['orm'] || [];
-        const targetType = getNextSlotTargetType('orm', existingVariants, activeSlug);
+        const existingVariants = curMat
+          ? useVariantStore.getState().materialMapVariants[curMat]?.['orm'] || []
+          : mapVariants['orm'] || [];
+        const targetType = getNextSlotTargetType('orm', existingVariants, activeSlug, curMat);
         const destFileName = `${activeSlug}_${targetType}.webp`;
         finalOutput = `${entryDir}${sep}${destFileName}`;
       } catch (err) {
@@ -170,7 +179,7 @@ export const OrmPackerModal: React.FC = () => {
         fileSize: fileInfo.size
       };
 
-      addMapVariant('orm', newVariant);
+      addMapVariant('orm', newVariant, curMat || undefined);
       setUseOrmPack(true);
       usePbrMaterialStore.getState().setMaterialPackingMode('orm');
       autoSaveActiveEntry(true);

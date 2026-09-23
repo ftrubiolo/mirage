@@ -6,14 +6,14 @@ import { WebpConvertModal } from './WebpConvertModal';
 import { ImageLightboxModal } from '../UI/ImageLightboxModal';
 import { autoSaveActiveEntry } from '../../utils/libraryBridge';
 import { invalidateTexture } from '../../utils/pbrController';
-import { getNextSlotTargetType, getNextBaseColorTargetType } from '../../utils/mapSlotNaming';
+import { getNextSlotTargetType, getNextBaseColorTargetType, sanitizeMaterialNameForFile } from '../../utils/mapSlotNaming';
 import { MapVariantRowItem, MapVariantRowItemProps } from './MapVariantRowItem';
 import { MapSlotDropZone } from './MapSlotDropZone';
 import { MapSlotDeleteModal, MapSlotDeleteCandidate } from './MapSlotDeleteModal';
 import { MapSlotHeader } from './MapSlotHeader';
 
 // Re-export naming utilities and row item for full backward compatibility
-export { getNextSlotTargetType, getNextBaseColorTargetType };
+export { getNextSlotTargetType, getNextBaseColorTargetType, sanitizeMaterialNameForFile };
 export { MapVariantRowItem };
 export type { MapVariantRowItemProps };
 
@@ -103,7 +103,8 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
   const handleAddVariantWithFile = async (filePath: string) => {
     const fileInfo = await window.electronAPI.getFileInfo(filePath);
     const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
-    const targetType = getNextSlotTargetType(slot, variants, activeSlug);
+    const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
+    const targetType = getNextSlotTargetType(slot, variants, activeSlug, curMat);
     let targetPath = filePath;
     let targetName = fileInfo.name;
     let targetSize = fileInfo.size;
@@ -136,7 +137,7 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
       fileName: targetName,
       fileSize: targetSize
     };
-    addMapVariant(slot, newVariant);
+    addMapVariant(slot, newVariant, curMat || undefined);
     autoSaveActiveEntry(true);
   };
 
@@ -144,19 +145,17 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
   const handleReplaceVariantWithFile = async (variant: MapVariantItem, filePath: string) => {
     const fileInfo = await window.electronAPI.getFileInfo(filePath);
     const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
+    const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
 
     if (variant.url) {
       invalidateTexture(variant.url);
     }
 
-    let targetType: string = slot;
-    const match = variant.fileName?.match(new RegExp(`^${activeSlug}_(${slot}(?:-\\d+)?)\\.`));
-    if (match && match[1]) {
-      targetType = match[1];
-    } else {
-      const nameMatch = variant.name?.match(new RegExp(`^${activeSlug}_(${slot}(?:-\\d+)?)`));
-      if (nameMatch && nameMatch[1]) {
-        targetType = nameMatch[1];
+    let targetType: string = curMat ? `${sanitizeMaterialNameForFile(curMat)}_${slot}` : slot;
+    if (variant.fileName) {
+      const withoutExt = variant.fileName.replace(/\.[^/.]+$/, '');
+      if (withoutExt.startsWith(`${activeSlug}_`)) {
+        targetType = withoutExt.slice(activeSlug.length + 1);
       }
     }
 

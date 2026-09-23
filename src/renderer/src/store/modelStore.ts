@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { GlbManifest } from '../utils/glbValidator';
 import { usePbrMaterialStore } from './pbrMaterialStore';
+import { useVariantStore } from './variantStore';
 
 export interface ModelStats {
   triangleCount: number;
@@ -52,7 +53,7 @@ export interface ModelState {
 
   setProductMeta: (productId: string, productName: string) => void;
   setModel: (modelFilePath: string | null, modelUrl: string | null, modelFileSize?: number) => void;
-  setModelStats: (modelStats: ModelStats) => void;
+  setModelStats: (modelStats: ModelStats, materialsInfo?: Record<string, any>) => void;
   setGlbManifest: (manifest: GlbManifest | null) => void;
   setIsModelLoading: (isModelLoading: boolean) => void;
   setUnitScale: (scale: number, unitType?: UnitType) => void;
@@ -119,7 +120,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
 
   setGlbManifest: (glbManifest: GlbManifest | null) => set({ glbManifest }),
 
-  setModelStats: (modelStats: ModelStats) => {
+  setModelStats: (modelStats: ModelStats, materialsInfo?: Record<string, any>) => {
     const unitScale = get().unitScale;
     const rawDimensions = modelStats.dimensions;
     set({
@@ -135,7 +136,8 @@ export const useModelStore = create<ModelState>((set, get) => ({
     });
 
     if (modelStats.materials && Array.isArray(modelStats.materials)) {
-      usePbrMaterialStore.getState().syncMaterialSlots(modelStats.materials);
+      usePbrMaterialStore.getState().syncMaterialSlots(modelStats.materials, materialsInfo);
+      useVariantStore.getState().syncMaterialSlots(modelStats.materials);
     }
   },
 

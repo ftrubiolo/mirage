@@ -1,5 +1,17 @@
 import { create } from 'zustand';
-import { EntryVariantMapSlot } from '../types/library';
+import { EntryVariantMapSlot, EntryVariantMaterial } from '../types/library';
+import { getOriginalMaterialData } from '../utils/pbrController';
+
+let materialMapSyncHandler: ((name: string | null) => void) | null = null;
+let materialMapClearHandler: (() => void) | null = null;
+
+export const registerMaterialMapSyncHandler = (
+  handler: (name: string | null) => void,
+  clearHandler?: () => void
+): void => {
+  materialMapSyncHandler = handler;
+  if (clearHandler) materialMapClearHandler = clearHandler;
+};
 
 export type DebugChannel = 'lit' | 'albedo' | 'normal' | 'roughness' | 'metalness' | 'ao' | 'emissive' | 'wireframe';
 
@@ -65,6 +77,7 @@ export const createDefaultSlotEnabled = (): Record<SlotName, boolean> => ({
 });
 
 export interface PbrMaterialParameters {
+  baseColor: string;
   normalScale: number;
   normalInvertY: boolean;
   roughnessFactor: number;
@@ -83,6 +96,7 @@ export interface PbrMaterialParameters {
 }
 
 export const defaultPbrParameters: PbrMaterialParameters = {
+  baseColor: '#ffffff',
   normalScale: 1.0,
   normalInvertY: false,
   roughnessFactor: 1.0,
@@ -148,7 +162,11 @@ export interface PbrMaterialState extends PbrMaterialParameters {
   materialsState: Record<string, SingleMaterialSlotData>;
 
   setActiveMaterial: (name: string | null) => void;
-  syncMaterialSlots: (materialNames: string[]) => void;
+  syncMaterialSlots: (
+    materialNames: string[],
+    initialDefaults?: Record<string, Partial<SingleMaterialSlotData>>
+  ) => void;
+  restoreActiveMaterialOriginal: (origDefaults?: Partial<SingleMaterialSlotData>) => void;
 
   setPbrProperty: <K extends keyof PbrMaterialParameters>(key: K, value: PbrMaterialParameters[K]) => void;
 
@@ -164,7 +182,8 @@ export interface PbrMaterialState extends PbrMaterialParameters {
   applyVariantMaterialState: (
     maps: Record<string, EntryVariantMapSlot>,
     slotEnabled?: Partial<Record<string, boolean>>,
-    settings?: Partial<PbrMaterialParameters & { useOrmPack?: boolean; materialPackingMode?: MaterialPackingMode }>
+    settings?: Partial<PbrMaterialParameters & { useOrmPack?: boolean; materialPackingMode?: MaterialPackingMode }>,
+    variantMaterials?: Record<string, EntryVariantMaterial>
   ) => void;
   resetPbrMaterials: () => void;
 }
@@ -192,16 +211,28 @@ export const initialPbrMaps = {
   displacementMap: { ...emptySlot }
 };
 
-export const createDefaultMaterialSlotData = (): SingleMaterialSlotData => ({
-  ...defaultPbrParameters,
-  ...initialPbrMaps,
-  slotEnabled: createDefaultSlotEnabled(),
-  useOrmPack: true,
-  materialPackingMode: 'orm',
-  loadFromCache: false
-});
+export const createDefaultMaterialSlotData = (defaults?: Partial<SingleMaterialSlotData>): SingleMaterialSlotData => {
+  const cleanDefaults: Partial<SingleMaterialSlotData> = {};
+  if (defaults) {
+    for (const [k, v] of Object.entries(defaults)) {
+      if (v !== undefined) {
+        (cleanDefaults as any)[k] = v;
+      }
+    }
+  }
+  return {
+    ...defaultPbrParameters,
+    ...initialPbrMaps,
+    slotEnabled: createDefaultSlotEnabled(),
+    useOrmPack: true,
+    materialPackingMode: 'orm',
+    loadFromCache: false,
+    ...cleanDefaults
+  };
+};
 
 export const extractCurrentMaterialSlotData = (state: PbrMaterialState): SingleMaterialSlotData => ({
+  baseColor: state.baseColor,
   baseColorMap: state.baseColorMap,
   normalMap: state.normalMap,
   ormMap: state.ormMap,
@@ -236,6 +267,21 @@ export const extractCurrentMaterialSlotData = (state: PbrMaterialState): SingleM
   displacementScale: state.displacementScale
 });
 
+export const extractOrigSlotProps = (orig?: any): Partial<SingleMaterialSlotData> => {
+  if (!orig) return {};
+  return {
+    ...(orig.color ? { baseColor: `#${orig.color.getHexString()}` } : orig.baseColor ? { baseColor: orig.baseColor } : {}),
+    ...(orig.roughness !== undefined ? { roughnessFactor: orig.roughness } : orig.roughnessFactor !== undefined ? { roughnessFactor: orig.roughnessFactor } : {}),
+    ...(orig.metalness !== undefined ? { metalnessFactor: orig.metalness } : orig.metalnessFactor !== undefined ? { metalnessFactor: orig.metalnessFactor } : {}),
+    ...(orig.transmission !== undefined ? { transmissionFactor: orig.transmission } : orig.transmissionFactor !== undefined ? { transmissionFactor: orig.transmissionFactor } : {}),
+    ...(orig.ior !== undefined ? { ior: orig.ior } : {}),
+    ...(orig.clearcoat !== undefined ? { clearcoatFactor: orig.clearcoat } : orig.clearcoatFactor !== undefined ? { clearcoatFactor: orig.clearcoatFactor } : {}),
+    ...(orig.clearcoatRoughness !== undefined ? { clearcoatRoughness: orig.clearcoatRoughness } : {}),
+    ...(orig.sheenColor ? { sheenColor: typeof orig.sheenColor === 'string' ? orig.sheenColor : `#${orig.sheenColor.getHexString()}` } : {}),
+    ...(orig.sheenRoughness !== undefined ? { sheenRoughness: orig.sheenRoughness } : {})
+  };
+};
+
 export const usePbrMaterialStore = create<PbrMaterialState>((set, get) => ({
   ...defaultPbrParameters,
   ...initialPbrMaps,
@@ -250,6 +296,8 @@ export const usePbrMaterialStore = create<PbrMaterialState>((set, get) => ({
   materialsState: {},
 
   setActiveMaterial: (name) => {
+    materialMapSyncHandler?.(name);
+
     set((state) => {
       if (state.activeMaterialName === name) return state;
 
@@ -278,9 +326,43 @@ export const usePbrMaterialStore = create<PbrMaterialState>((set, get) => ({
     });
   },
 
-  syncMaterialSlots: (materialNames) => {
+  syncMaterialSlots: (materialNames, initialDefaults) => {
     set((state) => {
-      if (!materialNames || materialNames.length <= 1) {
+      if (!materialNames || materialNames.length === 0) {
+        return {
+          activeMaterialName: null,
+          materialsState: {}
+        };
+      }
+
+      if (materialNames.length === 1) {
+        const singleName = materialNames[0];
+        const singleDefaults = initialDefaults?.[singleName];
+        if (state.materialsState[singleName]) {
+          const existing = state.materialsState[singleName];
+          return {
+            activeMaterialName: null,
+            materialsState: {},
+            ...existing
+          };
+        }
+        if (singleDefaults) {
+          const slotData = createDefaultMaterialSlotData(singleDefaults);
+          const preservedMaps: any = {};
+          for (const slot of ALL_SLOT_NAMES) {
+            const m = (state as any)[`${slot}Map`];
+            if (m?.filePath || m?.url) {
+              preservedMaps[`${slot}Map`] = m;
+            }
+          }
+          const merged = { ...slotData, ...preservedMaps };
+          return {
+            activeMaterialName: null,
+            materialsState: {},
+            ...merged,
+            activeMapsCount: countActiveMaps(merged)
+          };
+        }
         return {
           activeMaterialName: null,
           materialsState: {}
@@ -289,20 +371,56 @@ export const usePbrMaterialStore = create<PbrMaterialState>((set, get) => ({
 
       const nextMaterialsState: Record<string, SingleMaterialSlotData> = {};
       for (const name of materialNames) {
-        if (state.materialsState[name]) {
-          nextMaterialsState[name] = state.materialsState[name];
-        } else if (name === materialNames[0] && state.activeMaterialName === null) {
-          nextMaterialsState[name] = extractCurrentMaterialSlotData(state);
+        const existing = state.materialsState[name];
+        const defs = initialDefaults?.[name];
+
+        if (existing) {
+          const hasExistingMaps = countActiveMaps(existing) > 0;
+          if (hasExistingMaps) {
+            nextMaterialsState[name] = existing;
+          } else if (defs) {
+            nextMaterialsState[name] = {
+              ...existing,
+              ...createDefaultMaterialSlotData(defs),
+              slotEnabled: existing.slotEnabled || createDefaultSlotEnabled()
+            };
+          } else {
+            nextMaterialsState[name] = existing;
+          }
+        } else if (defs) {
+          nextMaterialsState[name] = createDefaultMaterialSlotData(defs);
         } else {
           nextMaterialsState[name] = createDefaultMaterialSlotData();
         }
+      }
+
+      // Backward compatibility: If the primary material (materialNames[0]) has NO maps in nextMaterialsState,
+      // but state has active maps (e.g. from flat entry.maps), migrate them to materialNames[0]!
+      const primaryName = materialNames[0];
+      if (
+        nextMaterialsState[primaryName] &&
+        countActiveMaps(nextMaterialsState[primaryName]) === 0 &&
+        countActiveMaps(state) > 0
+      ) {
+        const preservedMaps: any = {};
+        for (const slot of ALL_SLOT_NAMES) {
+          const m = (state as any)[`${slot}Map`];
+          if (m?.filePath || m?.url) {
+            preservedMaps[`${slot}Map`] = m;
+          }
+        }
+        nextMaterialsState[primaryName] = {
+          ...nextMaterialsState[primaryName],
+          ...preservedMaps,
+          slotEnabled: state.slotEnabled || nextMaterialsState[primaryName].slotEnabled
+        };
       }
 
       const nextActive = state.activeMaterialName && materialNames.includes(state.activeMaterialName)
         ? state.activeMaterialName
         : materialNames[0];
 
-      const targetSlotData = nextMaterialsState[nextActive] || createDefaultMaterialSlotData();
+      const targetSlotData = nextMaterialsState[nextActive] || createDefaultMaterialSlotData(initialDefaults?.[nextActive]);
       const count = countActiveMaps(targetSlotData);
 
       return {
@@ -311,6 +429,32 @@ export const usePbrMaterialStore = create<PbrMaterialState>((set, get) => ({
         ...targetSlotData,
         activeMapsCount: count
       };
+    });
+  },
+
+  restoreActiveMaterialOriginal: (origDefaults) => {
+    const state = get();
+    const defaults = origDefaults || {};
+    const resetSlot = createDefaultMaterialSlotData(defaults);
+    const count = countActiveMaps(resetSlot);
+
+    materialMapClearHandler?.();
+
+    if (!state.activeMaterialName) {
+      set({
+        ...resetSlot,
+        activeMapsCount: count
+      });
+      return;
+    }
+
+    set({
+      ...resetSlot,
+      activeMapsCount: count,
+      materialsState: {
+        ...state.materialsState,
+        [state.activeMaterialName]: resetSlot
+      }
     });
   },
 
@@ -467,61 +611,126 @@ export const usePbrMaterialStore = create<PbrMaterialState>((set, get) => ({
 
   setLoadFromCache: (loadFromCache) =>
     set((state) => {
-      if (!state.activeMaterialName) return { loadFromCache };
-      const currentSlot = state.materialsState[state.activeMaterialName] || extractCurrentMaterialSlotData(state);
-      return {
-        loadFromCache,
-        materialsState: {
-          ...state.materialsState,
-          [state.activeMaterialName]: {
-            ...currentSlot,
-            loadFromCache
+      if (!loadFromCache) {
+        if (!state.activeMaterialName) return { loadFromCache: false };
+        const currentSlot = state.materialsState[state.activeMaterialName] || extractCurrentMaterialSlotData(state);
+        return {
+          loadFromCache: false,
+          materialsState: {
+            ...state.materialsState,
+            [state.activeMaterialName]: {
+              ...currentSlot,
+              loadFromCache: false
+            }
           }
-        }
+        };
+      }
+
+      if (!state.activeMaterialName) {
+        const orig = getOriginalMaterialData();
+        return {
+          loadFromCache: true,
+          ...extractOrigSlotProps(orig)
+        };
+      }
+
+      const nextMaterialsState = { ...state.materialsState };
+      for (const [name, slotData] of Object.entries(nextMaterialsState)) {
+        const orig = getOriginalMaterialData(name);
+        nextMaterialsState[name] = {
+          ...slotData,
+          loadFromCache: true,
+          ...extractOrigSlotProps(orig)
+        };
+      }
+
+      const activeOrig = getOriginalMaterialData(state.activeMaterialName);
+      return {
+        loadFromCache: true,
+        ...extractOrigSlotProps(activeOrig),
+        materialsState: nextMaterialsState
       };
     }),
 
-  toggleLoadFromCache: () =>
-    set((state) => {
-      const next = !state.loadFromCache;
-      if (!state.activeMaterialName) return { loadFromCache: next };
-      const currentSlot = state.materialsState[state.activeMaterialName] || extractCurrentMaterialSlotData(state);
-      return {
-        loadFromCache: next,
-        materialsState: {
-          ...state.materialsState,
-          [state.activeMaterialName]: {
-            ...currentSlot,
-            loadFromCache: next
-          }
-        }
-      };
-    }),
+  toggleLoadFromCache: () => {
+    const next = !get().loadFromCache;
+    get().setLoadFromCache(next);
+  },
 
   setDebugChannel: (debugChannel) => set({ debugChannel }),
 
-  applyVariantMaterialState: (maps, slotEnabled, settings) => {
-    const mapsObj: Record<string, PbrSlotMap> = {};
-    for (const slot of ALL_SLOT_NAMES) {
-      const targetMap = maps?.[slot];
-      const mapKey = `${slot}Map`;
-      if (targetMap && (targetMap.filePath || targetMap.url)) {
-        mapsObj[mapKey] = {
-          url: targetMap.url || '',
-          filePath: targetMap.filePath || null,
-          fileName: targetMap.fileName || `${slot}.webp`,
-          fileSize: targetMap.fileSize || 0
+  applyVariantMaterialState: (maps, slotEnabled, settings, variantMaterials) => {
+    const parseMapsObj = (inputMaps?: Record<string, EntryVariantMapSlot>): Record<string, PbrSlotMap> => {
+      const mapsObj: Record<string, PbrSlotMap> = {};
+      for (const slot of ALL_SLOT_NAMES) {
+        const targetMap = inputMaps?.[slot];
+        const mapKey = `${slot}Map`;
+        if (targetMap && (targetMap.filePath || targetMap.url)) {
+          mapsObj[mapKey] = {
+            url: targetMap.url || '',
+            filePath: targetMap.filePath || null,
+            fileName: targetMap.fileName || `${slot}.webp`,
+            fileSize: targetMap.fileSize || 0
+          };
+        } else {
+          mapsObj[mapKey] = { ...emptySlot };
+        }
+      }
+      return mapsObj;
+    };
+
+    const nextMaterialsState = { ...get().materialsState };
+
+    if (variantMaterials && Object.keys(variantMaterials).length > 0) {
+      for (const [matName, matPayload] of Object.entries(variantMaterials)) {
+        const matMapsObj = parseMapsObj(matPayload.maps);
+        const matSlotEnabled = matPayload.slotEnabled
+          ? { ...createDefaultSlotEnabled(), ...matPayload.slotEnabled }
+          : createDefaultSlotEnabled();
+        const s = (matPayload.settings as any) || {};
+        const pMode: MaterialPackingMode =
+          s.materialPackingMode || (s.useOrmPack === false ? 'separate' : 'orm');
+
+        const existingSlot = nextMaterialsState[matName] || createDefaultMaterialSlotData();
+        nextMaterialsState[matName] = {
+          ...existingSlot,
+          ...matMapsObj,
+          slotEnabled: matSlotEnabled,
+          useOrmPack: pMode === 'orm',
+          materialPackingMode: pMode,
+          loadFromCache: s.loadFromCache ?? existingSlot.loadFromCache ?? false,
+          baseColor: s.baseColor ?? existingSlot.baseColor ?? defaultPbrParameters.baseColor,
+          normalScale: s.normalScale ?? existingSlot.normalScale ?? defaultPbrParameters.normalScale,
+          normalInvertY: s.normalInvertY ?? existingSlot.normalInvertY ?? defaultPbrParameters.normalInvertY,
+          roughnessFactor: s.roughnessFactor ?? existingSlot.roughnessFactor ?? defaultPbrParameters.roughnessFactor,
+          metalnessFactor: s.metalnessFactor ?? existingSlot.metalnessFactor ?? defaultPbrParameters.metalnessFactor,
+          aoIntensity: s.aoIntensity ?? existingSlot.aoIntensity ?? defaultPbrParameters.aoIntensity,
+          emissiveIntensity: s.emissiveIntensity ?? existingSlot.emissiveIntensity ?? defaultPbrParameters.emissiveIntensity,
+          emissiveColor: s.emissiveColor ?? existingSlot.emissiveColor ?? defaultPbrParameters.emissiveColor,
+          emissiveFullGlow: s.emissiveFullGlow ?? existingSlot.emissiveFullGlow ?? defaultPbrParameters.emissiveFullGlow,
+          clearcoatFactor: s.clearcoatFactor ?? existingSlot.clearcoatFactor ?? defaultPbrParameters.clearcoatFactor,
+          clearcoatRoughness: s.clearcoatRoughness ?? existingSlot.clearcoatRoughness ?? defaultPbrParameters.clearcoatRoughness,
+          sheenColor: s.sheenColor ?? existingSlot.sheenColor ?? defaultPbrParameters.sheenColor,
+          sheenRoughness: s.sheenRoughness ?? existingSlot.sheenRoughness ?? defaultPbrParameters.sheenRoughness,
+          transmissionFactor: s.transmissionFactor ?? existingSlot.transmissionFactor ?? defaultPbrParameters.transmissionFactor,
+          ior: s.ior ?? existingSlot.ior ?? defaultPbrParameters.ior,
+          displacementScale: s.displacementScale ?? existingSlot.displacementScale ?? defaultPbrParameters.displacementScale
         };
-      } else {
-        mapsObj[mapKey] = { ...emptySlot };
       }
     }
 
-    const nextSlotEnabled = slotEnabled
-      ? { ...createDefaultSlotEnabled(), ...slotEnabled }
+    const activeMatName = get().activeMaterialName;
+    const activeFromVariant = activeMatName && variantMaterials?.[activeMatName];
+    const targetMaps = activeFromVariant ? activeFromVariant.maps : maps;
+    const targetSlotEnabled = activeFromVariant ? activeFromVariant.slotEnabled : slotEnabled;
+    const targetSettings = activeFromVariant ? activeFromVariant.settings : settings;
+
+    const mapsObj = parseMapsObj(targetMaps);
+    const nextSlotEnabled = targetSlotEnabled
+      ? { ...createDefaultSlotEnabled(), ...targetSlotEnabled }
       : createDefaultSlotEnabled();
 
-    const s = (settings as any) || {};
+    const s = (targetSettings as any) || {};
     const packingMode: MaterialPackingMode =
       s.materialPackingMode || (s.useOrmPack === false ? 'separate' : 'orm');
 
@@ -530,6 +739,8 @@ export const usePbrMaterialStore = create<PbrMaterialState>((set, get) => ({
       slotEnabled: nextSlotEnabled,
       useOrmPack: packingMode === 'orm',
       materialPackingMode: packingMode,
+      loadFromCache: s.loadFromCache ?? (activeMatName ? nextMaterialsState[activeMatName]?.loadFromCache : false) ?? false,
+      baseColor: s.baseColor ?? defaultPbrParameters.baseColor,
       normalScale: s.normalScale ?? defaultPbrParameters.normalScale,
       normalInvertY: s.normalInvertY ?? defaultPbrParameters.normalInvertY,
       roughnessFactor: s.roughnessFactor ?? defaultPbrParameters.roughnessFactor,
@@ -558,7 +769,7 @@ export const usePbrMaterialStore = create<PbrMaterialState>((set, get) => ({
       return {
         ...activeState,
         materialsState: {
-          ...state.materialsState,
+          ...nextMaterialsState,
           [state.activeMaterialName]: extractCurrentMaterialSlotData(activeState as any)
         }
       };

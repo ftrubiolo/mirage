@@ -19,6 +19,7 @@ export type FurnitureCategory =
   | 'otro';
 
 export interface LibraryEntrySettings {
+  baseColor?: string;
   normalScale: number;
   normalInvertY: boolean;
   roughnessFactor: number;
@@ -51,13 +52,32 @@ export interface EntryVariantMapSlot {
   url?: string;
 }
 
+export interface TextureAssetItem {
+  id: string;
+  name: string;
+  filePath: string;
+  fileName: string;
+  fileSize?: number;
+  url?: string;
+}
+
+export type TexturePool = Record<string, Partial<Record<string, TextureAssetItem[]>>>;
+
+export interface EntryVariantMaterial {
+  assignedMapIds?: Partial<Record<string, string | null>>;
+  maps?: Record<string, EntryVariantMapSlot>;
+  slotEnabled?: Partial<Record<string, boolean>>;
+  settings?: Partial<LibraryEntrySettings>;
+}
+
 export interface EntryVariant {
   id: string;
   name: string;
   isDefault?: boolean;
   posterUrl?: string | null;
   posterFileName?: string | null;
-  maps: Record<string, EntryVariantMapSlot>;
+  materials?: Record<string, EntryVariantMaterial>;
+  maps?: Record<string, EntryVariantMapSlot>;
   slotEnabled?: Partial<Record<string, boolean>>;
   settings?: Partial<LibraryEntrySettings>;
   productOptionRef?: {
@@ -84,10 +104,13 @@ export interface LibraryEntry {
   modelFilePath?: string | null;
   modelFileSize?: number;
   dimensions?: { width: number; height: number; depth: number } | null;
-  stats?: { triangleCount: number; vertexCount: number; meshCount: number } | null;
+  stats?: { triangleCount: number; vertexCount: number; meshCount: number; materials?: string[] } | null;
+  texturePool?: TexturePool;
   variants?: EntryVariant[];
   activeVariantId?: string;
-  maps: Record<string, { fileName: string; filePath: string; fileSize?: number }>;
+  // Legacy optional properties accepted during ingestion migration:
+  maps?: Record<string, { fileName: string; filePath: string; fileSize?: number }>;
+  materials?: Record<string, EntryVariantMaterial>;
   colorways?: {
     id: string;
     name: string;
@@ -98,8 +121,10 @@ export interface LibraryEntry {
   }[];
   mapVariants?: Partial<Record<string, { id: string; name: string; url: string; filePath: string; fileName: string; fileSize?: number }[]>>;
   activeVariantIds?: Partial<Record<string, string | null>>;
+  materialMapVariants?: Partial<Record<string, Partial<Record<string, { id: string; name: string; url: string; filePath: string; fileName: string; fileSize?: number }[]>>>>;
+  materialActiveVariantIds?: Partial<Record<string, Partial<Record<string, string | null>>>>;
   slotEnabled?: Partial<Record<string, boolean>>;
-  settings: LibraryEntrySettings;
+  settings?: LibraryEntrySettings;
 }
 
 export const GLOBAL_MATERIAL_PRESETS: GlobalMaterialPreset[] = [

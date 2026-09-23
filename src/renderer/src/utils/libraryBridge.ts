@@ -1,15 +1,26 @@
-import { ALL_SLOT_NAMES, SlotName, PbrSlotMap, usePbrMaterialStore } from '../store/pbrMaterialStore';
-import { useModelStore } from '../store/modelStore';
 import {
-  selectActiveColorwayId,
-  selectColorways,
-  useVariantStore
-} from '../store/variantStore';
+  ALL_SLOT_NAMES,
+  SlotName,
+  PbrSlotMap,
+  usePbrMaterialStore,
+  createDefaultSlotEnabled,
+  extractCurrentMaterialSlotData
+} from '../store/pbrMaterialStore';
+import { useModelStore } from '../store/modelStore';
+import { useVariantStore } from '../store/variantStore';
 import { loadWorkbenchState, resetWorkbenchStores } from '../store/workbenchActions';
 import { useAppStore } from '../store/appStore';
-import { LibraryEntry, LibraryEntrySettings, FurnitureCategory } from '../types/library';
+import {
+  LibraryEntry,
+  FurnitureCategory,
+  EntryVariant,
+  EntryVariantMaterial,
+  TexturePool,
+  TextureAssetItem
+} from '../types/library';
 import { captureViewportSnapshot } from './viewportBridge';
 import { getFileName, getFileExt, isPathInside } from './pathUtils';
+import { migrateEntrySchema } from './entryMigration';
 
 let isProgrammaticUpdate = false;
 let lastSavedHash = '';
@@ -40,65 +51,95 @@ export const computeWorkbenchHash = (): string => {
     name: model.productName,
     model: model.modelFilePath,
     modelFileSize: model.modelFileSize,
-    baseColor: pbr.baseColorMap?.filePath,
-    normal: pbr.normalMap?.filePath,
-    orm: pbr.ormMap?.filePath,
-    ao: pbr.aoMap?.filePath,
-    rough: pbr.roughnessMap?.filePath,
-    metal: pbr.metalnessMap?.filePath,
-    emissive: pbr.emissiveMap?.filePath,
-    clearcoat: pbr.clearcoatMap?.filePath,
-    sheen: pbr.sheenMap?.filePath,
-    transmission: pbr.transmissionMap?.filePath,
-    alpha: pbr.alphaMap?.filePath,
-    disp: pbr.displacementMap?.filePath,
-    normalScale: pbr.normalScale,
-    normalInvertY: pbr.normalInvertY,
-    roughnessFactor: pbr.roughnessFactor,
-    metalnessFactor: pbr.metalnessFactor,
-    aoIntensity: pbr.aoIntensity,
-    emissiveIntensity: pbr.emissiveIntensity,
-    emissiveColor: pbr.emissiveColor,
-    emissiveFullGlow: pbr.emissiveFullGlow,
-    clearcoatFactor: pbr.clearcoatFactor,
-    clearcoatRoughness: pbr.clearcoatRoughness,
-    sheenColor: pbr.sheenColor,
-    sheenRoughness: pbr.sheenRoughness,
-    transmissionFactor: pbr.transmissionFactor,
-    ior: pbr.ior,
-    displacementScale: pbr.displacementScale,
     unitScale: model.unitScale,
     unitType: model.unitType,
     modelRotation: model.modelRotation,
     autoGround: model.autoGround,
-    useOrmPack: pbr.useOrmPack,
-    loadFromCache: pbr.loadFromCache,
-    slotEnabled: pbr.slotEnabled,
+    activeMaterialName: pbr.activeMaterialName,
+    pbr: {
+      baseColor: pbr.baseColor,
+      baseColorMap: pbr.baseColorMap?.filePath,
+      normalMap: pbr.normalMap?.filePath,
+      ormMap: pbr.ormMap?.filePath,
+      aoMap: pbr.aoMap?.filePath,
+      roughnessMap: pbr.roughnessMap?.filePath,
+      metalnessMap: pbr.metalnessMap?.filePath,
+      emissiveMap: pbr.emissiveMap?.filePath,
+      clearcoatMap: pbr.clearcoatMap?.filePath,
+      sheenMap: pbr.sheenMap?.filePath,
+      transmissionMap: pbr.transmissionMap?.filePath,
+      alphaMap: pbr.alphaMap?.filePath,
+      dispMap: pbr.displacementMap?.filePath,
+      normalScale: pbr.normalScale,
+      normalInvertY: pbr.normalInvertY,
+      roughnessFactor: pbr.roughnessFactor,
+      metalnessFactor: pbr.metalnessFactor,
+      aoIntensity: pbr.aoIntensity,
+      emissiveIntensity: pbr.emissiveIntensity,
+      emissiveColor: pbr.emissiveColor,
+      emissiveFullGlow: pbr.emissiveFullGlow,
+      clearcoatFactor: pbr.clearcoatFactor,
+      clearcoatRoughness: pbr.clearcoatRoughness,
+      sheenColor: pbr.sheenColor,
+      sheenRoughness: pbr.sheenRoughness,
+      transmissionFactor: pbr.transmissionFactor,
+      ior: pbr.ior,
+      displacementScale: pbr.displacementScale,
+      useOrmPack: pbr.useOrmPack,
+      materialPackingMode: pbr.materialPackingMode,
+      loadFromCache: pbr.loadFromCache,
+      slotEnabled: pbr.slotEnabled
+    },
+    materialsState: pbr.materialsState
+      ? Object.entries(pbr.materialsState).map(([name, m]) => ({
+          name,
+          baseColor: m.baseColor,
+          baseColorMap: m.baseColorMap?.filePath,
+          normalMap: m.normalMap?.filePath,
+          ormMap: m.ormMap?.filePath,
+          aoMap: m.aoMap?.filePath,
+          roughnessMap: m.roughnessMap?.filePath,
+          metalnessMap: m.metalnessMap?.filePath,
+          emissiveMap: m.emissiveMap?.filePath,
+          clearcoatMap: m.clearcoatMap?.filePath,
+          sheenMap: m.sheenMap?.filePath,
+          transmissionMap: m.transmissionMap?.filePath,
+          alphaMap: m.alphaMap?.filePath,
+          dispMap: m.displacementMap?.filePath,
+          normalScale: m.normalScale,
+          normalInvertY: m.normalInvertY,
+          roughnessFactor: m.roughnessFactor,
+          metalnessFactor: m.metalnessFactor,
+          aoIntensity: m.aoIntensity,
+          emissiveIntensity: m.emissiveIntensity,
+          emissiveColor: m.emissiveColor,
+          emissiveFullGlow: m.emissiveFullGlow,
+          clearcoatFactor: m.clearcoatFactor,
+          clearcoatRoughness: m.clearcoatRoughness,
+          sheenColor: m.sheenColor,
+          sheenRoughness: m.sheenRoughness,
+          transmissionFactor: m.transmissionFactor,
+          ior: m.ior,
+          displacementScale: m.displacementScale,
+          useOrmPack: m.useOrmPack,
+          materialPackingMode: m.materialPackingMode,
+          loadFromCache: m.loadFromCache,
+          slotEnabled: m.slotEnabled
+        }))
+      : [],
+    texturePool: variant.texturePool,
     variants: Array.isArray(variant.variants)
       ? variant.variants.map((v: any) => ({
           id: v.id,
           name: v.name,
           isDefault: v.isDefault,
           posterUrl: v.posterUrl,
-          maps: v.maps,
-          settings: v.settings,
-          slotEnabled: v.slotEnabled
+          materials: v.materials
         }))
       : [],
     activeVariantId: variant.activeVariantId,
-    mapVariants: variant.mapVariants
-      ? Object.entries(variant.mapVariants).map(([s, list]: [string, any]) => ({
-          slot: s,
-          variants: (list || []).map((v: any) => ({ id: v.id, name: v.name, file: v.filePath }))
-        }))
-      : [],
     activeVariantIds: variant.activeVariantIds,
-    colorways: selectColorways(variant).map((c) => ({
-      id: c.id,
-      name: c.name,
-      file: c.baseColorFilePath
-    })),
-    activeColorwayId: selectActiveColorwayId(variant)
+    materialActiveVariantIds: variant.materialActiveVariantIds
   });
 };
 
@@ -163,8 +204,11 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
     const model = useModelStore.getState();
     const variant = useVariantStore.getState();
 
+    // Ingestion boundary: normalize legacy or modern entries through migrateEntrySchema
+    const normalizedEntry = migrateEntrySchema(entry);
+
     // If this entry is already open and loaded in the workbench, check if target variant needs switching
-    if (activeSlug === entry.slug && model.modelUrl) {
+    if (activeSlug === normalizedEntry.slug && model.modelUrl) {
       if (targetVariantId && targetVariantId !== variant.activeVariantId) {
         variant.selectVariant(targetVariantId);
       }
@@ -175,9 +219,9 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
 
     // Resolve model URL synchronously
     let modelUrl: string | null = null;
-    const modelFileSize = entry.modelFileSize || 0;
-    if (entry.modelFilePath) {
-      modelUrl = window.electronAPI.toAssetUrl(entry.modelFilePath);
+    const modelFileSize = normalizedEntry.modelFileSize || 0;
+    if (normalizedEntry.modelFilePath) {
+      modelUrl = window.electronAPI.toAssetUrl(normalizedEntry.modelFilePath);
     }
 
     // If model is already loaded and identical, ensure loading flag is off
@@ -187,75 +231,60 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
       model.setIsModelLoading(false);
     }
 
-    // Restore maps
-    const slotNames = ALL_SLOT_NAMES;
-
-    const mapsRecord: Partial<Record<SlotName, PbrSlotMap>> = {};
-    for (const slot of slotNames) {
-      const mapData = entry.maps?.[slot];
-      if (mapData && mapData.filePath) {
-        const url = window.electronAPI.toAssetUrl(mapData.filePath);
-        mapsRecord[slot] = {
-          url,
-          filePath: mapData.filePath,
-          fileName: mapData.fileName,
-          fileSize: mapData.fileSize || 0
-        };
-      }
-    }
-
-    // Resolve map variants if present
-    const resolvedMapVariants: Partial<Record<SlotName, any[]>> = {};
-    if (entry.mapVariants) {
-      for (const [s, vList] of Object.entries(entry.mapVariants)) {
-        if (Array.isArray(vList)) {
-          resolvedMapVariants[s as SlotName] = vList.map((v) => ({
-            ...v,
-            url: v.filePath ? window.electronAPI.toAssetUrl(v.filePath) : v.url
+    // Resolve texturePool URLs
+    const resolvedTexturePool: TexturePool = {};
+    if (normalizedEntry.texturePool) {
+      for (const [matName, slots] of Object.entries(normalizedEntry.texturePool)) {
+        resolvedTexturePool[matName] = {};
+        for (const [slot, items] of Object.entries(slots)) {
+          resolvedTexturePool[matName][slot as SlotName] = (items || []).map((item) => ({
+            ...item,
+            url: item.filePath ? window.electronAPI.toAssetUrl(item.filePath) : item.url
           }));
         }
       }
     }
 
-    // Resolve variants maps paths to URLs
-    const resolvedVariants = (entry.variants || []).map((v) => {
-      const resolvedMaps: Record<string, any> = {};
-      for (const [slot, m] of Object.entries(v.maps || {})) {
-        resolvedMaps[slot] = {
-          ...m,
-          url: m.filePath ? window.electronAPI.toAssetUrl(m.filePath) : m.url || ''
-        };
+    // Resolve variant poster URLs
+    const resolvedVariants: EntryVariant[] = (normalizedEntry.variants || []).map((v) => {
+      let posterUrl = v.posterUrl;
+      if ((v as any).posterFilePath) {
+        posterUrl = window.electronAPI.toAssetUrl((v as any).posterFilePath);
+      } else if (
+        posterUrl &&
+        !posterUrl.startsWith('http') &&
+        !posterUrl.startsWith('blob:') &&
+        !posterUrl.startsWith('asset:') &&
+        !posterUrl.startsWith('data:')
+      ) {
+        posterUrl = window.electronAPI.toAssetUrl(posterUrl);
       }
       return {
         ...v,
-        posterUrl: (v as any).posterFilePath ? window.electronAPI.toAssetUrl((v as any).posterFilePath) : v.posterUrl,
-        maps: resolvedMaps
+        posterUrl
       };
     });
 
-    // Apply entire state atomically
+    // Apply entire state atomically to workbench stores
     loadWorkbenchState({
-      productId: entry.slug,
-      productSlug: entry.slug,
-      productName: entry.title,
-      modelFilePath: entry.modelFilePath || null,
+      productId: normalizedEntry.slug,
+      productSlug: normalizedEntry.slug,
+      productName: normalizedEntry.title,
+      modelFilePath: normalizedEntry.modelFilePath || null,
       modelUrl,
       modelFileSize,
-      dimensions: entry.dimensions || null,
-      stats: entry.stats || null,
-      maps: mapsRecord,
-      mapVariants: resolvedMapVariants,
-      activeVariantIds: entry.activeVariantIds,
-      slotEnabled: entry.slotEnabled,
+      dimensions: normalizedEntry.dimensions || null,
+      stats: normalizedEntry.stats || null,
+      texturePool: resolvedTexturePool,
       variants: resolvedVariants,
-      activeVariantId: targetVariantId || entry.activeVariantId || null,
-      settings: entry.settings,
-      colorways: entry.colorways || []
+      activeVariantId: targetVariantId || normalizedEntry.activeVariantId || null,
+      activeMaterialName:
+        normalizedEntry.stats?.materials?.[0] || Object.keys(resolvedTexturePool)[0] || null
     });
 
     // Mark active in appStore
-    useAppStore.getState().setActiveEntry(entry);
-    useAppStore.getState().setActiveEntrySlug(entry.slug);
+    useAppStore.getState().setActiveEntry(normalizedEntry);
+    useAppStore.getState().setActiveEntrySlug(normalizedEntry.slug);
 
     // Sync baseline hash so no auto-save is triggered from loading
     syncSavedHash(computeWorkbenchHash());
@@ -329,50 +358,207 @@ export const saveWorkbenchToLibrary = async (params: {
     }
   }
 
-  // 3. Build canonical root maps dictionary based on Default Variant (or active variant fallback)
-  const defaultVar = variant.variants.find((v) => v.isDefault) || variant.variants[0];
-  const mapsRecord: Record<string, { fileName: string; filePath: string; fileSize?: number }> = {};
+  // 3. Determine detected materials
+  const detectedMaterials: string[] =
+    model.modelStats?.materials && model.modelStats.materials.length > 0
+      ? model.modelStats.materials
+      : pbr.materialsState && Object.keys(pbr.materialsState).length > 0
+        ? Object.keys(pbr.materialsState)
+        : variant.texturePool && Object.keys(variant.texturePool).length > 0
+          ? Object.keys(variant.texturePool)
+          : ['default'];
 
-  const slotNames = ALL_SLOT_NAMES;
+  // 4. Build central texturePool
+  const texturePool: TexturePool = {};
+  for (const mat of detectedMaterials) {
+    texturePool[mat] = {};
+    for (const slot of ALL_SLOT_NAMES) {
+      const existingItems =
+        variant.texturePool?.[mat]?.[slot] ||
+        variant.materialMapVariants?.[mat]?.[slot] ||
+        (mat === detectedMaterials[0] ? variant.mapVariants?.[slot] : []) ||
+        [];
 
-  for (const slot of slotNames) {
-    const defaultSlotMap = defaultVar?.maps?.[slot] || (variant.activeVariantId === defaultVar?.id ? (pbr as any)[`${slot}Map`] : null);
-    if (defaultSlotMap && defaultSlotMap.filePath) {
-      mapsRecord[slot] = {
-        fileName: defaultSlotMap.fileName || `${slot}.webp`,
-        filePath: defaultSlotMap.filePath,
-        fileSize: defaultSlotMap.fileSize
-      };
+      texturePool[mat][slot] = existingItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        fileName: item.fileName || `${slot}.webp`,
+        filePath: item.filePath || '',
+        fileSize: item.fileSize || 0
+      }));
     }
   }
 
-  // 4. Gather settings
-  const settings: LibraryEntrySettings = {
-    normalScale: pbr.normalScale,
-    normalInvertY: pbr.normalInvertY,
-    roughnessFactor: pbr.roughnessFactor,
-    metalnessFactor: pbr.metalnessFactor,
-    aoIntensity: pbr.aoIntensity,
-    emissiveIntensity: pbr.emissiveIntensity,
-    emissiveColor: pbr.emissiveColor,
-    emissiveFullGlow: pbr.emissiveFullGlow,
-    clearcoatFactor: pbr.clearcoatFactor,
-    clearcoatRoughness: pbr.clearcoatRoughness,
-    sheenColor: pbr.sheenColor,
-    sheenRoughness: pbr.sheenRoughness,
-    transmissionFactor: pbr.transmissionFactor,
-    ior: pbr.ior,
-    displacementScale: pbr.displacementScale,
-    unitScale: model.unitScale,
-    unitType: model.unitType,
-    modelRotation: model.modelRotation,
-    autoGround: model.autoGround,
-    useOrmPack: pbr.useOrmPack,
-    materialPackingMode: pbr.materialPackingMode,
-    loadFromCache: pbr.loadFromCache
+  // Helper to ensure any active or variant map exists in texturePool
+  const ensureMapInPool = (
+    mat: string,
+    slot: SlotName,
+    map: { filePath?: string | null; fileName?: string | null; fileSize?: number; url?: string } | null | undefined,
+    explicitId?: string | null
+  ): string | null => {
+    if (!map || (!map.filePath && !map.url)) return null;
+    const targetMat = texturePool[mat] ? mat : detectedMaterials[0];
+    const pool = texturePool[targetMat][slot] || [];
+    const found = pool.find(
+      (i) =>
+        (explicitId && i.id === explicitId) ||
+        (map.filePath && i.filePath === map.filePath) ||
+        (map.fileName && i.fileName === map.fileName)
+    );
+    if (found) {
+      return found.id;
+    }
+    const id = explicitId || `${slot}-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    const item: TextureAssetItem = {
+      id,
+      name: map.fileName ? map.fileName.replace(/\.[^/.]+$/, '') : `${slot} ${pool.length + 1}`,
+      filePath: map.filePath || '',
+      fileName: map.fileName || `${slot}.webp`,
+      fileSize: map.fileSize || 0
+    };
+    pool.push(item);
+    texturePool[targetMat][slot] = pool;
+    return id;
   };
 
+  // 5. Build clean per-material settings & assignedMapIds for the active variant
+  const activeVarMaterials: Record<string, EntryVariantMaterial> = {};
+  for (const matName of detectedMaterials) {
+    const isMatActive =
+      pbr.activeMaterialName === matName || (pbr.activeMaterialName === null && detectedMaterials.length === 1);
+    const matSlotData = isMatActive
+      ? (pbr.materialsState[matName] || extractCurrentMaterialSlotData(pbr))
+      : (pbr.materialsState[matName] || null);
+
+    const activeIdsForMat = isMatActive
+      ? (variant.materialActiveVariantIds[matName] || variant.activeVariantIds || {})
+      : (variant.materialActiveVariantIds[matName] || {});
+
+    const assignedMapIds: Partial<Record<string, string | null>> = {};
+    for (const slot of ALL_SLOT_NAMES) {
+      const activeId = activeIdsForMat[slot] || null;
+      const slotMap = matSlotData ? (matSlotData as any)[`${slot}Map`] : null;
+      if (activeId || (slotMap && (slotMap.filePath || slotMap.url))) {
+        assignedMapIds[slot] = ensureMapInPool(matName, slot, slotMap, activeId);
+      } else {
+        assignedMapIds[slot] = null;
+      }
+    }
+
+    const hasAssignedMaps = Object.values(assignedMapIds).some(Boolean);
+    const slotEnabled =
+      matSlotData?.slotEnabled || (matName === 'default' ? pbr.slotEnabled : createDefaultSlotEnabled());
+    const loadFromCache =
+      matSlotData?.loadFromCache !== undefined
+        ? (hasAssignedMaps ? matSlotData.loadFromCache : (matSlotData.loadFromCache || detectedMaterials.length > 1))
+        : (detectedMaterials.length > 1 && !hasAssignedMaps);
+
+    activeVarMaterials[matName] = {
+      assignedMapIds,
+      slotEnabled,
+      settings: {
+        baseColor: matSlotData?.baseColor || '#ffffff',
+        normalScale: matSlotData?.normalScale ?? 1.0,
+        normalInvertY: matSlotData?.normalInvertY ?? false,
+        roughnessFactor: matSlotData?.roughnessFactor ?? 1.0,
+        metalnessFactor: matSlotData?.metalnessFactor ?? 1.0,
+        aoIntensity: matSlotData?.aoIntensity ?? 1.0,
+        emissiveIntensity: matSlotData?.emissiveIntensity ?? 1.0,
+        emissiveColor: matSlotData?.emissiveColor || '#000000',
+        emissiveFullGlow: matSlotData?.emissiveFullGlow ?? false,
+        clearcoatFactor: matSlotData?.clearcoatFactor ?? 0.0,
+        clearcoatRoughness: matSlotData?.clearcoatRoughness ?? 0.0,
+        sheenColor: matSlotData?.sheenColor || '#000000',
+        sheenRoughness: matSlotData?.sheenRoughness ?? 0.0,
+        transmissionFactor: matSlotData?.transmissionFactor ?? 0.0,
+        ior: matSlotData?.ior ?? 1.5,
+        displacementScale: matSlotData?.displacementScale ?? 0.05,
+        unitScale: model.unitScale,
+        unitType: model.unitType,
+        modelRotation: model.modelRotation,
+        autoGround: model.autoGround,
+        useOrmPack: matSlotData?.useOrmPack ?? true,
+        materialPackingMode: matSlotData?.materialPackingMode || 'orm',
+        loadFromCache
+      }
+    };
+  }
+
+  // 6. Build clean variants (omitting duplicate maps, settings, slotEnabled at variant root)
   const now = new Date().toISOString();
+  const rawVariants: EntryVariant[] =
+    variant.variants && variant.variants.length > 0
+      ? variant.variants
+      : [
+          {
+            id: 'var-default',
+            name: 'Default',
+            isDefault: true,
+            createdAt: now,
+            updatedAt: now
+          }
+        ];
+
+  const cleanVariants: EntryVariant[] = rawVariants.map((v, idx) => {
+    if (v.id === (variant.activeVariantId || rawVariants[0]?.id)) {
+      return {
+        id: v.id,
+        name: v.name,
+        isDefault: v.isDefault ?? idx === 0,
+        posterUrl: v.posterUrl || null,
+        posterFileName: v.posterFileName || null,
+        productOptionRef: v.productOptionRef,
+        createdAt: v.createdAt || now,
+        updatedAt: now,
+        materials: activeVarMaterials
+      };
+    }
+
+    // Other non-active variants: ensure materials object is clean
+    const otherVarMaterials: Record<string, EntryVariantMaterial> = {};
+    for (const matName of detectedMaterials) {
+      const vMat = v.materials?.[matName];
+      const assignedMapIds: Partial<Record<string, string | null>> = {};
+
+      for (const slot of ALL_SLOT_NAMES) {
+        let assignedId = vMat?.assignedMapIds?.[slot] || null;
+        const vMap = vMat?.maps?.[slot] || (matName === detectedMaterials[0] ? v.maps?.[slot] : null);
+        if (!assignedId && vMap) {
+          assignedId = ensureMapInPool(matName, slot, vMap);
+        }
+        assignedMapIds[slot] = assignedId || null;
+      }
+
+      const hasAssignedMaps = Object.values(assignedMapIds).some(Boolean);
+      const rawSettings = vMat?.settings || (matName === detectedMaterials[0] ? v.settings : {}) || {};
+      const loadFromCache =
+        rawSettings.loadFromCache !== undefined
+          ? (hasAssignedMaps ? rawSettings.loadFromCache : (rawSettings.loadFromCache || detectedMaterials.length > 1))
+          : (detectedMaterials.length > 1 && !hasAssignedMaps);
+
+      otherVarMaterials[matName] = {
+        assignedMapIds,
+        slotEnabled: vMat?.slotEnabled || (matName === detectedMaterials[0] ? v.slotEnabled : undefined) || createDefaultSlotEnabled(),
+        settings: {
+          ...rawSettings,
+          loadFromCache
+        }
+      };
+    }
+
+    return {
+      id: v.id,
+      name: v.name,
+      isDefault: v.isDefault ?? idx === 0,
+      posterUrl: v.posterUrl || null,
+      posterFileName: v.posterFileName || null,
+      productOptionRef: v.productOptionRef,
+      createdAt: v.createdAt || now,
+      updatedAt: v.updatedAt || now,
+      materials: otherVarMaterials
+    };
+  });
+
   const entry: LibraryEntry = {
     id: currentActiveEntry?.id || `entry-${Date.now()}`,
     title,
@@ -392,17 +578,18 @@ export const saveWorkbenchToLibrary = async (params: {
       ? {
           triangleCount: model.modelStats.triangleCount,
           vertexCount: model.modelStats.vertexCount,
-          meshCount: model.modelStats.meshCount
+          meshCount: model.modelStats.meshCount,
+          materials: detectedMaterials
         }
-      : currentActiveEntry?.stats || null,
-    variants: variant.variants,
-    activeVariantId: variant.activeVariantId || undefined,
-    maps: mapsRecord,
-    colorways: selectColorways(variant),
-    mapVariants: variant.mapVariants,
-    activeVariantIds: variant.activeVariantIds,
-    slotEnabled: pbr.slotEnabled,
-    settings
+      : currentActiveEntry?.stats
+        ? {
+            ...currentActiveEntry.stats,
+            materials: detectedMaterials
+          }
+        : { triangleCount: 0, vertexCount: 0, meshCount: 0, materials: detectedMaterials },
+    texturePool,
+    variants: cleanVariants,
+    activeVariantId: variant.activeVariantId || cleanVariants[0]?.id
   };
 
   await window.electronAPI.saveLibraryEntry(entry);

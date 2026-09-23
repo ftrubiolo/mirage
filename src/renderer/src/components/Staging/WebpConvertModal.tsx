@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, FolderOpen } from 'lucide-react';
-import { SlotName } from '../../store/pbrMaterialStore';
+import { SlotName, usePbrMaterialStore } from '../../store/pbrMaterialStore';
 import { MapVariantItem, useVariantStore } from '../../store/variantStore';
 import { useAppStore } from '../../store/appStore';
 import { getNextSlotTargetType } from './MapSlotPicker';
@@ -48,10 +48,11 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
   const handleBrowseOutput = async () => {
     try {
       const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
+      const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
       const libDir = await window.electronAPI.getLibraryPath();
       const sep = libDir.includes('\\') ? '\\' : '/';
       const entryDir = `${libDir}${sep}${activeSlug}`;
-      const targetType = getNextSlotTargetType(slot, allVariants, activeSlug);
+      const targetType = getNextSlotTargetType(slot, allVariants, activeSlug, curMat);
       const defaultFileName = `${activeSlug}_${targetType}.webp`;
       const defaultPath = `${entryDir}${sep}${defaultFileName}`;
 
@@ -75,10 +76,11 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
 
     try {
       const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
+      const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
       const libDir = await window.electronAPI.getLibraryPath();
       const sep = libDir.includes('\\') ? '\\' : '/';
       const entryDir = `${libDir}${sep}${activeSlug}`;
-      const targetType = getNextSlotTargetType(slot, allVariants, activeSlug);
+      const targetType = getNextSlotTargetType(slot, allVariants, activeSlug, curMat);
       const destFileName = `${activeSlug}_${targetType}.webp`;
       const outputPath = customOutputPath || `${entryDir}${sep}${destFileName}`;
 
@@ -115,7 +117,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
         fileSize: fileInfo.size
       };
 
-      addMapVariant(slot, newVariant);
+      addMapVariant(slot, newVariant, curMat || undefined);
       onClose();
     } catch (err: any) {
       console.error(`[WebpConvertModal] Error converting ${slot} texture to WebP:`, err);

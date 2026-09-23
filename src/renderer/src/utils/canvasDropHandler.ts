@@ -6,6 +6,7 @@ import { autoSaveActiveEntry } from './libraryBridge';
 import {
   detectMapSlotFromFileName,
   getNextSlotTargetType,
+  matchMaterialFromFileName,
   isImageFile,
   isModelFile
 } from './mapSlotNaming';
@@ -156,11 +157,21 @@ export const handleCanvasDrop = async (
       // Ignore fileInfo error in tests or mock environments
     }
 
+    const activeModelStats = useModelStore.getState().modelStats;
+    const availableMaterials = activeModelStats?.materials && activeModelStats.materials.length > 0
+      ? activeModelStats.materials
+      : Object.keys(usePbrMaterialStore.getState().materialsState || {});
+
+    const matchedMat = matchMaterialFromFileName(mapPath, availableMaterials);
+    const curMat = matchedMat || usePbrMaterialStore.getState().activeMaterialName || (availableMaterials.length > 1 ? availableMaterials[0] : null);
+
     if (activeSlug && window.electronAPI?.copyFileToLibrary) {
       const normalizedPath = mapPath.replace(/\\/g, '/');
       if (!normalizedPath.includes(`/${activeSlug}/`)) {
-        const existingVariants = useVariantStore.getState().mapVariants[slot] || [];
-        const targetType = getNextSlotTargetType(slot, existingVariants, activeSlug);
+        const existingVariants = curMat
+          ? useVariantStore.getState().materialMapVariants[curMat]?.[slot] || []
+          : useVariantStore.getState().mapVariants[slot] || [];
+        const targetType = getNextSlotTargetType(slot, existingVariants, activeSlug, curMat);
         const ext = mapPath.split('.').pop() || 'webp';
         try {
           const copied = await window.electronAPI.copyFileToLibrary({
@@ -196,8 +207,10 @@ export const handleCanvasDrop = async (
       fileSize: targetSize
     };
 
-    useVariantStore.getState().addMapVariant(slot, newVariant);
-    usePbrMaterialStore.getState().setSlotEnabled(slot, true);
+    useVariantStore.getState().addMapVariant(slot, newVariant, curMat || undefined);
+    if (!curMat || curMat === usePbrMaterialStore.getState().activeMaterialName) {
+      usePbrMaterialStore.getState().setSlotEnabled(slot, true);
+    }
     assignedSlotsSet.add(slot);
     result.assignedCount++;
   }

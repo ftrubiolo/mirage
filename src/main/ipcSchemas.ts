@@ -84,13 +84,13 @@ export const GetThumbnailSchema = z.object({
 export const CopyFileToLibrarySchema = z.object({
   entrySlug: z.string().min(1).max(128),
   sourceFilePath: pathString,
-  targetType: z.string().min(1).max(64),
+  targetType: z.string().min(1).max(128),
   ext: z.string().max(16).optional()
 });
 
 export const WriteBinaryToLibrarySchema = z.object({
   entrySlug: z.string().min(1).max(128),
-  targetType: z.string().min(1).max(64),
+  targetType: z.string().min(1).max(128),
   ext: z.string().min(1).max(16),
   buffer: z.union([z.instanceof(Uint8Array), z.instanceof(ArrayBuffer)])
 });

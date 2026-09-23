@@ -4,7 +4,9 @@ import {
   isImageFile,
   isModelFile,
   getNextSlotTargetType,
-  getNextBaseColorTargetType
+  getNextBaseColorTargetType,
+  sanitizeMaterialNameForFile,
+  matchMaterialFromFileName
 } from '../utils/mapSlotNaming';
 
 describe('mapSlotNaming - detectMapSlotFromFileName', () => {
@@ -178,3 +180,97 @@ describe('mapSlotNaming - file type checkers', () => {
     expect(isModelFile('model.png')).toBe(false);
   });
 });
+
+describe('mapSlotNaming - sanitizeMaterialNameForFile', () => {
+  it('returns empty string for undefined, null, empty string or "default"', () => {
+    expect(sanitizeMaterialNameForFile()).toBe('');
+    expect(sanitizeMaterialNameForFile(null)).toBe('');
+    expect(sanitizeMaterialNameForFile('')).toBe('');
+    expect(sanitizeMaterialNameForFile('default')).toBe('');
+  });
+
+  it('replaces spaces, slashes and special characters with underscores', () => {
+    expect(sanitizeMaterialNameForFile('Mesa bake opaco')).toBe('Mesa_bake_opaco');
+    expect(sanitizeMaterialNameForFile('Wood / Dark')).toBe('Wood___Dark');
+    expect(sanitizeMaterialNameForFile('Mat#1 [Test]')).toBe('Mat_1__Test_');
+  });
+
+  it('preserves alphanumeric characters, dashes and underscores', () => {
+    expect(sanitizeMaterialNameForFile('mat_01-alpha')).toBe('mat_01-alpha');
+  });
+});
+
+describe('mapSlotNaming - matchMaterialFromFileName', () => {
+  const materials = ['Mesa_bake_opaco', 'Mesa_bake_transparente', 'default'];
+
+  it('returns null if availableMaterials has 1 or fewer items', () => {
+    expect(matchMaterialFromFileName('mesa_opaco_baseColor.png', ['singleMat'])).toBeNull();
+    expect(matchMaterialFromFileName('mesa_opaco_baseColor.png', [])).toBeNull();
+  });
+
+  it('matches material name present in filename (case-insensitive)', () => {
+    expect(
+      matchMaterialFromFileName('mesa_model_mesa_bake_opaco_baseColor.webp', materials)
+    ).toBe('Mesa_bake_opaco');
+    expect(
+      matchMaterialFromFileName('/path/to/Mesa_bake_transparente_normal.png', materials)
+    ).toBe('Mesa_bake_transparente');
+  });
+
+  it('returns null if no material name is found in the filename', () => {
+    expect(matchMaterialFromFileName('mesa_baseColor.webp', materials)).toBeNull();
+  });
+});
+
+describe('mapSlotNaming - getNextSlotTargetType with material namespacing', () => {
+  it('generates unnamespaced slot targetType for default or undefined material', () => {
+    expect(getNextSlotTargetType('baseColor', [], 'mesa')).toBe('baseColor');
+    expect(getNextSlotTargetType('normal', [], 'mesa', 'default')).toBe('normal');
+  });
+
+  it('generates namespaced slot targetType when materialName is provided', () => {
+    expect(getNextSlotTargetType('baseColor', [], 'mesa', 'Mesa_bake_opaco')).toBe(
+      'Mesa_bake_opaco_baseColor'
+    );
+    expect(getNextSlotTargetType('normal', [], 'mesa', 'Mesa bake transparente')).toBe(
+      'Mesa_bake_transparente_normal'
+    );
+  });
+
+  it('increments index when slot already exists for that material', () => {
+    const existing = [
+      {
+        id: 'v1',
+        name: 'Mesa_bake_opaco_baseColor',
+        url: '',
+        filePath: '',
+        fileName: 'mesa_Mesa_bake_opaco_baseColor.webp'
+      }
+    ];
+
+    expect(getNextSlotTargetType('baseColor', existing, 'mesa', 'Mesa_bake_opaco')).toBe(
+      'Mesa_bake_opaco_baseColor-2'
+    );
+    expect(getNextBaseColorTargetType(existing, 'mesa', 'Mesa_bake_opaco')).toBe(
+      'Mesa_bake_opaco_baseColor-2'
+    );
+  });
+
+  it('does not increment index for a different material when the first material has a variant', () => {
+    const existing = [
+      {
+        id: 'v1',
+        name: 'Mesa_bake_opaco_baseColor',
+        url: '',
+        filePath: '',
+        fileName: 'mesa_Mesa_bake_opaco_baseColor.webp'
+      }
+    ];
+
+    // Different material should start at base slot name, not -2
+    expect(getNextSlotTargetType('baseColor', existing, 'mesa', 'Mesa_bake_transparente')).toBe(
+      'Mesa_bake_transparente_baseColor'
+    );
+  });
+});
+

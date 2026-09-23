@@ -146,4 +146,49 @@ describe('canvasDropHandler', () => {
     expect(result.skippedCount).toBe(2);
     expect(result.assignedSlots).toEqual(['baseColor']);
   });
+
+  it('namespaces dropped texture files by detected material when model has multiple materials', async () => {
+    useAppStore.getState().setActiveEntrySlug('mesa');
+    useModelStore.getState().setModelStats({
+      triangleCount: 500,
+      vertexCount: 300,
+      meshCount: 2,
+      materials: ['Mesa_bake_opaco', 'Mesa_bake_transparente'],
+      dimensions: { width: 1, height: 1, depth: 1 }
+    });
+
+    const files = [
+      '/downloads/mesa_Mesa_bake_opaco_baseColor.png',
+      '/downloads/mesa_Mesa_bake_transparente_baseColor.png'
+    ];
+
+    const result = await handleCanvasDrop(files);
+
+    expect(result.assignedCount).toBe(2);
+    expect(window.electronAPI.copyFileToLibrary).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entrySlug: 'mesa',
+        sourceFilePath: '/downloads/mesa_Mesa_bake_opaco_baseColor.png',
+        targetType: 'Mesa_bake_opaco_baseColor'
+      })
+    );
+    expect(window.electronAPI.copyFileToLibrary).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entrySlug: 'mesa',
+        sourceFilePath: '/downloads/mesa_Mesa_bake_transparente_baseColor.png',
+        targetType: 'Mesa_bake_transparente_baseColor'
+      })
+    );
+
+    const variantState = useVariantStore.getState();
+    expect(variantState.materialMapVariants['Mesa_bake_opaco']?.baseColor?.length).toBe(1);
+    expect(variantState.materialMapVariants['Mesa_bake_transparente']?.baseColor?.length).toBe(1);
+    expect(
+      variantState.materialMapVariants['Mesa_bake_opaco']?.baseColor?.[0].filePath
+    ).toContain('Mesa_bake_opaco_baseColor');
+    expect(
+      variantState.materialMapVariants['Mesa_bake_transparente']?.baseColor?.[0].filePath
+    ).toContain('Mesa_bake_transparente_baseColor');
+  });
 });
+

@@ -131,9 +131,7 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
       isDefault: rawVariants.length === 0,
       posterUrl: sourceVar ? sourceVar.posterUrl : null,
       posterFileName: sourceVar ? sourceVar.posterFileName : null,
-      maps: sourceVar ? { ...sourceVar.maps } : {},
-      slotEnabled: sourceVar?.slotEnabled ? { ...sourceVar.slotEnabled } : {},
-      settings: sourceVar?.settings ? { ...sourceVar.settings } : {},
+      materials: sourceVar?.materials ? JSON.parse(JSON.stringify(sourceVar.materials)) : undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

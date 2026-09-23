@@ -1,12 +1,16 @@
-import { EntryVariant, EntryVariantMapSlot } from '../types/library';
+import { EntryVariant, EntryVariantMapSlot, EntryVariantMaterial, TexturePool } from '../types/library';
+import { migrateEntrySchema } from '../utils/entryMigration';
 import { ModelStats, useModelStore } from './modelStore';
 import {
   ALL_SLOT_NAMES,
   DebugChannel,
+  MaterialPackingMode,
   PbrMaterialParameters,
   PbrSlotMap,
+  SingleMaterialSlotData,
   SlotName,
   countActiveMaps,
+  createDefaultMaterialSlotData,
   createDefaultSlotEnabled,
   defaultPbrParameters,
   emptySlot,
@@ -40,7 +44,8 @@ export interface LoadWorkbenchData {
   modelUrl: string | null;
   modelFileSize?: number;
   dimensions?: { width: number; height: number; depth: number } | null;
-  stats?: { triangleCount: number; vertexCount: number; meshCount: number } | null;
+  stats?: { triangleCount: number; vertexCount: number; meshCount: number; materials?: string[] } | null;
+  texturePool?: TexturePool;
   maps?: Partial<Record<SlotName, PbrSlotMap>>;
   mapVariants?: Partial<Record<SlotName, MapVariantItem[]>>;
   activeVariantIds?: Partial<Record<SlotName, string | null>>;
@@ -48,6 +53,7 @@ export interface LoadWorkbenchData {
   variants?: EntryVariant[];
   activeVariantId?: string | null;
   settings?: {
+    baseColor?: string;
     normalScale?: number;
     normalInvertY?: boolean;
     roughnessFactor?: number;
@@ -72,6 +78,10 @@ export interface LoadWorkbenchData {
     autoGround?: boolean;
   };
   colorways?: ColorwayItem[];
+  materials?: Record<string, EntryVariantMaterial>;
+  materialMapVariants?: Record<string, Partial<Record<SlotName, any[]>>>;
+  materialActiveVariantIds?: Partial<Record<string, Partial<Record<string, string | null>>>>;
+  activeMaterialName?: string | null;
 }
 
 /**
@@ -82,6 +92,18 @@ export interface LoadWorkbenchData {
  * re-upload of the GLB.
  */
 export function loadWorkbenchState(data: LoadWorkbenchData): void {
+  // Boundary normalization: if incoming data is unnormalized or legacy, migrate once right here
+  if (!data.texturePool && (!data.variants || data.variants.length === 0 || !data.variants[0].materials)) {
+    const migrated = migrateEntrySchema(data as any);
+    data = {
+      ...data,
+      texturePool: migrated.texturePool,
+      variants: migrated.variants,
+      activeVariantId: data.activeVariantId || migrated.activeVariantId,
+      stats: migrated.stats
+    };
+  }
+
   const s = data.settings || {};
   const unitScale = s.unitScale ?? 1.0;
   const unitType = s.unitType ?? 'm';
@@ -89,12 +111,13 @@ export function loadWorkbenchState(data: LoadWorkbenchData): void {
   const autoGround = s.autoGround ?? true;
 
   // 1. Model store hydration
+  const detectedMaterials = data.stats?.materials || (data.texturePool ? Object.keys(data.texturePool) : []) || [];
   const modelStats: ModelStats | null = data.stats
     ? {
         triangleCount: data.stats.triangleCount,
         vertexCount: data.stats.vertexCount,
         meshCount: data.stats.meshCount,
-        materials: [],
+        materials: detectedMaterials,
         dimensions: data.dimensions || { width: 0.8, height: 0.85, depth: 0.8 }
       }
     : null;
@@ -132,47 +155,40 @@ export function loadWorkbenchState(data: LoadWorkbenchData): void {
     isModelLoading: isModelChanging
   });
 
-  // 2. Variant store hydration
+  // 2. Variant store & PBR hydration
   const initialSlotEnabled = data.slotEnabled
     ? { ...createDefaultSlotEnabled(), ...data.slotEnabled }
     : createDefaultSlotEnabled();
 
-  let loadedVariants: EntryVariant[] = [];
-  if (data.variants && data.variants.length > 0) {
-    loadedVariants = data.variants.map((v) => ({
-      ...v,
-      maps: { ...(v.maps || {}) },
-      slotEnabled: v.slotEnabled
-        ? { ...createDefaultSlotEnabled(), ...v.slotEnabled }
-        : createDefaultSlotEnabled(),
-      settings: { ...(v.settings || {}) }
-    }));
-  } else {
-    const fallbackMaps: Record<string, EntryVariantMapSlot> = {};
-    for (const slot of ALL_SLOT_NAMES) {
-      const m = data.maps?.[slot];
-      if (m?.filePath || m?.url) {
-        fallbackMaps[slot] = {
-          fileName: m.fileName || `${slot}.webp`,
-          filePath: m.filePath || '',
-          fileSize: m.fileSize || 0,
-          url: m.url || ''
-        };
-      }
-    }
-    loadedVariants = [
-      {
-        id: 'var-default',
-        name: 'Default',
-        isDefault: true,
-        maps: fallbackMaps,
-        slotEnabled: initialSlotEnabled,
-        settings: s as EntryVariant['settings'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ];
-  }
+  const loadedVariants: EntryVariant[] = (data.variants && data.variants.length > 0)
+    ? data.variants.map((v) => ({
+        ...v,
+        maps: { ...(v.maps || {}) },
+        materials: v.materials ? { ...v.materials } : undefined,
+        slotEnabled: v.slotEnabled
+          ? { ...createDefaultSlotEnabled(), ...v.slotEnabled }
+          : createDefaultSlotEnabled(),
+        settings: { ...(v.settings || {}) }
+      }))
+    : [
+        {
+          id: 'var-default',
+          name: 'Default',
+          isDefault: true,
+          materials: {
+            default: {
+              assignedMapIds: createEmptyActiveVariantIds(),
+              slotEnabled: initialSlotEnabled,
+              settings: s as EntryVariant['settings']
+            }
+          },
+          maps: {},
+          slotEnabled: initialSlotEnabled,
+          settings: s as EntryVariant['settings'],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ];
 
   const targetVarId =
     data.activeVariantId && loadedVariants.some((v) => v.id === data.activeVariantId)
@@ -181,171 +197,154 @@ export function loadWorkbenchState(data: LoadWorkbenchData): void {
 
   const targetVar = loadedVariants.find((v) => v.id === targetVarId) || loadedVariants[0];
   const targetVarSettings = (targetVar.settings as typeof s) || s;
-  const targetVarSlotEnabled = targetVar.slotEnabled || initialSlotEnabled;
 
-  const initialMapVariants = createEmptyMapVariants();
-  const initialActiveIds = createEmptyActiveVariantIds();
-  const mapsObj: Record<string, PbrSlotMap> = {};
+  const poolSource: TexturePool = data.texturePool || {};
 
-  for (const slot of ALL_SLOT_NAMES) {
-    const mapKey = `${slot}Map`;
-    const collected: MapVariantItem[] = [];
+  const effectiveMatNames = detectedMaterials.length > 0
+    ? detectedMaterials
+    : Object.keys(poolSource).length > 0
+      ? Object.keys(poolSource)
+      : targetVar.materials
+        ? Object.keys(targetVar.materials)
+        : ['default'];
 
-    const addUnique = (item: {
-      id?: string;
-      name?: string;
-      url?: string;
-      filePath?: string;
-      fileName?: string;
-      fileSize?: number;
-    }) => {
-      if (!item.filePath && !item.url) return;
-      const exists = collected.some(
-        (c) =>
-          (item.id && c.id === item.id) ||
-          (item.filePath && c.filePath === item.filePath) ||
-          (item.fileName && c.fileName === item.fileName)
-      );
-      if (!exists) {
-        collected.push({
-          id:
-            item.id ||
-            `${slot}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          name:
-            item.name ||
-            (item.fileName
-              ? item.fileName.replace(/\.[^/.]+$/, '')
-              : `${slot} ${collected.length + 1}`),
-          url:
-            item.url ||
-            (item.filePath && window.electronAPI?.toAssetUrl
-              ? window.electronAPI.toAssetUrl(item.filePath)
-              : '') ||
-            '',
-          filePath: item.filePath || '',
-          fileName: item.fileName || `${slot}.webp`,
-          fileSize: item.fileSize || 0
+  const hasMultipleMaterials = effectiveMatNames.length > 1;
+  const initialActiveMaterialName = hasMultipleMaterials
+    ? (data.activeMaterialName && effectiveMatNames.includes(data.activeMaterialName)
+        ? data.activeMaterialName
+        : effectiveMatNames[0])
+    : null;
+
+  const initialMaterialMapVariants: Record<string, Record<SlotName, MapVariantItem[]>> = {};
+  const initialMaterialActiveVariantIds: Record<string, Record<SlotName, string | null>> = {};
+  const initialMaterialsState: Record<string, SingleMaterialSlotData> = {};
+
+  for (const matName of effectiveMatNames) {
+    const rawPool = poolSource[matName] || (data.materialMapVariants?.[matName] as any) || {};
+    const matPools = createEmptyMapVariants();
+    const matActiveIds = createEmptyActiveVariantIds();
+    const matMaps: Record<string, PbrSlotMap> = {};
+
+    const varMat = targetVar.materials?.[matName];
+    const assignedIds = varMat?.assignedMapIds || (data.materialActiveVariantIds?.[matName] as any) || {};
+
+    for (const slot of ALL_SLOT_NAMES) {
+      const slotItems: MapVariantItem[] = (rawPool[slot] || []).map((item: any) => ({
+        id: item.id || `${slot}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        name: item.name || (item.fileName ? item.fileName.replace(/\.[^/.]+$/, '') : `${slot}`),
+        url: item.url || (item.filePath && (window as any).electronAPI?.toAssetUrl ? (window as any).electronAPI.toAssetUrl(item.filePath) : '') || '',
+        filePath: item.filePath || '',
+        fileName: item.fileName || `${slot}.webp`,
+        fileSize: item.fileSize || 0
+      }));
+
+      // In-memory fallback if variant has map but pool didn't have it
+      const vSlotMap = varMat?.maps?.[slot];
+      if (vSlotMap && (vSlotMap.filePath || vSlotMap.url) && !slotItems.some((x) => x.id === vSlotMap.id || (vSlotMap.filePath && x.filePath === vSlotMap.filePath))) {
+        slotItems.push({
+          id: vSlotMap.id || `${slot}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          name: vSlotMap.fileName ? vSlotMap.fileName.replace(/\.[^/.]+$/, '') : `${slot}`,
+          url: vSlotMap.url || (vSlotMap.filePath && (window as any).electronAPI?.toAssetUrl ? (window as any).electronAPI.toAssetUrl(vSlotMap.filePath) : '') || '',
+          filePath: vSlotMap.filePath || '',
+          fileName: vSlotMap.fileName || `${slot}.webp`,
+          fileSize: vSlotMap.fileSize || 0
         });
       }
+
+      matPools[slot] = slotItems;
+
+      let activeId = assignedIds[slot] || (vSlotMap?.id) || null;
+      if (activeId) {
+        const matched = slotItems.find((i) => i.id === activeId || (vSlotMap?.filePath && i.filePath === vSlotMap.filePath));
+        if (matched) {
+          activeId = matched.id;
+          matMaps[`${slot}Map`] = {
+            url: matched.url,
+            filePath: matched.filePath || null,
+            fileName: matched.fileName || null,
+            fileSize: matched.fileSize || 0
+          };
+        } else {
+          matMaps[`${slot}Map`] = { ...emptySlot };
+        }
+      } else {
+        matMaps[`${slot}Map`] = { ...emptySlot };
+      }
+
+      matActiveIds[slot] = activeId;
+    }
+
+    initialMaterialMapVariants[matName] = matPools;
+    initialMaterialActiveVariantIds[matName] = matActiveIds;
+
+    const matSlotEnabled = varMat?.slotEnabled
+      ? { ...createDefaultSlotEnabled(), ...varMat.slotEnabled }
+      : createDefaultSlotEnabled();
+
+    const matSettings =
+      (varMat?.settings as any) || (matName === initialActiveMaterialName ? targetVarSettings : {});
+    const matPackingMode: MaterialPackingMode =
+      matSettings.materialPackingMode || (matSettings.useOrmPack === false ? 'separate' : 'orm');
+
+    const hasAssignedMaps = Object.values(matActiveIds).some(Boolean);
+    const loadFromCache =
+      matSettings.loadFromCache !== undefined
+        ? matSettings.loadFromCache
+        : hasMultipleMaterials && !hasAssignedMaps;
+
+    initialMaterialsState[matName] = {
+      ...defaultPbrParameters,
+      ...(matMaps as any),
+      slotEnabled: matSlotEnabled,
+      useOrmPack: matPackingMode === 'orm',
+      materialPackingMode: matPackingMode,
+      loadFromCache,
+      baseColor: matSettings.baseColor ?? defaultPbrParameters.baseColor,
+      normalScale: matSettings.normalScale ?? defaultPbrParameters.normalScale,
+      normalInvertY: matSettings.normalInvertY ?? defaultPbrParameters.normalInvertY,
+      roughnessFactor: matSettings.roughnessFactor ?? defaultPbrParameters.roughnessFactor,
+      metalnessFactor: matSettings.metalnessFactor ?? defaultPbrParameters.metalnessFactor,
+      aoIntensity: matSettings.aoIntensity ?? defaultPbrParameters.aoIntensity,
+      emissiveIntensity: matSettings.emissiveIntensity ?? defaultPbrParameters.emissiveIntensity,
+      emissiveColor: matSettings.emissiveColor ?? defaultPbrParameters.emissiveColor,
+      emissiveFullGlow: matSettings.emissiveFullGlow ?? defaultPbrParameters.emissiveFullGlow,
+      clearcoatFactor: matSettings.clearcoatFactor ?? defaultPbrParameters.clearcoatFactor,
+      clearcoatRoughness: matSettings.clearcoatRoughness ?? defaultPbrParameters.clearcoatRoughness,
+      sheenColor: matSettings.sheenColor ?? defaultPbrParameters.sheenColor,
+      sheenRoughness: matSettings.sheenRoughness ?? defaultPbrParameters.sheenRoughness,
+      transmissionFactor: matSettings.transmissionFactor ?? defaultPbrParameters.transmissionFactor,
+      ior: matSettings.ior ?? defaultPbrParameters.ior,
+      displacementScale: matSettings.displacementScale ?? defaultPbrParameters.displacementScale
     };
-
-    if (data.mapVariants?.[slot]) for (const mv of data.mapVariants[slot]!) addUnique(mv);
-    for (const v of loadedVariants) if (v.maps?.[slot]) addUnique(v.maps[slot]);
-    if (slot === 'baseColor' && data.colorways) {
-      for (const c of data.colorways) {
-        addUnique({
-          id: c.id,
-          name: c.name,
-          url: c.baseColorUrl,
-          filePath: c.baseColorFilePath,
-          fileName: c.fileName,
-          fileSize: c.fileSize
-        });
-      }
-    }
-    if (data.maps?.[slot]?.filePath || data.maps?.[slot]?.url) {
-      const m = data.maps[slot]!;
-      addUnique({
-        url: m.url || undefined,
-        filePath: m.filePath || undefined,
-        fileName: m.fileName || undefined,
-        fileSize: m.fileSize
-      });
-    }
-
-    initialMapVariants[slot] = collected;
-
-    let activeId: string | null = null;
-    const targetMap = targetVar.maps?.[slot];
-    if (targetMap && (targetMap.filePath || targetMap.url)) {
-      const matched = collected.find(
-        (c) =>
-          (targetMap.id && c.id === targetMap.id) ||
-          (targetMap.filePath && c.filePath === targetMap.filePath) ||
-          (targetMap.fileName && c.fileName === targetMap.fileName) ||
-          (targetMap.url && c.url === targetMap.url)
-      );
-      if (matched) {
-        activeId = matched.id;
-        mapsObj[mapKey] = {
-          url: matched.url,
-          filePath: matched.filePath || null,
-          fileName: matched.fileName || null,
-          fileSize: matched.fileSize || 0
-        };
-      } else {
-        mapsObj[mapKey] = { ...emptySlot };
-      }
-    } else if (data.activeVariantIds?.[slot]) {
-      const matched = collected.find((c) => c.id === data.activeVariantIds![slot]);
-      if (matched) {
-        activeId = matched.id;
-        mapsObj[mapKey] = {
-          url: matched.url,
-          filePath: matched.filePath || null,
-          fileName: matched.fileName || null,
-          fileSize: matched.fileSize || 0
-        };
-      } else {
-        mapsObj[mapKey] = { ...emptySlot };
-      }
-    } else if (collected.length > 0 && targetVar.isDefault) {
-      activeId = collected[0].id;
-      mapsObj[mapKey] = {
-        url: collected[0].url,
-        filePath: collected[0].filePath || null,
-        fileName: collected[0].fileName || null,
-        fileSize: collected[0].fileSize || 0
-      };
-    } else {
-      mapsObj[mapKey] = { ...emptySlot };
-    }
-
-    initialActiveIds[slot] = activeId;
   }
+
+  const activeMatName = initialActiveMaterialName || effectiveMatNames[0];
+  const activeMatPool = initialMaterialMapVariants[activeMatName] || createEmptyMapVariants();
+  const activeMatActiveIds = initialMaterialActiveVariantIds[activeMatName] || createEmptyActiveVariantIds();
+  const activeSlotData = initialMaterialsState[activeMatName];
 
   useVariantStore.setState({
     variants: loadedVariants,
     activeVariantId: targetVarId,
-    mapVariants: initialMapVariants,
-    activeVariantIds: initialActiveIds
+    texturePool: initialMaterialMapVariants,
+    mapVariants: activeMatPool,
+    activeVariantIds: activeMatActiveIds,
+    materialMapVariants: initialMaterialMapVariants,
+    materialActiveVariantIds: initialMaterialActiveVariantIds,
+    activeMaterialName: initialActiveMaterialName
   });
 
-  // 3. PBR material store hydration
-  const nextSlotEnabled = { ...createDefaultSlotEnabled(), ...targetVarSlotEnabled };
-  const rawPackingMode = (targetVarSettings as any)?.materialPackingMode || (s as any)?.materialPackingMode;
-  const packingMode = rawPackingMode || ((targetVarSettings.useOrmPack ?? s.useOrmPack) === false ? 'separate' : 'orm');
-  const pbrPartial = {
-    ...mapsObj,
+  const nextSlotEnabled = { ...createDefaultSlotEnabled(), ...activeSlotData.slotEnabled };
+  const rootData = {
+    ...activeSlotData,
     slotEnabled: nextSlotEnabled,
-    useOrmPack: packingMode === 'orm',
-    materialPackingMode: packingMode,
-    loadFromCache: s.loadFromCache ?? false,
     debugChannel: 'lit' as DebugChannel,
-    normalScale: targetVarSettings.normalScale ?? defaultPbrParameters.normalScale,
-    normalInvertY: targetVarSettings.normalInvertY ?? defaultPbrParameters.normalInvertY,
-    roughnessFactor: targetVarSettings.roughnessFactor ?? defaultPbrParameters.roughnessFactor,
-    metalnessFactor: targetVarSettings.metalnessFactor ?? defaultPbrParameters.metalnessFactor,
-    aoIntensity: targetVarSettings.aoIntensity ?? defaultPbrParameters.aoIntensity,
-    emissiveIntensity: targetVarSettings.emissiveIntensity ?? defaultPbrParameters.emissiveIntensity,
-    emissiveColor: targetVarSettings.emissiveColor ?? defaultPbrParameters.emissiveColor,
-    emissiveFullGlow: targetVarSettings.emissiveFullGlow ?? defaultPbrParameters.emissiveFullGlow,
-    clearcoatFactor: targetVarSettings.clearcoatFactor ?? defaultPbrParameters.clearcoatFactor,
-    clearcoatRoughness:
-      targetVarSettings.clearcoatRoughness ?? defaultPbrParameters.clearcoatRoughness,
-    sheenColor: targetVarSettings.sheenColor ?? defaultPbrParameters.sheenColor,
-    sheenRoughness: targetVarSettings.sheenRoughness ?? defaultPbrParameters.sheenRoughness,
-    transmissionFactor:
-      targetVarSettings.transmissionFactor ?? defaultPbrParameters.transmissionFactor,
-    ior: targetVarSettings.ior ?? defaultPbrParameters.ior,
-    displacementScale:
-      targetVarSettings.displacementScale ?? defaultPbrParameters.displacementScale
+    activeMaterialName: initialActiveMaterialName,
+    materialsState: hasMultipleMaterials ? initialMaterialsState : {},
+    activeMapsCount: countActiveMaps(activeSlotData)
   };
 
-  usePbrMaterialStore.setState({
-    ...pbrPartial,
-    activeMapsCount: countActiveMaps(pbrPartial)
-  });
+  usePbrMaterialStore.setState(rootData);
 }
 
 /** Resets every domain store. The ORM dialog flag is UI state and is left alone. */

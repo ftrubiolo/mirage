@@ -73,6 +73,7 @@ export function clearTextureCache(): void {
   loadedTextureCache.forEach((tex) => tex.dispose());
   loadedTextureCache.clear();
   texturePromiseCache.clear();
+  originalMaterialByName.clear();
 }
 
 export interface PbrUniformValues {
@@ -95,12 +96,14 @@ export interface PbrUniformValues {
   ior?: number;
   emissiveIntensity?: number;
   color?: string | THREE.Color;
+  baseColor?: string | THREE.Color;
   emissive?: string | THREE.Color;
   emissiveColor?: string | THREE.Color;
   emissiveFullGlow?: boolean;
   displacementScale?: number;
   forcedNullSlots?: string[];
   slotEnabled?: Partial<Record<string, boolean>>;
+  loadFromCache?: boolean;
   targetMaterialName?: string | null;
 }
 
@@ -123,6 +126,8 @@ export interface PbrTextureValues {
 
 export interface PbrTextureOptions {
   model: THREE.Object3D;
+  color?: string | THREE.Color;
+  baseColor?: string | THREE.Color;
   baseColorUrl?: string | null;
   normalUrl?: string | null;
   ormUrl?: string | null;
@@ -166,7 +171,7 @@ export interface PbrStateOptions extends PbrTextureOptions, PbrUniformValues {
   model: THREE.Object3D;
 }
 
-interface OrigMaterialData {
+export interface OrigMaterialData {
   map: THREE.Texture | null;
   normalMap: THREE.Texture | null;
   roughnessMap: THREE.Texture | null;
@@ -181,9 +186,90 @@ interface OrigMaterialData {
   alphaMap: THREE.Texture | null;
   displacementMap: THREE.Texture | null;
   color: THREE.Color;
+  roughness?: number;
+  metalness?: number;
+  transmission?: number;
+  ior?: number;
+  clearcoat?: number;
+  clearcoatRoughness?: number;
+  sheen?: number;
+  sheenColor?: THREE.Color;
+  sheenRoughness?: number;
+  transparent?: boolean;
+  opacity?: number;
+  alphaTest?: number;
+  side?: THREE.Side;
+}
+
+export interface ModelMaterialInfo {
+  baseColor: string;
+  roughnessFactor: number;
+  metalnessFactor: number;
+  transmissionFactor?: number;
+  ior?: number;
+  clearcoatFactor?: number;
+  clearcoatRoughness?: number;
+  sheenColor?: string;
+  sheenRoughness?: number;
 }
 
 const originalMaterialCache = new WeakMap<THREE.Material, OrigMaterialData>();
+const originalMaterialByName = new Map<string, OrigMaterialData>();
+
+export function getOriginalMaterialData(materialName?: string | null): OrigMaterialData | undefined {
+  if (!materialName) {
+    if (originalMaterialByName.size === 1) {
+      return originalMaterialByName.values().next().value;
+    }
+    return undefined;
+  }
+  return originalMaterialByName.get(materialName);
+}
+
+export function extractModelMaterialsInfo(model: THREE.Object3D): Record<string, ModelMaterialInfo> {
+  const result: Record<string, ModelMaterialInfo> = {};
+  if (!model) return result;
+
+  let unnamedIndex = 1;
+  model.traverse((child) => {
+    if ((child as THREE.Mesh).isMesh) {
+      const mesh = child as THREE.Mesh;
+      const rawMats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const m of rawMats) {
+        if (m instanceof THREE.MeshStandardMaterial) {
+          const name = m.name || `Material_${unnamedIndex++}`;
+          if (!result[name]) {
+            const isPhys = m instanceof THREE.MeshPhysicalMaterial;
+            const isGlassName = /transparen|glass|vidrio|cristal/i.test(name);
+            const transmission = isPhys ? m.transmission : (m as any).transmission;
+            const effectiveTransmission = transmission !== undefined ? transmission : (isGlassName ? 0.95 : undefined);
+            const effectiveRoughness = isGlassName ? (m.roughness === 1.0 || m.roughness === undefined ? 0.05 : m.roughness) : (m.roughness ?? 1.0);
+            const effectiveMetalness = isGlassName ? (m.metalness === 1.0 || m.metalness === undefined ? 0.0 : m.metalness) : (m.metalness ?? 1.0);
+            const ior = isPhys ? m.ior : ((m as any).ior ?? (isGlassName ? 1.52 : undefined));
+            const clearcoat = isPhys ? m.clearcoat : (m as any).clearcoat;
+            const clearcoatRoughness = isPhys ? m.clearcoatRoughness : (m as any).clearcoatRoughness;
+            const sheenColor = isPhys ? m.sheenColor : (m as any).sheenColor;
+            const sheenRoughness = isPhys ? m.sheenRoughness : (m as any).sheenRoughness;
+
+            result[name] = {
+              baseColor: m.color ? `#${m.color.getHexString()}` : '#ffffff',
+              roughnessFactor: effectiveRoughness,
+              metalnessFactor: effectiveMetalness,
+              ...(effectiveTransmission !== undefined ? { transmissionFactor: effectiveTransmission } : {}),
+              ...(ior !== undefined ? { ior } : {}),
+              ...(clearcoat !== undefined ? { clearcoatFactor: clearcoat } : {}),
+              ...(clearcoatRoughness !== undefined ? { clearcoatRoughness } : {}),
+              ...(sheenColor ? { sheenColor: typeof sheenColor === 'string' ? sheenColor : `#${sheenColor.getHexString()}` } : {}),
+              ...(sheenRoughness !== undefined ? { sheenRoughness } : {})
+            };
+          }
+        }
+      }
+    }
+  });
+
+  return result;
+}
 
 /**
  * Captures pristine initial material properties before any runtime PBR modifications occur.
@@ -191,13 +277,18 @@ const originalMaterialCache = new WeakMap<THREE.Material, OrigMaterialData>();
  */
 export function captureOriginalMaterials(model: THREE.Object3D): void {
   if (!model) return;
+  let unnamedIndex = 1;
   model.traverse((child) => {
     if ((child as THREE.Mesh).isMesh) {
       const mesh = child as THREE.Mesh;
       const rawMats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
       for (const m of rawMats) {
         if (m instanceof THREE.MeshStandardMaterial && !originalMaterialCache.has(m)) {
-          originalMaterialCache.set(m, {
+          if (!m.name) {
+            m.name = `Material_${unnamedIndex++}`;
+          }
+          const isPhys = m instanceof THREE.MeshPhysicalMaterial;
+          const origData: OrigMaterialData = {
             map: m.map,
             normalMap: m.normalMap,
             roughnessMap: m.roughnessMap,
@@ -211,8 +302,38 @@ export function captureOriginalMaterials(model: THREE.Object3D): void {
             transmissionMap: (m as any).transmissionMap || null,
             alphaMap: m.alphaMap || null,
             displacementMap: (m as any).displacementMap || null,
-            color: m.color ? m.color.clone() : new THREE.Color(1, 1, 1)
-          });
+            color: m.color ? m.color.clone() : new THREE.Color(1, 1, 1),
+            roughness: m.roughness,
+            metalness: m.metalness,
+            transmission: isPhys ? m.transmission : (m as any).transmission,
+            ior: isPhys ? m.ior : (m as any).ior,
+            clearcoat: isPhys ? m.clearcoat : (m as any).clearcoat,
+            clearcoatRoughness: isPhys ? m.clearcoatRoughness : (m as any).clearcoatRoughness,
+            sheen: isPhys ? m.sheen : (m as any).sheen,
+            sheenColor: (isPhys && m.sheenColor) ? m.sheenColor.clone() : ((m as any).sheenColor?.clone ? (m as any).sheenColor.clone() : undefined),
+            sheenRoughness: isPhys ? m.sheenRoughness : (m as any).sheenRoughness,
+            transparent: m.transparent,
+            opacity: m.opacity,
+            alphaTest: m.alphaTest,
+            side: m.side
+          };
+          // Transmissive & transparent materials render best as DoubleSide to allow viewing from underneath
+          const transmissionVal = isPhys ? m.transmission : (m as any).transmission;
+          const isGlassName = /transparen|glass|vidrio|cristal/i.test(m.name || '');
+          if ((transmissionVal !== undefined && transmissionVal > 0) || isGlassName || m.transparent) {
+            m.side = THREE.DoubleSide;
+            m.depthWrite = false;
+            mesh.receiveShadow = false;
+            mesh.castShadow = false;
+            mesh.renderOrder = 1;
+            if (isGlassName && m.metalness === 1.0) {
+              m.metalness = 0.0;
+            }
+          }
+          originalMaterialCache.set(m, origData);
+          if (m.name) {
+            originalMaterialByName.set(m.name, origData);
+          }
         }
       }
     }
@@ -238,12 +359,25 @@ function upgradeToPhysicalMaterial(mat: THREE.MeshStandardMaterial): THREE.MeshP
   physMat.alphaMap = mat.alphaMap;
   physMat.transparent = mat.transparent;
   physMat.opacity = mat.opacity;
-  physMat.side = mat.side;
+  physMat.alphaTest = mat.alphaTest;
+  physMat.depthWrite = mat.depthWrite;
+  physMat.depthTest = mat.depthTest;
+  physMat.blending = mat.blending;
+  physMat.toneMapped = mat.toneMapped;
+  physMat.side = ((mat as any).transmission !== undefined && (mat as any).transmission > 0) ? THREE.DoubleSide : mat.side;
   physMat.wireframe = mat.wireframe;
   physMat.envMap = mat.envMap;
   physMat.envMapIntensity = mat.envMapIntensity;
   physMat.displacementMap = mat.displacementMap;
   physMat.displacementScale = mat.displacementScale;
+  physMat.userData = { ...mat.userData };
+  if ((mat as any).ior !== undefined) physMat.ior = (mat as any).ior;
+  if ((mat as any).transmission !== undefined) physMat.transmission = (mat as any).transmission;
+  if ((mat as any).clearcoat !== undefined) physMat.clearcoat = (mat as any).clearcoat;
+  if ((mat as any).clearcoatRoughness !== undefined) physMat.clearcoatRoughness = (mat as any).clearcoatRoughness;
+  if ((mat as any).sheen !== undefined) physMat.sheen = (mat as any).sheen;
+  if ((mat as any).sheenColor) physMat.sheenColor.copy((mat as any).sheenColor);
+  if ((mat as any).sheenRoughness !== undefined) physMat.sheenRoughness = (mat as any).sheenRoughness;
   return physMat;
 }
 
@@ -292,26 +426,38 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
       const mesh = child as THREE.Mesh;
       const rawMats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
 
-      for (const m of rawMats) {
+      for (let matIdx = 0; matIdx < rawMats.length; matIdx++) {
+        let m = rawMats[matIdx];
         if (m instanceof THREE.MeshStandardMaterial) {
           if (uniforms.targetMaterialName && uniforms.targetMaterialName !== '*' && m.name !== uniforms.targetMaterialName) {
             continue;
           }
+          const orig = originalMaterialCache.get(m);
           // Tracks whether this material needs its shader program rebuilt.
           // Uniform-only changes (roughness, metalness, intensities) must NOT
           // set it; only changes to the *presence* of a shader feature do.
           let structuralChange = false;
 
+          const isGlassName = /transparen|glass|vidrio|cristal/i.test(m.name || '');
+
           // Roughness
           const roughness = uniforms.roughness !== undefined ? uniforms.roughness : uniforms.roughnessFactor;
           if (roughness !== undefined) {
             m.roughness = roughness;
+          } else if (uniforms.loadFromCache && orig?.roughness !== undefined) {
+            m.roughness = orig.roughness;
+          } else if (isGlassName && m.roughness > 0.1) {
+            m.roughness = 0.05;
           }
 
           // Metalness
           const metalness = uniforms.metalness !== undefined ? uniforms.metalness : uniforms.metalnessFactor;
           if (metalness !== undefined) {
             m.metalness = metalness;
+          } else if (uniforms.loadFromCache && orig?.metalness !== undefined) {
+            m.metalness = orig.metalness;
+          } else if (isGlassName && m.metalness === 1.0) {
+            m.metalness = 0.0;
           }
 
           // Normal Scale & Invert Y
@@ -340,11 +486,14 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
           }
 
           // Base Color Tint
-          if (uniforms.color !== undefined) {
-            if (typeof uniforms.color === 'string') {
-              m.color.set(uniforms.color);
+          const targetColor = uniforms.color !== undefined ? uniforms.color : uniforms.baseColor;
+          if (uniforms.loadFromCache && orig?.color) {
+            m.color.copy(orig.color);
+          } else if (targetColor !== undefined) {
+            if (typeof targetColor === 'string') {
+              m.color.set(targetColor);
             } else {
-              m.color.copy(uniforms.color);
+              m.color.copy(targetColor);
             }
           }
 
@@ -353,7 +502,6 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
             m.emissive.set(0x000000);
             m.emissiveIntensity = 0;
           } else {
-            const orig = originalMaterialCache.get(m);
             const hasEmissiveMap = Boolean(m.emissiveMap);
             const hasOrigEmissive = Boolean(
               orig && (
@@ -414,9 +562,13 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
               const clearcoat = uniforms.clearcoat !== undefined ? uniforms.clearcoat : uniforms.clearcoatFactor;
               if (clearcoat !== undefined) {
                 nextClearcoat = clearcoat;
+              } else if (uniforms.loadFromCache && orig?.clearcoat !== undefined) {
+                nextClearcoat = orig.clearcoat;
               }
               if (uniforms.clearcoatRoughness !== undefined) {
                 m.clearcoatRoughness = uniforms.clearcoatRoughness;
+              } else if (uniforms.loadFromCache && orig?.clearcoatRoughness !== undefined) {
+                m.clearcoatRoughness = orig.clearcoatRoughness;
               }
             }
             if (nextClearcoat > 0 !== m.clearcoat > 0) structuralChange = true;
@@ -430,13 +582,32 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
               const transmission = uniforms.transmission !== undefined ? uniforms.transmission : uniforms.transmissionFactor;
               if (transmission !== undefined) {
                 nextTransmission = transmission;
+              } else if (uniforms.loadFromCache && orig?.transmission !== undefined) {
+                nextTransmission = orig.transmission;
+              } else if (isGlassName && nextTransmission === 0) {
+                nextTransmission = 0.95;
               }
               if (uniforms.ior !== undefined) {
                 m.ior = uniforms.ior;
+              } else if (uniforms.loadFromCache && orig?.ior !== undefined) {
+                m.ior = orig.ior;
+              } else if (isGlassName && (!m.ior || m.ior === 1.5)) {
+                m.ior = 1.52;
               }
             }
             if (nextTransmission > 0 !== m.transmission > 0) structuralChange = true;
             m.transmission = nextTransmission;
+            if (nextTransmission > 0 || isGlassName) {
+              m.side = THREE.DoubleSide;
+              m.depthWrite = false;
+              mesh.receiveShadow = false;
+              mesh.castShadow = false;
+              mesh.renderOrder = 1;
+            } else if (orig && orig.transparent !== true) {
+              mesh.receiveShadow = true;
+              mesh.castShadow = true;
+              mesh.renderOrder = 0;
+            }
 
             // Sheen
             let nextSheen = m.sheen;
@@ -445,6 +616,8 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
             } else {
               if (uniforms.sheen !== undefined) {
                 nextSheen = uniforms.sheen;
+              } else if (uniforms.loadFromCache && orig?.sheen !== undefined) {
+                nextSheen = orig.sheen;
               }
               if (uniforms.sheenColor !== undefined) {
                 if (typeof uniforms.sheenColor === 'string') {
@@ -452,9 +625,13 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
                 } else {
                   m.sheenColor.copy(uniforms.sheenColor);
                 }
+              } else if (uniforms.loadFromCache && orig?.sheenColor) {
+                m.sheenColor.copy(orig.sheenColor);
               }
               if (uniforms.sheenRoughness !== undefined) {
                 m.sheenRoughness = uniforms.sheenRoughness;
+              } else if (uniforms.loadFromCache && orig?.sheenRoughness !== undefined) {
+                m.sheenRoughness = orig.sheenRoughness;
               }
             }
             if (nextSheen > 0 !== m.sheen > 0) structuralChange = true;
@@ -466,6 +643,17 @@ export function applyPbrUniforms(model: THREE.Object3D, uniforms: Partial<PbrUni
             m.displacementScale = 0;
           } else if (uniforms.displacementScale !== undefined) {
             m.displacementScale = uniforms.displacementScale;
+          }
+
+          // Alpha / Opacity restoration when loadFromCache is active
+          if (uniforms.loadFromCache && orig) {
+            if (orig.transparent !== undefined && m.transparent !== orig.transparent) {
+              m.transparent = orig.transparent;
+              structuralChange = true;
+            }
+            if (orig.opacity !== undefined && m.opacity !== orig.opacity) {
+              m.opacity = orig.opacity;
+            }
           }
 
           // Only the feature-presence crossings set above reach this. A plain
@@ -644,6 +832,7 @@ export function applyPbrTextures(
 
           let orig = originalMaterialCache.get(mat);
           if (!orig) {
+            const phys = mat instanceof THREE.MeshPhysicalMaterial ? mat : null;
             orig = {
               map: mat.map,
               normalMap: mat.normalMap,
@@ -658,24 +847,43 @@ export function applyPbrTextures(
               transmissionMap: (mat as any).transmissionMap || null,
               alphaMap: mat.alphaMap || null,
               displacementMap: (mat as any).displacementMap || null,
-              color: mat.color ? mat.color.clone() : new THREE.Color(1, 1, 1)
+              color: mat.color ? mat.color.clone() : new THREE.Color(1, 1, 1),
+              roughness: mat.roughness,
+              metalness: mat.metalness,
+              transmission: phys ? phys.transmission : (mat as any).transmission,
+              ior: phys ? phys.ior : (mat as any).ior,
+              clearcoat: phys ? phys.clearcoat : (mat as any).clearcoat,
+              clearcoatRoughness: phys ? phys.clearcoatRoughness : (mat as any).clearcoatRoughness,
+              sheen: phys ? phys.sheen : (mat as any).sheen,
+              sheenColor: (phys && phys.sheenColor) ? phys.sheenColor.clone() : ((mat as any).sheenColor?.clone ? (mat as any).sheenColor.clone() : undefined),
+              sheenRoughness: phys ? phys.sheenRoughness : (mat as any).sheenRoughness,
+              transparent: mat.transparent,
+              opacity: mat.opacity,
+              alphaTest: mat.alphaTest
             };
             originalMaterialCache.set(mat, orig);
+            if (mat.name) {
+              originalMaterialByName.set(mat.name, orig);
+            }
           }
 
           let structuralChange = false;
 
           // Physical upgrade check
+          const isGlassName = /transparen|glass|vidrio|cristal/i.test(mat.name || '');
           const needsPhysical = Boolean(
-            (!isNull('clearcoat') && (loaded.clearcoat || (clearcoatFactor !== undefined && clearcoatFactor > 0))) ||
-            (!isNull('sheen') && (loaded.sheen || (sheenRoughness !== undefined && sheenRoughness > 0 && sheenColor !== '#000000' && sheenColor !== '#ffffff'))) ||
-            (!isNull('transmission') && (loaded.transmission || (transmissionFactor !== undefined && transmissionFactor > 0)))
+            (!isNull('clearcoat') && (loaded.clearcoat || (clearcoatFactor !== undefined && clearcoatFactor > 0) || (loadFromCache && (orig.clearcoatMap || (orig.clearcoat !== undefined && orig.clearcoat > 0))))) ||
+            (!isNull('sheen') && (loaded.sheen || (sheenRoughness !== undefined && sheenRoughness > 0 && sheenColor !== '#000000' && sheenColor !== '#ffffff') || (loadFromCache && (orig.sheenColorMap || (orig.sheen !== undefined && orig.sheen > 0))))) ||
+            (!isNull('transmission') && (loaded.transmission || (transmissionFactor !== undefined && transmissionFactor > 0) || (loadFromCache && (orig.transmissionMap || (orig.transmission !== undefined && orig.transmission > 0))) || isGlassName))
           );
 
           if (needsPhysical && !(mat instanceof THREE.MeshPhysicalMaterial)) {
             const previousMat = mat;
             const physMat = upgradeToPhysicalMaterial(previousMat);
             originalMaterialCache.set(physMat, orig);
+            if (physMat.name) {
+              originalMaterialByName.set(physMat.name, orig);
+            }
             mat = physMat;
             if (Array.isArray(mesh.material)) {
               mesh.material[matIdx] = physMat;
@@ -706,10 +914,20 @@ export function applyPbrTextures(
             // Base Color
             const targetBaseMap = isNull('baseColor') ? null : (loaded.baseColor || (loadFromCache ? orig.map : null));
             if (assignMaterialMap(mat, 'map', targetBaseMap, THREE.SRGBColorSpace)) structuralChange = true;
-            if (!targetBaseMap) {
-              mat.color.set(0xd0ceca);
+
+            const targetColor = options.color ?? options.baseColor;
+            if (loadFromCache && !loaded.baseColor && orig.color) {
+              mat.color.copy(orig.color);
+            } else if (targetColor !== undefined) {
+              if (typeof targetColor === 'string') {
+                mat.color.set(targetColor);
+              } else {
+                mat.color.copy(targetColor);
+              }
+            } else if (orig.color) {
+              mat.color.copy(orig.color);
             } else {
-              mat.color.copy(orig.color || new THREE.Color(1, 1, 1));
+              mat.color.set(0xffffff);
             }
 
             // Normal Map
@@ -748,10 +966,17 @@ export function applyPbrTextures(
             if (mat.aoMap && aoIntensity !== undefined) mat.aoMapIntensity = aoIntensity;
 
             if (assignMaterialMap(mat, 'roughnessMap', targetRoughness)) structuralChange = true;
-            if (roughnessFactor !== undefined) mat.roughness = roughnessFactor;
+            if (loadFromCache && !loaded.roughness && orig.roughness !== undefined) mat.roughness = orig.roughness;
+            else if (roughnessFactor !== undefined) mat.roughness = roughnessFactor;
 
             if (assignMaterialMap(mat, 'metalnessMap', targetMetalness)) structuralChange = true;
-            if (metalnessFactor !== undefined) mat.metalness = metalnessFactor;
+            if (metalnessFactor !== undefined) {
+              mat.metalness = metalnessFactor;
+            } else if (loadFromCache && !loaded.metalness && orig.metalness !== undefined) {
+              mat.metalness = orig.metalness;
+            } else if (isGlassName && mat.metalness === 1.0) {
+              mat.metalness = 0.0;
+            }
 
             // Emissive Map & Color
             const targetEmissiveMap = isNull('emissive')
@@ -786,34 +1011,84 @@ export function applyPbrTextures(
               const targetClearcoat = isNull('clearcoat') ? null : (loaded.clearcoat || (loadFromCache ? orig.clearcoatMap : null));
               if (assignMaterialMap(mat, 'clearcoatMap', targetClearcoat)) structuralChange = true;
               if (targetClearcoat && mat.clearcoat === 0) mat.clearcoat = 1.0;
+              else if (loadFromCache && orig.clearcoat !== undefined) mat.clearcoat = orig.clearcoat;
               else if (clearcoatFactor !== undefined) mat.clearcoat = clearcoatFactor;
-              if (clearcoatRoughness !== undefined) mat.clearcoatRoughness = clearcoatRoughness;
+              if (loadFromCache && orig.clearcoatRoughness !== undefined) mat.clearcoatRoughness = orig.clearcoatRoughness;
+              else if (clearcoatRoughness !== undefined) mat.clearcoatRoughness = clearcoatRoughness;
 
               const targetSheen = isNull('sheen') ? null : (loaded.sheen || (loadFromCache ? orig.sheenColorMap : null));
               if (assignMaterialMap(mat, 'sheenColorMap', targetSheen, THREE.SRGBColorSpace)) structuralChange = true;
               if (targetSheen && mat.sheen === 0) mat.sheen = 1.0;
-              if (sheenColor !== undefined) {
+              else if (loadFromCache && orig.sheen !== undefined) mat.sheen = orig.sheen;
+              if (loadFromCache && orig.sheenColor) {
+                mat.sheenColor.copy(orig.sheenColor);
+              } else if (sheenColor !== undefined) {
                 if (typeof sheenColor === 'string') mat.sheenColor.set(sheenColor);
                 else mat.sheenColor.copy(sheenColor);
               }
-              if (sheenRoughness !== undefined) mat.sheenRoughness = sheenRoughness;
+              if (loadFromCache && orig.sheenRoughness !== undefined) mat.sheenRoughness = orig.sheenRoughness;
+              else if (sheenRoughness !== undefined) mat.sheenRoughness = sheenRoughness;
 
               const targetTransmission = isNull('transmission') ? null : (loaded.transmission || (loadFromCache ? orig.transmissionMap : null));
               if (assignMaterialMap(mat, 'transmissionMap', targetTransmission)) structuralChange = true;
               if (targetTransmission && mat.transmission === 0) mat.transmission = 1.0;
+              else if (loadFromCache && orig.transmission !== undefined) mat.transmission = orig.transmission;
               else if (transmissionFactor !== undefined) mat.transmission = transmissionFactor;
-              if (ior !== undefined) mat.ior = ior;
+              else if (isGlassName && mat.transmission === 0) mat.transmission = 0.95;
+              if (loadFromCache && orig.ior !== undefined) mat.ior = orig.ior;
+              else if (ior !== undefined) mat.ior = ior;
+              else if (isGlassName && (!mat.ior || mat.ior === 1.5)) mat.ior = 1.52;
+
+              if (mat.transmission > 0 || isGlassName) {
+                mat.side = THREE.DoubleSide;
+                mat.depthWrite = false;
+                mesh.receiveShadow = false;
+                mesh.castShadow = false;
+                mesh.renderOrder = 1;
+              } else if (mat.transmission > 0) {
+                mesh.receiveShadow = false;
+                mesh.castShadow = false;
+              } else if (orig && orig.transparent !== true) {
+                if (orig.side !== undefined) {
+                  mat.side = orig.side;
+                }
+                mesh.receiveShadow = true;
+                mesh.castShadow = true;
+                mesh.renderOrder = 0;
+              }
             }
 
             // Alpha / Opacity
             const targetAlpha = isNull('alpha') ? null : (loaded.alpha || (loadFromCache ? orig.alphaMap : null));
             if (assignMaterialMap(mat, 'alphaMap', targetAlpha)) structuralChange = true;
-            const isTransparent = Boolean(targetAlpha);
-            if (mat.transparent !== isTransparent) {
-              mat.transparent = isTransparent;
-              mat.alphaTest = isTransparent ? 0.05 : 0;
+
+            if (targetAlpha) {
+              if (!mat.transparent) {
+                mat.transparent = true;
+                structuralChange = true;
+              }
+              if (mat.alphaTest !== 0.05) {
+                mat.alphaTest = 0.05;
+                structuralChange = true;
+              }
               mat.opacity = 1.0;
-              structuralChange = true;
+            } else {
+              // No alpha map applied: preserve native transparency & opacity from original GLB
+              const targetTransparent = orig.transparent ?? false;
+              const targetOpacity = orig.opacity ?? 1.0;
+              const targetAlphaTest = orig.alphaTest ?? 0;
+
+              if (mat.transparent !== targetTransparent) {
+                mat.transparent = targetTransparent;
+                structuralChange = true;
+              }
+              if (mat.opacity !== targetOpacity) {
+                mat.opacity = targetOpacity;
+              }
+              if (mat.alphaTest !== targetAlphaTest) {
+                mat.alphaTest = targetAlphaTest;
+                structuralChange = true;
+              }
             }
 
             // Displacement

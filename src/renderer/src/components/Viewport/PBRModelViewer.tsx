@@ -6,9 +6,10 @@ import { useThree, useFrame } from '@react-three/fiber';
 import { TransformControls } from '@react-three/drei';
 import { GLTFAnimationPointerExtension } from '@needle-tools/three-animation-pointer';
 import { useModelStore, normalizeDegrees } from '../../store/modelStore';
-import { usePbrMaterialStore } from '../../store/pbrMaterialStore';
+import { usePbrMaterialStore, SingleMaterialSlotData } from '../../store/pbrMaterialStore';
+import { useVariantStore } from '../../store/variantStore';
 import { useViewportStore } from '../../store/viewportStore';
-import { applyPbrTextures, applyPbrUniforms, captureOriginalMaterials, clearTextureCache } from '../../utils/pbrController';
+import { applyPbrTextures, applyPbrUniforms, captureOriginalMaterials, clearTextureCache, extractModelMaterialsInfo } from '../../utils/pbrController';
 import { analyzeGlbHierarchy, extractGlbManifest } from '../../utils/glbValidator';
 import { viewportBridge } from '../../utils/viewportBridge';
 import { commandManager, SetModelPositionCommand, SetModelRotationCommand } from '../../utils/commandManager';
@@ -179,9 +180,13 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
             captureOriginalMaterials(scene);
             rawSceneRef.current = scene;
 
+            // Extract native material properties from GLB
+            const materialsInfo = extractModelMaterialsInfo(scene);
+
             // 1. Analyze hierarchy and stats (raw scale 1.0)
             const stats = analyzeGlbHierarchy(scene);
-            setModelStats(stats);
+            setModelStats(stats, materialsInfo);
+            useVariantStore.getState().syncMaterialSlots(stats.materials);
             console.log(`[PERF: 3D VIEWER] Model stats: ${stats.triangleCount.toLocaleString()} polys, ${stats.vertexCount.toLocaleString()} verts, ${stats.meshCount} meshes`);
 
             // Extract non-geometry GLB manifest (embedded textures, materials, extensions)
@@ -215,11 +220,37 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
               depth: Number(size.z.toFixed(3))
             });
 
-            // 3. Enable shadow casting & receiving
+            // 3. Enable shadow casting & receiving (exclude transmissive/transparent materials to prevent black self-shadowing)
             scene.traverse((child) => {
               if ((child as THREE.Mesh).isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
+                const mesh = child as THREE.Mesh;
+                const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                const isTransmissiveOrTransparent = mats.some((m) => {
+                  const isPhys = m instanceof THREE.MeshPhysicalMaterial;
+                  const transmission = isPhys ? m.transmission : (m as any).transmission;
+                  const isGlass = /transparen|glass|vidrio|cristal/i.test(m.name || '');
+                  return (
+                    (transmission !== undefined && transmission > 0.05) ||
+                    m.transparent ||
+                    m.opacity < 0.95 ||
+                    isGlass
+                  );
+                });
+                mesh.castShadow = !isTransmissiveOrTransparent;
+                mesh.receiveShadow = !isTransmissiveOrTransparent;
+                if (isTransmissiveOrTransparent) {
+                  mesh.renderOrder = 1;
+                  mats.forEach((m) => {
+                    m.depthWrite = false;
+                    m.side = THREE.DoubleSide;
+                    const isGlass = /transparen|glass|vidrio|cristal/i.test(m.name || '');
+                    if (isGlass && m instanceof THREE.MeshStandardMaterial && m.metalness === 1.0) {
+                      m.metalness = 0.0;
+                    }
+                  });
+                } else {
+                  mesh.renderOrder = 0;
+                }
               }
             });
 
@@ -234,9 +265,10 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
             camera.lookAt(0, centerY, 0);
 
             if (orbitControlsRef.current) {
+              const edgeThreshold = Math.max(0.04, Math.min(0.12, maxDim * 0.03));
               orbitControlsRef.current.target.set(0, centerY, 0);
-              orbitControlsRef.current.minDistance = maxDim * 0.3;
-              orbitControlsRef.current.maxDistance = maxDim * 4.0;
+              orbitControlsRef.current.minDistance = edgeThreshold;
+              orbitControlsRef.current.maxDistance = Math.max(50, maxDim * 10.0);
               orbitControlsRef.current.update();
             }
 
@@ -316,6 +348,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     }
   }, [modelRotation.x, modelRotation.y, modelRotation.z, unitScale, modelGroup, updateGroundAndDimensions]);
 
+  const baseColor = usePbrMaterialStore((state) => state.baseColor);
   const baseColorMap = usePbrMaterialStore((state) => state.baseColorMap);
   const normalMap = usePbrMaterialStore((state) => state.normalMap);
   const ormMap = usePbrMaterialStore((state) => state.ormMap);
@@ -350,6 +383,24 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
   const slotEnabled = usePbrMaterialStore((state) => state.slotEnabled);
   const debugChannel = usePbrMaterialStore((state) => state.debugChannel);
   const activeMaterialName = usePbrMaterialStore((state) => state.activeMaterialName);
+  const materialsState = usePbrMaterialStore((state) => state.materialsState);
+
+  const appliedNonActiveRef = useRef<Record<string, SingleMaterialSlotData>>({});
+  const prevDebugWireRef = useRef({ debugChannel, showWireframe });
+
+  useEffect(() => {
+    appliedNonActiveRef.current = {};
+  }, [modelGroup]);
+
+  useEffect(() => {
+    if (
+      prevDebugWireRef.current.debugChannel !== debugChannel ||
+      prevDebugWireRef.current.showWireframe !== showWireframe
+    ) {
+      prevDebugWireRef.current = { debugChannel, showWireframe };
+      appliedNonActiveRef.current = {};
+    }
+  }, [debugChannel, showWireframe]);
 
   // Dynamic PBR uniform updates: synchronous, zero recompilation, 60 FPS slider response
   useEffect(() => {
@@ -361,6 +412,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
 
     applyPbrUniforms(modelGroup, {
       targetMaterialName: activeMaterialName,
+      color: baseColor,
       roughness: roughnessFactor,
       metalness: metalnessFactor,
       normalScale,
@@ -377,11 +429,13 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
       ior,
       displacementScale,
       forcedNullSlots,
-      slotEnabled
+      slotEnabled,
+      loadFromCache
     });
   }, [
     modelGroup,
     activeMaterialName,
+    baseColor,
     roughnessFactor,
     metalnessFactor,
     normalScale,
@@ -397,7 +451,8 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     transmissionFactor,
     ior,
     displacementScale,
-    slotEnabled
+    slotEnabled,
+    loadFromCache
   ]);
 
   // Texture maps and structural PBR updates: asynchronous, recompiles shaders ONLY on structural changes
@@ -411,6 +466,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     applyPbrTextures({
       model: modelGroup,
       targetMaterialName: activeMaterialName,
+      color: baseColor,
       baseColorUrl: baseColorMap.url,
       normalUrl: normalMap.url,
       ormUrl: ormMap.url,
@@ -449,6 +505,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
   }, [
     modelGroup,
     activeMaterialName,
+    baseColor,
     baseColorMap.url,
     normalMap.url,
     ormMap.url,
@@ -464,12 +521,109 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     displacementMap.url,
     useOrmPack,
     materialPackingMode,
+    normalScale,
+    normalInvertY,
+    roughnessFactor,
+    metalnessFactor,
+    aoIntensity,
+    emissiveIntensity,
+    emissiveColor,
+    emissiveFullGlow,
+    clearcoatFactor,
+    clearcoatRoughness,
+    sheenColor,
+    sheenRoughness,
+    transmissionFactor,
+    ior,
+    displacementScale,
     loadFromCache,
     slotEnabled,
-    emissiveFullGlow,
     debugChannel,
     showWireframe
   ]);
+
+  // Apply PBR textures and uniforms to all non-active materials in materialsState
+  useEffect(() => {
+    if (!modelGroup || !materialsState) return;
+
+    const nonActiveNames = Object.keys(materialsState).filter((name) => name !== activeMaterialName);
+    if (nonActiveNames.length === 0) return;
+
+    for (const name of nonActiveNames) {
+      const slotData = materialsState[name];
+      if (!slotData) continue;
+
+      if (appliedNonActiveRef.current[name] === slotData) continue;
+      appliedNonActiveRef.current[name] = slotData;
+
+      const forcedNullSlots = (Object.entries(slotData.slotEnabled || {}) as [string, boolean][])
+        .filter(([_, enabled]) => !enabled)
+        .map(([slot]) => slot);
+
+      applyPbrTextures({
+        model: modelGroup,
+        targetMaterialName: name,
+        color: slotData.baseColor,
+        baseColorUrl: slotData.baseColorMap?.url,
+        normalUrl: slotData.normalMap?.url,
+        ormUrl: slotData.ormMap?.url,
+        metalRoughnessUrl: slotData.metalRoughnessMap?.url,
+        aoUrl: slotData.aoMap?.url,
+        roughnessUrl: slotData.roughnessMap?.url,
+        metalnessUrl: slotData.metalnessMap?.url,
+        emissiveUrl: slotData.emissiveMap?.url,
+        clearcoatUrl: slotData.clearcoatMap?.url,
+        sheenUrl: slotData.sheenMap?.url,
+        transmissionUrl: slotData.transmissionMap?.url,
+        alphaUrl: slotData.alphaMap?.url,
+        displacementUrl: slotData.displacementMap?.url,
+        useOrmPack: slotData.useOrmPack,
+        materialPackingMode: slotData.materialPackingMode,
+        normalScale: slotData.normalScale,
+        normalInvertY: slotData.normalInvertY,
+        roughnessFactor: slotData.roughnessFactor,
+        metalnessFactor: slotData.metalnessFactor,
+        aoIntensity: slotData.aoIntensity,
+        emissiveIntensity: slotData.emissiveIntensity,
+        emissiveColor: slotData.emissiveColor,
+        emissiveFullGlow: slotData.emissiveFullGlow,
+        clearcoatFactor: slotData.clearcoatFactor,
+        clearcoatRoughness: slotData.clearcoatRoughness,
+        sheenColor: slotData.sheenColor,
+        sheenRoughness: slotData.sheenRoughness,
+        transmissionFactor: slotData.transmissionFactor,
+        ior: slotData.ior,
+        displacementScale: slotData.displacementScale,
+        loadFromCache: slotData.loadFromCache,
+        forcedNullSlots,
+        debugChannel,
+        wireframe: showWireframe
+      });
+
+      applyPbrUniforms(modelGroup, {
+        targetMaterialName: name,
+        color: slotData.baseColor,
+        roughness: slotData.roughnessFactor,
+        metalness: slotData.metalnessFactor,
+        normalScale: slotData.normalScale,
+        normalInvertY: slotData.normalInvertY,
+        aoMapIntensity: slotData.aoIntensity,
+        emissiveIntensity: slotData.emissiveIntensity,
+        emissive: slotData.emissiveColor,
+        emissiveFullGlow: slotData.emissiveFullGlow,
+        clearcoat: slotData.clearcoatFactor,
+        clearcoatRoughness: slotData.clearcoatRoughness,
+        sheenColor: slotData.sheenColor,
+        sheenRoughness: slotData.sheenRoughness,
+        transmission: slotData.transmissionFactor,
+        ior: slotData.ior,
+        displacementScale: slotData.displacementScale,
+        forcedNullSlots,
+        slotEnabled: slotData.slotEnabled,
+        loadFromCache: slotData.loadFromCache
+      });
+    }
+  }, [modelGroup, materialsState, activeMaterialName, debugChannel, showWireframe]);
 
   // Trigger camera reframing on demand
   useEffect(() => {
@@ -484,11 +638,18 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
     const fitDistance = ((maxDim / 2) / Math.tan(fovRad / 2)) * 1.35;
     const centerY = size.y / 2;
 
-    camera.position.set(fitDistance * 0.75, centerY + fitDistance * 0.4, fitDistance * 0.75);
-    camera.lookAt(0, centerY, 0);
+    const targetX = modelPosition.x;
+    const targetY = centerY + modelPosition.y;
+    const targetZ = modelPosition.z;
+
+    camera.position.set(targetX + fitDistance * 0.75, targetY + fitDistance * 0.4, targetZ + fitDistance * 0.75);
+    camera.lookAt(targetX, targetY, targetZ);
 
     if (orbitControlsRef.current) {
-      orbitControlsRef.current.target.set(0, centerY, 0);
+      const edgeThreshold = Math.max(0.04, Math.min(0.12, maxDim * 0.03));
+      orbitControlsRef.current.target.set(targetX, targetY, targetZ);
+      orbitControlsRef.current.minDistance = edgeThreshold;
+      orbitControlsRef.current.maxDistance = Math.max(50, maxDim * 10.0);
       orbitControlsRef.current.update();
     }
   }, [resetCameraCounter]);

@@ -16,7 +16,9 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
     cameraFov,
     isOrthographic,
     fitToModelCounter,
-    resetCameraCounter
+    resetCameraCounter,
+    focusPoint,
+    focusPointCounter
   } = useViewportStore();
 
   const isTransitioning = useRef(false);
@@ -31,8 +33,13 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
   useEffect(() => {
     if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera && !perspCamRef.current) {
       perspCamRef.current = camera as THREE.PerspectiveCamera;
+      if (camera.near > 0.01) {
+        camera.near = 0.01;
+        camera.updateProjectionMatrix();
+        invalidate();
+      }
     }
-  }, [camera]);
+  }, [camera, invalidate]);
 
   // Update PerspectiveCamera FOV
   useEffect(() => {
@@ -62,7 +69,7 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
       // Switching: Perspective -> Orthographic
       const perspCam = (camera as THREE.PerspectiveCamera).isPerspectiveCamera
         ? (camera as THREE.PerspectiveCamera)
-        : perspCamRef.current || new THREE.PerspectiveCamera(cameraFov || 50, aspect, 0.1, 100);
+        : perspCamRef.current || new THREE.PerspectiveCamera(cameraFov || 50, aspect, 0.01, 100);
       perspCamRef.current = perspCam;
 
       const dist = Math.max(perspCam.position.distanceTo(target), 0.1);
@@ -114,7 +121,7 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
 
       let perspCam = perspCamRef.current;
       if (!perspCam) {
-        perspCam = new THREE.PerspectiveCamera(cameraFov || 50, aspect, 0.1, 100);
+        perspCam = new THREE.PerspectiveCamera(cameraFov || 50, aspect, 0.01, 100);
         perspCamRef.current = perspCam;
       }
 
@@ -151,16 +158,14 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
 
   const calculateTarget = (preset: CameraPreset | 'fit' | 'reset') => {
     const model = viewportBridge.modelGroup;
-    let centerY = 0.5;
+    const center = new THREE.Vector3(0, 0.5, 0);
     let maxDim = 1.2;
 
     if (model) {
       const box = new THREE.Box3().setFromObject(model);
-      const center = new THREE.Vector3();
       box.getCenter(center);
       const sizeVec = new THREE.Vector3();
       box.getSize(sizeVec);
-      centerY = sizeVec.y / 2;
       maxDim = Math.max(sizeVec.x, sizeVec.y, sizeVec.z, 0.2);
     }
 
@@ -170,7 +175,7 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
     const fovRad = (((persCam as any).fov || 50) * Math.PI) / 180;
     const fitDistance = Math.max(((maxDim / 2) / Math.tan(fovRad / 2)) * 1.35, 0.5);
 
-    targetLookAt.current.set(0, centerY, 0);
+    targetLookAt.current.copy(center);
 
     // Target zoom for orthographic camera on fit / reset
     if ((camera as THREE.OrthographicCamera).isOrthographicCamera) {
@@ -184,31 +189,31 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
 
     switch (preset) {
       case 'front':
-        targetPosition.current.set(0, centerY, fitDistance);
+        targetPosition.current.set(center.x, center.y, center.z + fitDistance);
         break;
       case 'back':
-        targetPosition.current.set(0, centerY, -fitDistance);
+        targetPosition.current.set(center.x, center.y, center.z - fitDistance);
         break;
       case 'right':
-        targetPosition.current.set(fitDistance, centerY, 0);
+        targetPosition.current.set(center.x + fitDistance, center.y, center.z);
         break;
       case 'left':
-        targetPosition.current.set(-fitDistance, centerY, 0);
+        targetPosition.current.set(center.x - fitDistance, center.y, center.z);
         break;
       case 'top':
-        targetPosition.current.set(0, centerY + fitDistance, 0.001);
+        targetPosition.current.set(center.x, center.y + fitDistance, center.z + 0.001);
         break;
       case 'bottom':
-        targetPosition.current.set(0, centerY - fitDistance, 0.001);
+        targetPosition.current.set(center.x, center.y - fitDistance, center.z + 0.001);
         break;
       case 'iso':
       case 'fit':
       case 'reset':
       default:
         targetPosition.current.set(
-          fitDistance * 0.75,
-          centerY + fitDistance * 0.45,
-          fitDistance * 0.75
+          center.x + fitDistance * 0.75,
+          center.y + fitDistance * 0.45,
+          center.z + fitDistance * 0.75
         );
         break;
     }
@@ -236,6 +241,19 @@ export const CameraController: React.FC<CameraControllerProps> = ({ orbitControl
       calculateTarget('reset');
     }
   }, [resetCameraCounter]);
+
+  // Focus on double-clicked point
+  useEffect(() => {
+    if (focusPointCounter > 0 && focusPoint) {
+      targetLookAt.current.set(focusPoint[0], focusPoint[1], focusPoint[2]);
+
+      const currentTarget = orbitControlsRef.current?.target || new THREE.Vector3(0, 0.5, 0);
+      const offset = new THREE.Vector3().subVectors(camera.position, currentTarget);
+      targetPosition.current.copy(targetLookAt.current).add(offset);
+      targetZoom.current = null;
+      isTransitioning.current = true;
+    }
+  }, [focusPointCounter]);
 
   // Smooth lerp frame loop
   useFrame((_, delta) => {

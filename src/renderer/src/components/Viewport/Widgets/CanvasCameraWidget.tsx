@@ -1,15 +1,15 @@
 import React from 'react';
-import { Compass, Focus, Box, Eye } from 'lucide-react';
-import { useViewportStore, CameraPreset } from '../../../store/viewportStore';
+import { Focus, Box, Eye, Camera } from 'lucide-react';
+import { useViewportStore, CameraPreset, CAMERA_FOCAL_LENGTHS } from '../../../store/viewportStore';
 
-const CAMERA_PRESETS: { id: CameraPreset; label: string; short: string }[] = [
-  { id: 'iso', label: 'Isométrica (3/4)', short: 'ISO' },
-  { id: 'front', label: 'Frontal', short: 'Frontal' },
-  { id: 'right', label: 'Derecha', short: 'Der' },
-  { id: 'left', label: 'Izquierda', short: 'Izq' },
-  { id: 'top', label: 'Planta (Superior)', short: 'Top' },
-  { id: 'bottom', label: 'Inferior', short: 'Bottom' },
-  { id: 'back', label: 'Posterior', short: 'Back' }
+const CAMERA_PRESETS: { id: CameraPreset; label: string; short: string; shortcut?: string }[] = [
+  { id: 'iso', label: 'Isométrica (3/4)', short: 'ISO', shortcut: '0' },
+  { id: 'front', label: 'Frontal', short: 'Front', shortcut: '1' },
+  { id: 'right', label: 'Lateral Der.', short: 'Der', shortcut: '3' },
+  { id: 'left', label: 'Lateral Izq.', short: 'Izq', shortcut: 'Ctrl+3' },
+  { id: 'top', label: 'Superior (Planta)', short: 'Top', shortcut: '7' },
+  { id: 'bottom', label: 'Inferior (Base)', short: 'Base', shortcut: 'Ctrl+7' },
+  { id: 'back', label: 'Posterior', short: 'Back', shortcut: 'Ctrl+1' }
 ];
 
 export const CanvasCameraWidget: React.FC = () => {
@@ -19,6 +19,7 @@ export const CanvasCameraWidget: React.FC = () => {
   const toggleOrthographic = useViewportStore((s) => s.toggleOrthographic);
   const cameraFov = useViewportStore((s) => s.cameraFov);
   const setCameraFov = useViewportStore((s) => s.setCameraFov);
+  const setCameraFocalLength = useViewportStore((s) => s.setCameraFocalLength);
   const triggerFitToModel = useViewportStore((s) => s.triggerFitToModel);
 
   return (
@@ -33,7 +34,7 @@ export const CanvasCameraWidget: React.FC = () => {
               ? 'bg-action text-white border-action shadow-xs'
               : 'bg-surface-container/60 hover:bg-surface-high border-hairline text-ink-secondary'
           }`}
-          title="Alternar entre proyección perspectiva y ortográfica"
+          title="Alternar entre proyección perspectiva y ortográfica (5)"
         >
           <Box size={13} />
           <span>{isOrthographic ? 'Ortográfica (CAD)' : 'Perspectiva'}</span>
@@ -52,15 +53,17 @@ export const CanvasCameraWidget: React.FC = () => {
 
       {/* Camera Presets Grid */}
       <div className="flex flex-col gap-1 bg-surface-container/30 p-2 rounded-xs border border-hairline">
-        <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-ink-tertiary">
-          Orientaciones Estándar CAD
-        </span>
+        <div className="flex items-center justify-between text-[10px] font-mono uppercase font-bold tracking-wider text-ink-tertiary">
+          <span>Orientaciones Estándar CAD</span>
+          <span className="text-[9px] font-normal text-ink-tertiary lowercase">doble clic centra punto</span>
+        </div>
         <div className="grid grid-cols-4 gap-1">
           {CAMERA_PRESETS.map((preset) => (
             <button
               key={preset.id}
               type="button"
               onClick={() => setCameraPreset(preset.id)}
+              title={`${preset.label}${preset.shortcut ? ` (${preset.shortcut})` : ''}`}
               className={`py-1 rounded-xs font-mono text-[10px] text-center border transition-colors ${
                 cameraPreset === preset.id
                   ? 'bg-action/15 text-action border-action/40 font-bold'
@@ -73,18 +76,41 @@ export const CanvasCameraWidget: React.FC = () => {
         </div>
       </div>
 
-      {/* Field of View (FOV) Slider (only in perspective mode) */}
+      {/* Field of View (FOV) & Lens Presets (only in perspective mode) */}
       {!isOrthographic && (
-        <div className="flex flex-col gap-1 bg-surface-container/30 p-2 rounded-xs border border-hairline">
+        <div className="flex flex-col gap-1.5 bg-surface-container/30 p-2 rounded-xs border border-hairline">
           <div className="flex items-center justify-between text-[11px] font-medium text-ink-primary">
             <div className="flex items-center gap-1.5">
               <Eye size={13} className="text-action shrink-0" />
-              <span>Campo de Visión (FOV)</span>
+              <span>Lente & Campo de Visión</span>
             </div>
             <span className="font-mono text-[10px] tabular-nums text-ink-tertiary">
               {Math.round(cameraFov)}°
             </span>
           </div>
+
+          {/* Focal Length Lens Presets */}
+          <div className="grid grid-cols-4 gap-1">
+            {CAMERA_FOCAL_LENGTHS.map((lens) => {
+              const isSelected = Math.abs(cameraFov - lens.fov) <= 2;
+              return (
+                <button
+                  key={lens.mm}
+                  type="button"
+                  onClick={() => setCameraFocalLength(lens.mm)}
+                  title={`${lens.label}: ${lens.desc} (${lens.fov}°)`}
+                  className={`py-0.5 rounded-xs font-mono text-[10px] text-center border transition-colors ${
+                    isSelected
+                      ? 'bg-action/15 text-action border-action/40 font-bold'
+                      : 'bg-surface-lowest text-ink-secondary border-hairline hover:bg-surface-high hover:text-ink-primary'
+                  }`}
+                >
+                  {lens.label}
+                </button>
+              );
+            })}
+          </div>
+
           <input
             type="range"
             min={15}
@@ -100,7 +126,7 @@ export const CanvasCameraWidget: React.FC = () => {
             onPointerDown={(e) => e.stopPropagation()}
             onChange={(e) => setCameraFov(parseInt(e.target.value, 10))}
             data-interactive="true"
-            className="w-full h-1.5 bg-surface-high rounded-none appearance-none cursor-pointer accent-action"
+            className="w-full h-1.5 bg-surface-high rounded-none appearance-none cursor-pointer accent-action mt-1"
           />
         </div>
       )}

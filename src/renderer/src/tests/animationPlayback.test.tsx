@@ -93,6 +93,42 @@ describe('glTF Animation Playback & Controls System', () => {
 
       expect(finishedSpy).toHaveBeenCalledTimes(1);
     });
+
+    it('preserves animation mixer and playback state when registering new cameras (e.g. persp to ortho toggle)', () => {
+      const gl = {} as any;
+      const scene = new THREE.Scene();
+      const perspCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+      const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+
+      viewportBridge.register(gl, scene, perspCamera);
+
+      const rootObj = new THREE.Group();
+      const posTrack = new THREE.VectorKeyframeTrack('.position', [0, 1], [0, 0, 0, 2, 0, 0]);
+      const clip = new THREE.AnimationClip('PerspToOrthoClip', 1, [posTrack]);
+      const mixer = new THREE.AnimationMixer(rootObj);
+      viewportBridge.registerAnimations(mixer, [clip]);
+
+      expect(viewportBridge.mixer).toBe(mixer);
+      expect(viewportBridge.actions.length).toBe(1);
+      expect(viewportBridge.camera).toBe(perspCamera);
+
+      // Advance mixer slightly
+      mixer.update(0.3);
+      expect(viewportBridge.getAnimationTime()).toBeCloseTo(0.3, 1);
+
+      // Switch camera to Orthographic (as occurs during camera toggle)
+      viewportBridge.register(gl, scene, orthoCamera);
+
+      // Verify camera changed but mixer and activeAction remain intact
+      expect(viewportBridge.camera).toBe(orthoCamera);
+      expect(viewportBridge.mixer).toBe(mixer);
+      expect(viewportBridge.actions.length).toBe(1);
+      expect(viewportBridge.activeAction).not.toBeNull();
+
+      // Ensure animation can continue advancing and is not broken
+      mixer.update(0.3);
+      expect(viewportBridge.getAnimationTime()).toBeCloseTo(0.6, 1);
+    });
   });
 
   describe('ViewportStore Animation State Machine', () => {

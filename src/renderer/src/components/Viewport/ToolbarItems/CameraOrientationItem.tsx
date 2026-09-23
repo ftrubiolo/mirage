@@ -8,14 +8,14 @@ interface CameraOrientationItemProps {
   iconOnly?: boolean;
 }
 
-const CAMERA_PRESETS: { id: CameraPreset; label: string; short: string }[] = [
-  { id: 'iso', label: 'Isométrica (3/4)', short: 'ISO' },
-  { id: 'front', label: 'Frontal', short: 'Frontal' },
-  { id: 'right', label: 'Lateral Derecha', short: 'Lateral Der' },
-  { id: 'left', label: 'Lateral Izquierda', short: 'Lateral Izq' },
-  { id: 'top', label: 'Superior (Planta)', short: 'Planta' },
-  { id: 'bottom', label: 'Inferior', short: 'Inferior' },
-  { id: 'back', label: 'Posterior', short: 'Posterior' }
+const CAMERA_PRESETS: { id: CameraPreset; label: string; short: string; shortcut: string }[] = [
+  { id: 'iso', label: 'Isométrica (3/4)', short: 'ISO', shortcut: '0' },
+  { id: 'front', label: 'Frontal', short: 'Frontal', shortcut: '1' },
+  { id: 'right', label: 'Lateral Derecha', short: 'Lateral Der', shortcut: '3' },
+  { id: 'left', label: 'Lateral Izquierda', short: 'Lateral Izq', shortcut: 'Ctrl+3' },
+  { id: 'top', label: 'Superior (Planta)', short: 'Planta', shortcut: '7' },
+  { id: 'bottom', label: 'Inferior (Base)', short: 'Inferior', shortcut: 'Ctrl+7' },
+  { id: 'back', label: 'Posterior', short: 'Posterior', shortcut: 'Ctrl+1' }
 ];
 
 export const CameraOrientationItem: React.FC<CameraOrientationItemProps> = ({ compact, iconOnly }) => {
@@ -80,8 +80,9 @@ export const CameraOrientationItem: React.FC<CameraOrientationItemProps> = ({ co
                     : 'text-ink-primary hover:bg-surface-container'
                 }`}
               >
-                <span>{preset.label}</span>
-                {isSelected && <Check className="w-3.5 h-3.5 text-action shrink-0 ml-2" />}
+                <span className="flex-1 truncate">{preset.label}</span>
+                <span className="text-[10px] font-mono text-ink-tertiary ml-2 shrink-0">{preset.shortcut}</span>
+                {isSelected && <Check className="w-3.5 h-3.5 text-action shrink-0 ml-1.5" />}
               </button>
             );
           })}

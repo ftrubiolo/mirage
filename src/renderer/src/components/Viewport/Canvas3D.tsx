@@ -23,11 +23,147 @@ const ViewportBridgeSync: React.FC = () => {
   const { gl, scene, camera } = useThree();
   useEffect(() => {
     viewportBridge.register(gl, scene, camera);
+  }, [gl, scene, camera]);
+
+  useEffect(() => {
     return () => {
       viewportBridge.unregister();
     };
-  }, [gl, scene, camera]);
+  }, []);
+
   return null;
+};
+
+const ViewportDoubleClickHandler: React.FC = () => {
+  const { camera, gl } = useThree();
+
+  useEffect(() => {
+    const dom = gl.domElement;
+    if (!dom) return;
+
+    const handleDblClick = (e: MouseEvent) => {
+      const model = viewportBridge.modelGroup;
+      if (!model) return;
+
+      const rect = dom.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+
+      const hits = raycaster.intersectObjects(model.children, true);
+      if (hits.length > 0) {
+        const hitPoint = hits[0].point;
+        useViewportStore.getState().focusOnPoint([hitPoint.x, hitPoint.y, hitPoint.z]);
+      }
+    };
+
+    dom.addEventListener('dblclick', handleDblClick);
+    return () => dom.removeEventListener('dblclick', handleDblClick);
+  }, [camera, gl]);
+
+  return null;
+};
+
+const ViewportZoomHandler: React.FC<{ orbitControlsRef: React.MutableRefObject<any> }> = ({ orbitControlsRef }) => {
+  const { camera, gl } = useThree();
+
+  useEffect(() => {
+    const dom = gl.domElement;
+    if (!dom) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      const controls = orbitControlsRef.current;
+      if (!controls) return;
+
+      const model = viewportBridge.modelGroup;
+      if (!model) {
+        controls.zoomToCursor = false;
+        return;
+      }
+
+      const rect = dom.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+
+      const hits = raycaster.intersectObjects(model.children, true);
+      const meshHit = hits.find((h) => (h.object as THREE.Mesh).isMesh && h.object.visible);
+
+      // Model size & threshold to stop at the edge of the geometry
+      const box = new THREE.Box3().setFromObject(model);
+      const sizeVec = new THREE.Vector3();
+      box.getSize(sizeVec);
+      const maxDim = Math.max(sizeVec.x, sizeVec.y, sizeVec.z, 0.2);
+      const edgeThreshold = Math.max(0.04, Math.min(0.12, maxDim * 0.03));
+
+      // Dynamically maintain controls.minDistance so OrbitControls also bounds zoom
+      controls.minDistance = edgeThreshold;
+
+      const isZoomingIn = e.deltaY < 0;
+
+      if (meshHit) {
+        // Pointer is over the model geometry
+        if (isZoomingIn && meshHit.distance <= edgeThreshold) {
+          // Stop at the edge of the geometry: prevent penetrating into the model
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          return;
+        }
+        controls.zoomToCursor = true;
+      } else {
+        // Pointer is in empty space: check along camera forward direction toward model
+        if (isZoomingIn) {
+          const forwardRay = new THREE.Raycaster();
+          const forwardDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+          forwardRay.set(camera.position, forwardDir);
+          const fwdHits = forwardRay.intersectObjects(model.children, true);
+          const fwdMeshHit = fwdHits.find((h) => (h.object as THREE.Mesh).isMesh && h.object.visible);
+          if (fwdMeshHit && fwdMeshHit.distance <= edgeThreshold) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return;
+          }
+        }
+        controls.zoomToCursor = false;
+      }
+    };
+
+    dom.addEventListener('wheel', handleWheel, { capture: true, passive: false });
+    return () => dom.removeEventListener('wheel', handleWheel, { capture: true });
+  }, [camera, gl, orbitControlsRef]);
+
+  return null;
+};
+
+const CanvasBackgroundSync: React.FC = () => {
+  const { gl, scene } = useThree();
+  const viewportTheme = useViewportStore((s) => s.viewportTheme);
+  const showEnvironmentBackground = useViewportStore((s) => s.showEnvironmentBackground);
+
+  useEffect(() => {
+    const bgColor = viewportTheme === 'dark' ? '#111110' : '#f7f5f2';
+    const clearHex = viewportTheme === 'dark' ? 0x111110 : 0xf7f5f2;
+    gl.setClearColor(clearHex, 1.0);
+    if (!showEnvironmentBackground) {
+      scene.background = new THREE.Color(bgColor);
+    }
+  }, [gl, scene, viewportTheme, showEnvironmentBackground]);
+
+  return !showEnvironmentBackground ? (
+    <color attach="background" args={[viewportTheme === 'dark' ? '#111110' : '#f7f5f2']} />
+  ) : null;
 };
 
 const ViewportResizeHandler: React.FC = () => {
@@ -85,8 +221,10 @@ export const Canvas3D: React.FC = React.memo(() => {
   const isModelLoading = useModelStore((state) => state.isModelLoading);
   const productName = useModelStore((state) => state.productName);
   const autoRotate = useViewportStore((state) => state.autoRotate);
+  const autoRotateSpeed = useViewportStore((state) => state.autoRotateSpeed);
   const cameraZoomAction = useViewportStore((state) => state.cameraZoomAction);
   const viewportTheme = useViewportStore((state) => state.viewportTheme);
+  const showEnvironmentBackground = useViewportStore((state) => state.showEnvironmentBackground);
   const canvasWidgets = useViewportStore((state) => state.canvasWidgets);
   const currentView = useAppStore((state) => state.currentView);
   const orbitControlsRef = useRef<any>(null);
@@ -280,8 +418,29 @@ export const Canvas3D: React.FC = React.memo(() => {
   useEffect(() => {
     if (!orbitControlsRef.current) return;
     if (cameraZoomAction > prevZoomAction.current) {
-      orbitControlsRef.current.dollyIn(1.15);
-      orbitControlsRef.current.update();
+      const model = viewportBridge.modelGroup;
+      const camera = viewportBridge.camera;
+      let atEdge = false;
+      if (model && camera) {
+        const box = new THREE.Box3().setFromObject(model);
+        const sizeVec = new THREE.Vector3();
+        box.getSize(sizeVec);
+        const maxDim = Math.max(sizeVec.x, sizeVec.y, sizeVec.z, 0.2);
+        const edgeThreshold = Math.max(0.04, Math.min(0.12, maxDim * 0.03));
+
+        const forwardRay = new THREE.Raycaster();
+        const forwardDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+        forwardRay.set(camera.position, forwardDir);
+        const hits = forwardRay.intersectObjects(model.children, true);
+        const meshHit = hits.find((h) => (h.object as THREE.Mesh).isMesh && h.object.visible);
+        if (meshHit && meshHit.distance <= edgeThreshold) {
+          atEdge = true;
+        }
+      }
+      if (!atEdge) {
+        orbitControlsRef.current.dollyIn(1.15);
+        orbitControlsRef.current.update();
+      }
     } else if (cameraZoomAction < prevZoomAction.current) {
       orbitControlsRef.current.dollyOut(1.15);
       orbitControlsRef.current.update();
@@ -436,7 +595,7 @@ export const Canvas3D: React.FC = React.memo(() => {
       <Canvas
         frameloop={currentView === 'workbench' ? 'always' : 'never'}
         resize={{ debounce: 0, scroll: false }}
-        camera={{ position: [0, 2, 4], fov: 50 }}
+        camera={{ position: [0, 2, 4], fov: 50, near: 0.01, far: 100 }}
         shadows={{ type: THREE.PCFShadowMap }}
         gl={{
           antialias: true,
@@ -465,14 +624,19 @@ export const Canvas3D: React.FC = React.memo(() => {
           canvas.addEventListener('webglcontextlost', handleContextLost);
           canvas.addEventListener('webglcontextrestored', handleContextRestored);
 
+          gl.setClearColor(viewportTheme === 'dark' ? 0x111110 : 0xf7f5f2, 1.0);
+
           contextCleanupRef.current = () => {
             canvas.removeEventListener('webglcontextlost', handleContextLost);
             canvas.removeEventListener('webglcontextrestored', handleContextRestored);
           };
         }}
       >
+        <CanvasBackgroundSync />
         <ViewportBridgeSync />
         <ViewportResizeHandler />
+        <ViewportDoubleClickHandler />
+        <ViewportZoomHandler orbitControlsRef={orbitControlsRef} />
         <StoreEnvironment />
         <CameraController orbitControlsRef={orbitControlsRef} />
 
@@ -490,13 +654,14 @@ export const Canvas3D: React.FC = React.memo(() => {
 
         <OrbitControls
           ref={orbitControlsRef}
+          zoomToCursor
           autoRotate={autoRotate && currentView === 'workbench'}
-          autoRotateSpeed={0.7}
+          autoRotateSpeed={autoRotateSpeed}
           enableDamping
           dampingFactor={0.05}
-          maxPolarAngle={Math.PI / 2 + 0.05}
-          minDistance={0.5}
-          maxDistance={15}
+          screenSpacePanning
+          minDistance={0.01}
+          maxDistance={100}
           minZoom={0.05}
           maxZoom={40}
           onChange={() => viewportBridge.notify()}

@@ -30,6 +30,13 @@ export type CameraPreset =
   | 'top'
   | 'bottom';
 
+export const CAMERA_FOCAL_LENGTHS = [
+  { mm: 24, fov: 74, label: '24mm', desc: 'Gran angular' },
+  { mm: 35, fov: 54, label: '35mm', desc: 'Angular medio' },
+  { mm: 50, fov: 40, label: '50mm', desc: 'Ojo humano (50mm)' },
+  { mm: 85, fov: 24, label: '85mm', desc: 'Teleobjetivo (85mm)' }
+] as const;
+
 export type LightingPreset =
   | 'studio'
   | 'natural'
@@ -123,6 +130,8 @@ interface ViewportState {
   cameraFov: number;
   isOrthographic: boolean;
   fitToModelCounter: number;
+  focusPoint: [number, number, number] | null;
+  focusPointCounter: number;
 
   // Lighting controls & presets
   lightingPreset: LightingPreset;
@@ -162,8 +171,11 @@ interface ViewportState {
   // Camera Actions
   setCameraPreset: (preset: CameraPreset) => void;
   setCameraFov: (fov: number) => void;
+  setCameraFocalLength: (mm: number) => void;
   toggleOrthographic: () => void;
+  setIsOrthographic: (val: boolean) => void;
   triggerFitToModel: () => void;
+  focusOnPoint: (point: [number, number, number]) => void;
 
   // Lighting Actions
   setLightingPreset: (preset: LightingPreset) => void;
@@ -285,6 +297,8 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
   cameraFov: 50,
   isOrthographic: false,
   fitToModelCounter: 0,
+  focusPoint: null,
+  focusPointCounter: 0,
 
   // Lighting initial state
   lightingPreset: 'studio',
@@ -540,6 +554,26 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
     set((state) => ({ isOrthographic: !state.isOrthographic }));
     requestSaveSettings();
   },
+  setCameraFocalLength: (mm) => {
+    const mapping: Record<number, number> = {
+      24: 74,
+      35: 54,
+      50: 40,
+      85: 24
+    };
+    const targetFov = mapping[mm] || 50;
+    set({ cameraFov: targetFov, isOrthographic: false });
+    requestSaveSettings();
+  },
+  setIsOrthographic: (val) => {
+    set({ isOrthographic: val });
+    requestSaveSettings();
+  },
+  focusOnPoint: (point) =>
+    set((state) => ({
+      focusPoint: point,
+      focusPointCounter: state.focusPointCounter + 1
+    })),
   triggerFitToModel: () =>
     set((state) => ({ fitToModelCounter: state.fitToModelCounter + 1 })),
 

@@ -7,6 +7,7 @@ import { getThumbnail } from './thumbnailService';
 import { watchFile, stopWatching } from './fileWatcher';
 import {
   getLibraryBasePath,
+  getEnvironmentsPath,
   getMirageDataDir,
   getLegacyMirageDataDir,
   getKeybindsPath,
@@ -32,6 +33,7 @@ import {
 import {
   AgentConnectionSchema,
   CopyFileToLibrarySchema,
+  DeleteCustomHdrSchema,
   EntrySlugSchema,
   GetThumbnailSchema,
   KeybindsSchema,
@@ -42,6 +44,7 @@ import {
   PackOrmOptionsSchema,
   RelativeResourcePathSchema,
   RenameLibraryFileSchema,
+  SaveCustomHdrSchema,
   SaveFileDialogOptionsSchema,
   SettingsPayloadSchema,
   TextureProcessOptionsSchema,
@@ -393,7 +396,8 @@ const DEFAULT_KEYBINDS: Record<string, string> = {
 
     const originalExt = parsed.ext || path.extname(sourcePath) || '.bin';
     const cleanExt = originalExt.startsWith('.') ? originalExt : `.${originalExt}`;
-    const fileName = assertSafeFileName(`${slug}_${parsed.targetType}${cleanExt}`);
+    const prefix = parsed.targetType.startsWith(`${slug}_`) ? '' : `${slug}_`;
+    const fileName = assertSafeFileName(`${prefix}${parsed.targetType}${cleanExt}`);
     const destPath = safeJoin(entryDir, fileName, 'destination file name');
 
     await fs.copyFile(sourcePath, destPath);
@@ -460,7 +464,8 @@ const DEFAULT_KEYBINDS: Record<string, string> = {
     await fs.mkdir(entryDir, { recursive: true });
 
     const cleanExt = parsed.ext.startsWith('.') ? parsed.ext : `.${parsed.ext}`;
-    const fileName = assertSafeFileName(`${slug}_${parsed.targetType}${cleanExt}`);
+    const prefix = parsed.targetType.startsWith(`${slug}_`) ? '' : `${slug}_`;
+    const fileName = assertSafeFileName(`${prefix}${parsed.targetType}${cleanExt}`);
     const destPath = safeJoin(entryDir, fileName, 'destination file name');
 
     await fs.writeFile(destPath, Buffer.from(parsed.buffer as ArrayBuffer));
@@ -507,6 +512,129 @@ const DEFAULT_KEYBINDS: Record<string, string> = {
     // Only reveal locations the app is already allowed to read.
     const target = await assertReadable(String(targetPath), 'targetPath');
     return openPathInSystemExplorer(target);
+  });
+
+  // --- Custom HDRI Environments IPC Handlers ---
+
+  function formatHdrDisplayName(fileName: string): string {
+    const withoutExt = fileName.replace(/\.hdr$/i, '');
+    const cleaned = withoutExt.replace(/[_-]+/g, ' ').trim();
+    if (!cleaned) return fileName;
+    return cleaned
+      .split(' ')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  function formatAssetUrl(filePath: string): string {
+    if (!filePath) return '';
+    const forwardSlashed = filePath.replace(/\\/g, '/');
+    const cleanPath = forwardSlashed.replace(/^\/+/, '');
+    return `local-asset:///${cleanPath}`;
+  }
+
+  ipcMain.handle('custom-hdr:list', async () => {
+    await ensureMirageDir();
+    const envDir = getEnvironmentsPath();
+    await fs.mkdir(envDir, { recursive: true });
+    try {
+      const files = await fs.readdir(envDir, { withFileTypes: true });
+      const items: Array<{
+        name: string;
+        displayName: string;
+        filePath: string;
+        assetUrl: string;
+        size: number;
+      }> = [];
+
+      for (const f of files) {
+        if (!f.isFile() || !f.name.toLowerCase().endsWith('.hdr')) continue;
+        const fullPath = path.join(envDir, f.name);
+        try {
+          const stats = await fs.stat(fullPath);
+          items.push({
+            name: f.name,
+            displayName: formatHdrDisplayName(f.name),
+            filePath: fullPath,
+            assetUrl: formatAssetUrl(fullPath),
+            size: stats.size
+          });
+        } catch {
+          // ignore unreadable files
+        }
+      }
+
+      items.sort((a, b) => a.displayName.localeCompare(b.displayName));
+      return items;
+    } catch (err) {
+      console.warn('[IPC:custom-hdr:list] Failed to list environments:', err);
+      return [];
+    }
+  });
+
+  ipcMain.handle('custom-hdr:save', async (_event, payload: unknown) => {
+    const rawOptions = typeof payload === 'string' ? { sourceFilePath: payload } : payload;
+    const parsed = parseOrThrow(SaveCustomHdrSchema, rawOptions, 'saveCustomHdr options');
+    const sourcePath = await assertReadable(parsed.sourceFilePath, 'sourceFilePath');
+
+    await ensureMirageDir();
+    const envDir = getEnvironmentsPath();
+    await fs.mkdir(envDir, { recursive: true });
+
+    const originalName = path.basename(sourcePath);
+    const safeBaseName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const parsedPath = path.parse(safeBaseName);
+    const baseStem = parsedPath.name || 'custom_environment';
+    const ext = '.hdr';
+
+    let finalName = `${baseStem}${ext}`;
+    let destPath = path.join(envDir, finalName);
+
+    let counter = 1;
+    while (true) {
+      try {
+        const destStat = await fs.stat(destPath);
+        const sourceStat = await fs.stat(sourcePath);
+        if (destStat.size === sourceStat.size) {
+          // Same size, reuse existing file
+          break;
+        }
+        finalName = `${baseStem}_${counter}${ext}`;
+        destPath = path.join(envDir, finalName);
+        counter++;
+      } catch {
+        break;
+      }
+    }
+
+    if (path.resolve(sourcePath) !== path.resolve(destPath)) {
+      await fs.copyFile(sourcePath, destPath);
+    }
+
+    const stats = await fs.stat(destPath);
+    return {
+      name: finalName,
+      displayName: formatHdrDisplayName(finalName),
+      filePath: destPath,
+      assetUrl: formatAssetUrl(destPath),
+      size: stats.size
+    };
+  });
+
+  ipcMain.handle('custom-hdr:delete', async (_event, payload: unknown) => {
+    const rawOptions = typeof payload === 'string' ? { fileName: payload } : payload;
+    const parsed = parseOrThrow(DeleteCustomHdrSchema, rawOptions, 'deleteCustomHdr options');
+
+    const envDir = getEnvironmentsPath();
+    const targetPath = safeJoin(envDir, parsed.fileName, 'HDR filename');
+    try {
+      await fs.unlink(targetPath);
+      return true;
+    } catch (err: any) {
+      if (err.code === 'ENOENT') return true;
+      console.warn('[IPC:custom-hdr:delete] Error deleting file:', err);
+      return false;
+    }
   });
 
   // --- Hardware-Encrypted Vault IPC Handlers ---

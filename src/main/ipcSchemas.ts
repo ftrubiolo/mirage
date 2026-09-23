@@ -156,6 +156,25 @@ export const McpToolCallSchema = z.object({
   args: z.record(z.string(), z.unknown()).optional()
 });
 
+export const SaveCustomHdrSchema = z.object({
+  sourceFilePath: pathString.refine((v) => v.toLowerCase().endsWith('.hdr'), {
+    message: 'Source file must have .hdr extension'
+  })
+});
+
+export const DeleteCustomHdrSchema = z.object({
+  fileName: z
+    .string()
+    .min(1)
+    .max(255)
+    .refine((v) => !v.includes('/') && !v.includes('\\') && !v.includes('..') && !v.includes('\0'), {
+      message: 'Filename must not contain path traversal characters'
+    })
+    .refine((v) => v.toLowerCase().endsWith('.hdr'), {
+      message: 'Filename must have .hdr extension'
+    })
+});
+
 export const WatchFileSchema = pathString;
 
 /**

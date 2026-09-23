@@ -158,6 +158,7 @@ const persistSettingsToFile = () => {
 export const initSettingsFromFile = async () => {
   if (typeof window !== 'undefined' && window.electronAPI?.loadSettings) {
     try {
+      await useViewportStore.getState().loadCustomHdrs();
       const data = await window.electronAPI.loadSettings();
       if (data) {
         useAppStore.getState().updateSettings({

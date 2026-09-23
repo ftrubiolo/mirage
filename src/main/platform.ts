@@ -152,6 +152,14 @@ export function getLibraryBasePath(): string {
 }
 
 /**
+ * Resolves the user custom HDRI environments directory:
+ * ~/.local/share/mirage/environments (or Windows/macOS equivalent)
+ */
+export function getEnvironmentsPath(): string {
+  return path.join(getMirageDataDir(), 'environments');
+}
+
+/**
  * Resolves the user keybinds configuration file path:
  * ~/.local/share/mirage/keybinds.json (or Windows/macOS equivalent)
  */

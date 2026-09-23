@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { viewportBridge } from '../utils/viewportBridge';
 
-export type EnvironmentPreset =
+export type BuiltInEnvironmentPreset =
   | 'city'
   | 'studio'
   | 'warehouse'
@@ -10,6 +10,16 @@ export type EnvironmentPreset =
   | 'night'
   | 'park'
   | 'lobby';
+
+export type EnvironmentPreset = BuiltInEnvironmentPreset | (string & {});
+
+export interface CustomHdrItem {
+  name: string;
+  displayName: string;
+  filePath: string;
+  assetUrl: string;
+  size: number;
+}
 
 export type CameraPreset =
   | 'iso'
@@ -97,6 +107,7 @@ interface ViewportState {
   showEnvironmentBackground: boolean;
   customHdrUrl: string | null;
   customHdrName: string | null;
+  customHdrs: CustomHdrItem[];
   autoRotate: boolean;
   showDimensions: boolean;
   showWireframe: boolean;
@@ -134,6 +145,10 @@ interface ViewportState {
   toggleEnvironmentBackground: () => void;
   setShowEnvironmentBackground: (val: boolean) => void;
   setCustomHdr: (url: string | null, name: string | null) => void;
+  selectCustomHdr: (item: CustomHdrItem) => void;
+  loadCustomHdrs: () => Promise<void>;
+  importCustomHdr: (sourceFilePath: string) => Promise<CustomHdrItem | null>;
+  deleteCustomHdr: (fileName: string) => Promise<boolean>;
   toggleAutoRotate: () => void;
   toggleDimensions: () => void;
   toggleWireframe: () => void;
@@ -254,6 +269,7 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
   showEnvironmentBackground: false,
   customHdrUrl: null,
   customHdrName: null,
+  customHdrs: [],
   autoRotate: false,
   showDimensions: false,
   showWireframe: false,
@@ -379,8 +395,105 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
     requestSaveSettings();
   },
   setEnvironmentPreset: (preset) => {
+    if (preset.startsWith('custom:')) {
+      const fileName = preset.slice(7);
+      const match = get().customHdrs.find((h) => h.name === fileName);
+      if (match) {
+        set({
+          environmentPreset: preset,
+          customHdrUrl: match.assetUrl,
+          customHdrName: match.displayName || match.name
+        });
+        requestSaveSettings();
+        return;
+      }
+    }
     set({ environmentPreset: preset, customHdrUrl: null, customHdrName: null });
     requestSaveSettings();
+  },
+  selectCustomHdr: (item) => {
+    set({
+      environmentPreset: `custom:${item.name}`,
+      customHdrUrl: item.assetUrl,
+      customHdrName: item.displayName || item.name
+    });
+    requestSaveSettings();
+  },
+  loadCustomHdrs: async () => {
+    if (typeof window === 'undefined' || !window.electronAPI?.listCustomHdrs) return;
+    try {
+      const hdrs = await window.electronAPI.listCustomHdrs();
+      set({ customHdrs: hdrs });
+      const current = get();
+      if (current.environmentPreset.startsWith('custom:')) {
+        const fileName = current.environmentPreset.slice(7);
+        const match = hdrs.find((h) => h.name === fileName);
+        if (match) {
+          set({
+            customHdrUrl: match.assetUrl,
+            customHdrName: match.displayName || match.name
+          });
+        } else {
+          set({
+            environmentPreset: 'city',
+            customHdrUrl: null,
+            customHdrName: null
+          });
+          requestSaveSettings();
+        }
+      }
+    } catch (err) {
+      console.warn('[viewportStore] Error loading custom HDRs:', err);
+    }
+  },
+  importCustomHdr: async (sourceFilePath) => {
+    if (typeof window === 'undefined' || !window.electronAPI?.saveCustomHdr) return null;
+    try {
+      const item = await window.electronAPI.saveCustomHdr(sourceFilePath);
+      if (item) {
+        const existing = get().customHdrs.filter((h) => h.name !== item.name);
+        const updated = [...existing, item].sort((a, b) => a.displayName.localeCompare(b.displayName));
+        set({
+          customHdrs: updated,
+          environmentPreset: `custom:${item.name}`,
+          customHdrUrl: item.assetUrl,
+          customHdrName: item.displayName || item.name
+        });
+        requestSaveSettings();
+        return item;
+      }
+      return null;
+    } catch (err) {
+      console.warn('[viewportStore] Error importing custom HDR:', err);
+      return null;
+    }
+  },
+  deleteCustomHdr: async (fileName) => {
+    if (typeof window === 'undefined' || !window.electronAPI?.deleteCustomHdr) return false;
+    try {
+      const ok = await window.electronAPI.deleteCustomHdr(fileName);
+      if (ok) {
+        const state = get();
+        const updated = state.customHdrs.filter((h) => h.name !== fileName);
+        const wasActive = state.environmentPreset === `custom:${fileName}` || state.customHdrName === fileName;
+        if (wasActive) {
+          set({
+            customHdrs: updated,
+            environmentPreset: 'city',
+            customHdrUrl: null,
+            customHdrName: null
+          });
+        } else {
+          set({ customHdrs: updated });
+        }
+        requestSaveSettings();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.warn('[viewportStore] Error deleting custom HDR:', err);
+      return false;
+    }
   },
   toggleEnvironmentBackground: () => {
     set((state) => ({ showEnvironmentBackground: !state.showEnvironmentBackground }));
@@ -804,12 +917,31 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
   },
 
   applyPersistedSettings: (settings) => {
-    set((state) => ({
-      ...state,
-      ...(settings.viewportTheme ? { viewportTheme: settings.viewportTheme } : {}),
-      ...(settings.environmentPreset ? { environmentPreset: settings.environmentPreset } : {}),
-      ...(settings.showEnvironmentBackground !== undefined ? { showEnvironmentBackground: settings.showEnvironmentBackground } : {}),
-      ...(settings.environmentIntensity !== undefined ? { environmentIntensity: settings.environmentIntensity } : {}),
+    set((state) => {
+      let customUrl = state.customHdrUrl;
+      let customName = state.customHdrName;
+      const envPreset = settings.environmentPreset ?? state.environmentPreset;
+
+      if (envPreset && envPreset.startsWith('custom:')) {
+        const fileName = envPreset.slice(7);
+        const match = state.customHdrs.find((h) => h.name === fileName);
+        if (match) {
+          customUrl = match.assetUrl;
+          customName = match.displayName || match.name;
+        }
+      } else if (settings.environmentPreset !== undefined) {
+        customUrl = null;
+        customName = null;
+      }
+
+      return {
+        ...state,
+        ...(settings.viewportTheme ? { viewportTheme: settings.viewportTheme } : {}),
+        environmentPreset: envPreset,
+        customHdrUrl: customUrl,
+        customHdrName: customName,
+        ...(settings.showEnvironmentBackground !== undefined ? { showEnvironmentBackground: settings.showEnvironmentBackground } : {}),
+        ...(settings.environmentIntensity !== undefined ? { environmentIntensity: settings.environmentIntensity } : {}),
       ...(settings.showDimensions !== undefined ? { showDimensions: settings.showDimensions } : {}),
       ...(settings.showWireframe !== undefined ? { showWireframe: settings.showWireframe } : {}),
       ...(settings.showGrid !== undefined ? { showGrid: settings.showGrid } : {}),
@@ -829,9 +961,19 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
       ...(settings.iconOnlyToolbarItems && Array.isArray(settings.iconOnlyToolbarItems) ? { iconOnlyToolbarItems: settings.iconOnlyToolbarItems } : {}),
       ...(settings.statusBarItems && Array.isArray(settings.statusBarItems) ? { statusBarItems: settings.statusBarItems } : {}),
       ...(settings.hiddenStatusBarItems && Array.isArray(settings.hiddenStatusBarItems) ? { hiddenStatusBarItems: settings.hiddenStatusBarItems } : {}),
-      ...(settings.canvasWidgets && Array.isArray(settings.canvasWidgets) ? { canvasWidgets: settings.canvasWidgets } : {})
-    }));
-  },
+      ...(settings.canvasWidgets && Array.isArray(settings.canvasWidgets) ? { canvasWidgets: settings.canvasWidgets } : {}),
+      ...(settings.canvasEnvironmentMode ? { canvasEnvironmentMode: settings.canvasEnvironmentMode } : {}),
+      ...(settings.canvasTransformMode ? { canvasTransformMode: settings.canvasTransformMode } : {}),
+      ...(settings.canvasTransformOrientation ? { canvasTransformOrientation: settings.canvasTransformOrientation } : {}),
+      ...(settings.autoRotateSpeed !== undefined ? { autoRotateSpeed: settings.autoRotateSpeed } : {}),
+      ...(settings.canvasWidgetModes ? { canvasWidgetModes: settings.canvasWidgetModes } : {}),
+      ...(settings.canvasWidgetOrientations ? { canvasWidgetOrientations: settings.canvasWidgetOrientations } : {}),
+      ...(settings.snapshotResolution ? { snapshotResolution: settings.snapshotResolution } : {}),
+      ...(settings.snapshotTransparent !== undefined ? { snapshotTransparent: settings.snapshotTransparent } : {}),
+      ...(settings.snapshotFormat ? { snapshotFormat: settings.snapshotFormat } : {})
+    };
+  });
+},
 
   getPersistableSettings: () => {
     const s = get();
@@ -859,7 +1001,7 @@ export const useViewportStore = create<ViewportState>((set, get) => ({
       iconOnlyToolbarItems: s.iconOnlyToolbarItems,
       statusBarItems: s.statusBarItems,
       hiddenStatusBarItems: s.hiddenStatusBarItems,
-      canvasWidgets: s.canvasWidgets
+      canvasWidgets: s.canvasWidgets,
     };
   }
 }));

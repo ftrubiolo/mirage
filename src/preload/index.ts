@@ -29,6 +29,14 @@ export interface TextureProcessOptions {
   quality?: number;
 }
 
+export interface CustomHdrItem {
+  name: string;
+  displayName: string;
+  filePath: string;
+  assetUrl: string;
+  size: number;
+}
+
 export interface ElectronAPI {
   openFileDialog: (options?: { filters?: { name: string; extensions: string[] }[]; title?: string }) => Promise<string | null>;
   openDirectoryDialog: () => Promise<string | null>;
@@ -72,6 +80,10 @@ export interface ElectronAPI {
   // Agent Connection & Model Fetch
   testAgentConnection: (params: { baseUrl: string; apiKey?: string; providerId: string }) => Promise<{ success: boolean; error?: string; models?: string[] }>;
   fetchAgentModels: (params: { baseUrl: string; apiKey?: string }) => Promise<{ success: boolean; error?: string; models?: string[] }>;
+  // Custom HDRI environments (.local/share/mirage/environments/)
+  listCustomHdrs: () => Promise<CustomHdrItem[]>;
+  saveCustomHdr: (sourceFilePath: string) => Promise<CustomHdrItem>;
+  deleteCustomHdr: (fileName: string) => Promise<boolean>;
   // Keybinds & Settings methods (.local/share/mirage/)
   loadKeybinds: () => Promise<Record<string, string>>;
   saveKeybinds: (keybinds: Record<string, string>) => Promise<boolean>;
@@ -153,6 +165,9 @@ const api: ElectronAPI = {
   },
   testAgentConnection: (params) => ipcRenderer.invoke('agent:testConnection', params),
   fetchAgentModels: (params) => ipcRenderer.invoke('agent:fetchModels', params),
+  listCustomHdrs: () => ipcRenderer.invoke('custom-hdr:list'),
+  saveCustomHdr: (sourceFilePath) => ipcRenderer.invoke('custom-hdr:save', { sourceFilePath }),
+  deleteCustomHdr: (fileName) => ipcRenderer.invoke('custom-hdr:delete', { fileName }),
   loadKeybinds: () => ipcRenderer.invoke('keybinds:load'),
   saveKeybinds: (keybinds) => ipcRenderer.invoke('keybinds:save', keybinds),
   getKeybindsPath: () => ipcRenderer.invoke('keybinds:getPath'),

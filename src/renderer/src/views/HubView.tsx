@@ -100,7 +100,7 @@ export const HubView: React.FC<HubViewProps> = () => {
       icon: <Settings className="w-5 h-5 text-action" />,
       title: 'Studio Settings',
       description:
-        'Display theme (Dark/Light/System), typography density scale, keybinds, and storage paths.',
+        'Swappable themes, dark/light mode, keybinds, AI providers, and local storage paths.',
       actionText: 'Preferences',
       onClick: () => setView('settings')
     }

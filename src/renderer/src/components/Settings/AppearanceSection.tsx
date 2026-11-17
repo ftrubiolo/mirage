@@ -4,11 +4,10 @@ import {
   Sun,
   Laptop,
   Palette,
-  Type,
   FolderOpen,
   RefreshCw
 } from 'lucide-react';
-import { useAppStore, ThemeMode, FontDensity } from '../../store/appStore';
+import { useAppStore, ThemeMode } from '../../store/appStore';
 import { ThemeSourceKind } from '../../../../shared/themes';
 import { Card } from '../UI/Card';
 import { Badge } from '../UI/Badge';
@@ -20,12 +19,6 @@ interface ModeOption {
   label: string;
   desc: string;
   icon: React.ComponentType<{ className?: string }>;
-}
-
-interface DensityOption {
-  id: FontDensity;
-  label: string;
-  desc: string;
 }
 
 const MODE_OPTIONS: ModeOption[] = [
@@ -49,12 +42,6 @@ const MODE_OPTIONS: ModeOption[] = [
   }
 ];
 
-const DENSITY_OPTIONS: DensityOption[] = [
-  { id: 'standard', label: 'Standard', desc: 'Balanced spacing for high-resolution displays' },
-  { id: 'compact', label: 'Compact', desc: 'Higher information density and tighter controls' },
-  { id: 'dense', label: 'Dense', desc: 'Maximum compression for telemetry and technical inspection' }
-];
-
 const SOURCE_LABELS: Record<ThemeSourceKind, string> = {
   builtin: 'Template',
   local: 'Custom / Linked'
@@ -68,7 +55,6 @@ export const AppearanceSection: React.FC = () => {
     themesDirPath,
     setThemeId,
     setThemeMode,
-    setFontDensity,
     refreshThemes
   } = useAppStore();
 
@@ -88,7 +74,7 @@ export const AppearanceSection: React.FC = () => {
           Appearance &amp; Theme
         </h1>
         <p className="text-xs text-ink-secondary mt-0.5">
-          Swap built-in, custom JSON, or symlinked generator palettes, color mode, and density.
+          Swap built-in, custom JSON, or symlinked generator palettes and color mode.
         </p>
       </div>
 
@@ -229,38 +215,6 @@ export const AppearanceSection: React.FC = () => {
                     {opt.desc}
                   </p>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Font Density */}
-      <section className="space-y-3 pt-4 border-t border-hairline">
-        <SectionHeader
-          title="Interface Density"
-          subtitle="UI scale and control compactness"
-          icon={<Type className="w-4 h-4" />}
-          bordered={false}
-        />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {DENSITY_OPTIONS.map((opt) => {
-            const isSelected = settings.fontDensity === opt.id;
-
-            return (
-              <Card
-                key={opt.id}
-                selected={isSelected}
-                hoverable={!isSelected}
-                onClick={() => setFontDensity(opt.id)}
-                className="p-3.5 cursor-pointer"
-              >
-                <h3 className="font-primary font-bold text-xs uppercase text-ink-primary">
-                  {opt.label}
-                </h3>
-                <p className="text-[11px] text-ink-secondary mt-1">
-                  {opt.desc}
-                </p>
               </Card>
             );
           })}

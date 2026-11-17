@@ -15,12 +15,10 @@ const LEGACY_APP_SETTINGS_KEY = 'sera-app-settings';
 
 export type AppView = 'hub' | 'workbench' | 'library' | 'entryDetail' | 'settings' | 'agent';
 export type ThemeMode = 'dark' | 'light' | 'system';
-export type FontDensity = 'standard' | 'compact' | 'dense';
 
 export interface AppSettings {
   themeId: string;
   themeMode: ThemeMode;
-  fontDensity: FontDensity;
   defaultContactShadows: boolean;
   defaultGroundGrid: boolean;
   defaultAutoRotate: boolean;
@@ -67,7 +65,6 @@ interface AppState {
   setThemeMode: (mode: ThemeMode) => void;
   setAvailableThemes: (themes: MirageThemeDefinition[]) => void;
   refreshThemes: () => Promise<void>;
-  setFontDensity: (density: FontDensity) => void;
   updateSettings: (partial: Partial<AppSettings>) => void;
   setLibraryPath: (path: string) => void;
   setActiveEntrySlug: (slug: string | null) => void;
@@ -79,7 +76,6 @@ const getStoredSettings = (): AppSettings => {
   const defaults: AppSettings = {
     themeId: DEFAULT_THEME_ID,
     themeMode: 'dark',
-    fontDensity: 'standard',
     defaultContactShadows: true,
     defaultGroundGrid: true,
     defaultAutoRotate: false,
@@ -192,12 +188,6 @@ const applyThemeToDocument = (
   return resolved;
 };
 
-const applyDensityClass = (density: FontDensity) => {
-  if (typeof document !== 'undefined') {
-    document.documentElement.setAttribute('data-density', density);
-  }
-};
-
 let appSettingsTimeout: any = null;
 const persistSettingsToFile = () => {
   if (typeof window === 'undefined' || !window.electronAPI?.updateSettings) return;
@@ -246,7 +236,6 @@ export const initSettingsFromFile = async () => {
         useAppStore.getState().updateSettings({
           themeId: data.themeId || DEFAULT_THEME_ID,
           themeMode: data.themeMode,
-          fontDensity: data.fontDensity,
           defaultContactShadows: data.defaultContactShadows,
           defaultGroundGrid: data.defaultGroundGrid,
           defaultAutoRotate: data.defaultAutoRotate,
@@ -265,7 +254,6 @@ export const initSettingsFromFile = async () => {
 const initialSettings = getStoredSettings();
 const initialTheme = findThemeById(BUILTIN_THEMES, initialSettings.themeId);
 const initialResolvedTheme = applyThemeToDocument(initialTheme, initialSettings.themeMode);
-applyDensityClass(initialSettings.fontDensity);
 
 export const useAppStore = create<AppState>((set, get) => ({
   currentView: 'hub',
@@ -391,16 +379,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  setFontDensity: (density: FontDensity) => {
-    const newSettings = { ...get().settings, fontDensity: density };
-    try {
-      localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(newSettings));
-    } catch {}
-    applyDensityClass(density);
-    set({ settings: newSettings });
-    persistSettingsToFile();
-  },
-
   updateSettings: (partial: Partial<AppSettings>) => {
     const newSettings = { ...get().settings, ...partial };
     try {
@@ -408,9 +386,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch {}
     const activeTheme = findThemeById(get().availableThemes, newSettings.themeId);
     const resolved = applyThemeToDocument(activeTheme, newSettings.themeMode);
-    if (partial.fontDensity) {
-      applyDensityClass(partial.fontDensity);
-    }
     set({
       settings: newSettings,
       activeTheme,

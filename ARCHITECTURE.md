@@ -56,7 +56,7 @@ The defining architectural constraint is that **the renderer parses untrusted bi
 │  agent/      3 files · tool registry, provider registry, scene serializer │
 │  components/ 70+ files · domain components (Viewport, Staging, Export, …) │
 │  components/UI/ 29 primitives · design-system UI (Button, MirageLogo, …)  │
-│  tests/     34 files · 616 tests (vitest + happy-dom)                     │
+│  tests/     34 files · 615 tests (vitest + happy-dom)                     │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -202,7 +202,7 @@ Four distinct mechanisms, deliberately chosen per data class:
 
 | Data | Mechanism | Why |
 | --- | --- | --- |
-| App settings (theme, density, viewport, camera) | `settings:update` IPC → `SettingsService` | deep-merged **in main** under a write mutex, atomic `tmp`+`rename`, debounce 350 ms with a 1500 ms max-wait |
+| App settings (theme, viewport, camera) | `settings:update` IPC → `SettingsService` | deep-merged **in main** under a write mutex, atomic `tmp`+`rename`, debounce 350 ms with a 1500 ms max-wait |
 | User & linked themes | `~/.config/mirage/themes/*.json` via `themes:list` / `themes:changed` | seeded templates + symlink-aware `chokidar` watcher for live hot-swap |
 | Keybinds | `keybinds.json` via IPC | small, user-authored, written whole |
 | AI providers & chat sessions | `localStorage` | renderer-local, no secrets (keys live in the vault) |
@@ -401,7 +401,7 @@ const { a, b } = useModelStore((s) => ({ a: s.a, b: s.b }));
 
 ```bash
 npm run typecheck   # tsc --noEmit — must exit 0
-npm test            # vitest run — 34 files, 616 tests
+npm test            # vitest run — 34 files, 615 tests
 npm run build       # electron-vite build
 ```
 

@@ -415,7 +415,7 @@ describe('Adversarial Graphics & State Stress Harness (M5 - R1 & R2)', () => {
         { viewport: { showWireframe: true } },
         { viewport: { showGrid: false } },
         { themeMode: 'light' },
-        { fontDensity: 'dense' },
+        { themeId: 'basalt' },
         { defaultContactShadows: false },
         { defaultAutoRotate: true }
       ];
@@ -462,7 +462,7 @@ describe('Adversarial Graphics & State Stress Harness (M5 - R1 & R2)', () => {
       expect(parsedDiskState.viewport.showGrid).toBe(false);
 
       expect(parsedDiskState.themeMode).toBe('light');
-      expect(parsedDiskState.fontDensity).toBe('dense');
+      expect(parsedDiskState.themeId).toBe('basalt');
       expect(parsedDiskState.defaultContactShadows).toBe(false);
       expect(parsedDiskState.defaultAutoRotate).toBe(true);
 

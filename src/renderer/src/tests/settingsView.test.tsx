@@ -33,7 +33,6 @@ describe('SettingsView and Decoupled Settings Components', () => {
       settings: {
         themeId: 'mirage',
         themeMode: 'dark',
-        fontDensity: 'standard',
         defaultContactShadows: true,
         defaultGroundGrid: true,
         defaultAutoRotate: false,
@@ -130,23 +129,6 @@ describe('SettingsView and Decoupled Settings Components', () => {
         (lightCard as HTMLElement)?.click();
       });
       expect(useAppStore.getState().settings.themeMode).toBe('light');
-    });
-
-    it('allows changing font density', () => {
-      act(() => {
-        root.render(<AppearanceSection />);
-      });
-
-      const denseCard = Array.from(container.querySelectorAll('h3')).find(
-        (h) => h.textContent?.includes('Dense')
-      )?.closest('div');
-
-      expect(denseCard).toBeDefined();
-      act(() => {
-        (denseCard as HTMLElement)?.click();
-      });
-
-      expect(useAppStore.getState().settings.fontDensity).toBe('dense');
     });
   });
 

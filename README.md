@@ -164,7 +164,7 @@ Current state, verified on this checkout:
 | Gate | Command | Result |
 | :--- | :--- | :--- |
 | Type check | `npx tsc --noEmit` | Clean (exit 0) |
-| Tests | `npx vitest run` | **34 files, 616 tests, all passing** |
+| Tests | `npx vitest run` | **34 files, 615 tests, all passing** |
 
 The suite covers the PBR controller, multi-material staging, model and variant stores, GLB validation, AR bake pipeline, thumbnail service and pipeline, theme normalization and symlinked theme discovery, path-safety utilities, colour conversion, settings persistence, the Web & AR package exporter, sidebar resize math, platform explorer integration, and the command manager — plus adversarial suites for graphics state and shortcut handling, and a design-system compliance suite that enforces [`DESIGN.md`](DESIGN.md).
 
@@ -245,7 +245,7 @@ mirage/
 │           ├── hooks/        # useResizableSidebar (pure resize math + hook)
 │           ├── store/        # Zustand: app, model, pbrMaterial, variant, viewport, agent
 │           ├── styles/       # globals.css — the design token layer
-│           ├── tests/        # Vitest suite (34 files, 616 tests)
+│           ├── tests/        # Vitest suite (34 files, 615 tests)
 │           ├── types/        # Config, library, and agent contracts
 │           └── utils/        # PBR controller, viewport bridge, glbValidator, arBakePipeline, mapSlotNaming, command manager
 ├── package.json

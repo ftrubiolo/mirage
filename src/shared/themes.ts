@@ -367,12 +367,12 @@ function deriveOppositeSeed(seed: MirageThemePaletteSeed, targetDark: boolean): 
 }
 
 /**
- * Default Main Theme — derived from /home/rei/Work/portfolio/src/styles/global.css
+ * Default Main Theme — Mirage Slate
  */
-export const PORTFOLIO_MIRAGE_THEME: MirageThemeDefinition = {
+export const MIRAGE_SLATE_THEME: MirageThemeDefinition = {
   id: 'mirage',
   name: 'Mirage Slate',
-  description: 'Portfolio-derived slate charcoal and bright teal-mint surfaces.',
+  description: 'Cool slate charcoal and crisp daylight surfaces with teal-mint accents.',
   author: 'Mirage',
   source: 'builtin',
   light: normalizePalette(
@@ -665,7 +665,7 @@ export const AMBER_INSTRUMENT_THEME: MirageThemeDefinition = {
 };
 
 export const BUILTIN_THEMES: MirageThemeDefinition[] = [
-  PORTFOLIO_MIRAGE_THEME,
+  MIRAGE_SLATE_THEME,
   BASALT_CLASSIC_THEME,
   BLUEPRINT_COBALT_THEME,
   AMBER_INSTRUMENT_THEME
@@ -674,7 +674,7 @@ export const BUILTIN_THEMES: MirageThemeDefinition[] = [
 export const DEFAULT_THEME_ID = 'mirage';
 
 export function getBuiltinTheme(id: string): MirageThemeDefinition {
-  return BUILTIN_THEMES.find((t) => t.id === id) || PORTFOLIO_MIRAGE_THEME;
+  return BUILTIN_THEMES.find((t) => t.id === id) || MIRAGE_SLATE_THEME;
 }
 
 /**

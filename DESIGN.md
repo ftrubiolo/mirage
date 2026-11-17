@@ -95,7 +95,7 @@ This document describes the system **as implemented in Mirage** (`src/renderer/s
 
 ## 2. Token Foundations: Swappable Themes, One Token Layer
 
-Mirage's default main theme (**Mirage Slate**) is derived from the `portfolio` slate-charcoal (`#1e2123` / `#fcfcfd`) and teal-mint (`#41c9b4` / `#2cb696`) palette. Additional themes—including the original **Basalt Crimson** palette—are stored as editable JSON files in `~/.config/mirage/themes/` (which serve as templates for custom user themes, and support symlinks from external theme generators such as Omarchy or Pywal for instant hot-swapping).
+Mirage's default main theme (**Mirage Slate**) uses cool slate-charcoal (`#1e2123` / `#fcfcfd`) and teal-mint (`#41c9b4` / `#2cb696`) tokens. Additional themes—including the original **Basalt Crimson** palette—are stored as editable JSON files in `~/.config/mirage/themes/` (which serve as templates for custom user themes, and support symlinks from external theme generators such as Omarchy or Pywal for instant hot-swapping).
 
 ### 2.1 The token layer is the mechanism
 

@@ -5,7 +5,7 @@ import * as os from 'node:os';
 import {
   BASALT_CLASSIC_THEME,
   DEFAULT_THEME_ID,
-  PORTFOLIO_MIRAGE_THEME,
+  MIRAGE_SLATE_THEME,
   getContrastRatio,
   normalizePalette,
   parseThemeFileJson
@@ -24,23 +24,23 @@ describe('Theme System, Local Templates, and Symlinked Generator Themes', () => 
     await fs.rm(tmpRoot, { recursive: true, force: true }).catch(() => {});
   });
 
-  it('derives the default Mirage Slate theme from the portfolio palette with accessible contrast', () => {
+  it('defines the default Mirage Slate theme with accessible contrast', () => {
     expect(DEFAULT_THEME_ID).toBe('mirage');
-    expect(PORTFOLIO_MIRAGE_THEME.dark.canvas).toBe('#1e2123');
-    expect(PORTFOLIO_MIRAGE_THEME.dark.surfaceLowest).toBe('#24282b');
-    expect(PORTFOLIO_MIRAGE_THEME.dark.action).toBe('#41c9b4');
-    expect(PORTFOLIO_MIRAGE_THEME.dark.onAction).toBe('#0e1715');
+    expect(MIRAGE_SLATE_THEME.dark.canvas).toBe('#1e2123');
+    expect(MIRAGE_SLATE_THEME.dark.surfaceLowest).toBe('#24282b');
+    expect(MIRAGE_SLATE_THEME.dark.action).toBe('#41c9b4');
+    expect(MIRAGE_SLATE_THEME.dark.onAction).toBe('#0e1715');
 
-    expect(PORTFOLIO_MIRAGE_THEME.light.canvas).toBe('#fcfcfd');
-    expect(PORTFOLIO_MIRAGE_THEME.light.surfaceLowest).toBe('#ffffff');
-    expect(PORTFOLIO_MIRAGE_THEME.light.action).toBe('#2cb696');
-    expect(PORTFOLIO_MIRAGE_THEME.light.onAction).toBe('#0e1715');
+    expect(MIRAGE_SLATE_THEME.light.canvas).toBe('#fcfcfd');
+    expect(MIRAGE_SLATE_THEME.light.surfaceLowest).toBe('#ffffff');
+    expect(MIRAGE_SLATE_THEME.light.action).toBe('#2cb696');
+    expect(MIRAGE_SLATE_THEME.light.onAction).toBe('#0e1715');
 
     expect(
-      getContrastRatio(PORTFOLIO_MIRAGE_THEME.dark.onAction, PORTFOLIO_MIRAGE_THEME.dark.action)
+      getContrastRatio(MIRAGE_SLATE_THEME.dark.onAction, MIRAGE_SLATE_THEME.dark.action)
     ).toBeGreaterThanOrEqual(7);
     expect(
-      getContrastRatio(PORTFOLIO_MIRAGE_THEME.light.onAction, PORTFOLIO_MIRAGE_THEME.light.action)
+      getContrastRatio(MIRAGE_SLATE_THEME.light.onAction, MIRAGE_SLATE_THEME.light.action)
     ).toBeGreaterThanOrEqual(7);
 
     // Classic Basalt Crimson remains intact as a template preset

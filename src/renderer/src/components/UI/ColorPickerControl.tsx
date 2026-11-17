@@ -415,7 +415,7 @@ export const ColorPickerControl: React.FC<ColorPickerControlProps> = ({
                 onClick={() => setMode('RGB')}
                 className={`flex-1 py-1 rounded-xs font-semibold text-center transition-colors cursor-pointer ${
                   mode === 'RGB'
-                    ? 'bg-action text-white shadow-xs'
+                    ? 'bg-action text-on-action shadow-xs'
                     : 'text-ink-secondary hover:text-ink-primary'
                 }`}
               >
@@ -426,7 +426,7 @@ export const ColorPickerControl: React.FC<ColorPickerControlProps> = ({
                 onClick={() => setMode('HSV')}
                 className={`flex-1 py-1 rounded-xs font-semibold text-center transition-colors cursor-pointer ${
                   mode === 'HSV'
-                    ? 'bg-action text-white shadow-xs'
+                    ? 'bg-action text-on-action shadow-xs'
                     : 'text-ink-secondary hover:text-ink-primary'
                 }`}
               >
@@ -437,7 +437,7 @@ export const ColorPickerControl: React.FC<ColorPickerControlProps> = ({
                 onClick={() => setMode('Hex')}
                 className={`flex-1 py-1 rounded-xs font-semibold text-center transition-colors cursor-pointer ${
                   mode === 'Hex'
-                    ? 'bg-action text-white shadow-xs'
+                    ? 'bg-action text-on-action shadow-xs'
                     : 'text-ink-secondary hover:text-ink-primary'
                 }`}
               >

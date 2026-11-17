@@ -64,7 +64,7 @@ export const PbrMapsStudio: React.FC = React.memo(() => {
                   onClick={() => setActiveMaterial(matName)}
                   className={`px-2.5 py-1.5 text-xs rounded-xs font-mono font-medium transition-all flex items-center gap-2 cursor-pointer ${
                     isActive
-                      ? 'bg-action text-white shadow-xs'
+                      ? 'bg-action text-on-action shadow-xs'
                       : 'bg-surface-mid text-ink-secondary hover:text-ink-primary hover:bg-surface-highest'
                   }`}
                   title={`Material: ${matName} • Color: ${matColor}`}
@@ -77,7 +77,7 @@ export const PbrMapsStudio: React.FC = React.memo(() => {
                   {mapCount > 0 && (
                     <span
                       className={`px-1.5 py-0.2 text-[9px] rounded-full font-mono ${
-                        isActive ? 'bg-white/25 text-white' : 'bg-surface-highest text-ink-primary'
+                        isActive ? 'bg-on-action/15 text-on-action' : 'bg-surface-highest text-ink-primary'
                       }`}
                       title={`${mapCount} assigned map(s)`}
                     >

@@ -176,6 +176,42 @@ export function getSettingsPath(): string {
 }
 
 /**
+ * Resolves the root application configuration directory:
+ * - Linux: $XDG_CONFIG_HOME/mirage (default: ~/.config/mirage)
+ * - Windows: %APPDATA%/mirage (or userData)
+ * - macOS: ~/Library/Application Support/mirage
+ */
+export function getMirageConfigDir(): string {
+  if (isLinux) {
+    const xdgConfigHome = process.env.XDG_CONFIG_HOME;
+    if (xdgConfigHome) {
+      return path.join(xdgConfigHome, 'mirage');
+    }
+    const home = process.env.HOME || '';
+    return path.join(home, '.config', 'mirage');
+  }
+
+  if (isWindows) {
+    const appData = process.env.APPDATA || process.env.LOCALAPPDATA;
+    if (appData) {
+      return path.join(appData, 'mirage');
+    }
+    return path.join(app.getPath('userData'), 'mirage');
+  }
+
+  const home = process.env.HOME || '';
+  return path.join(home, 'Library', 'Application Support', 'mirage');
+}
+
+/**
+ * Resolves the user themes directory:
+ * ~/.config/mirage/themes (or Windows/macOS equivalent)
+ */
+export function getThemesPath(): string {
+  return path.join(getMirageConfigDir(), 'themes');
+}
+
+/**
  * Safely opens a path in the system file explorer without blocking or freezing the application.
  * Solves Electron issue #47668 on Linux where shell.openPath synchronously waits for xdg-open/file manager.
  */

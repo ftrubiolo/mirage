@@ -30,7 +30,7 @@ export const TransformGizmoItem: React.FC = () => {
         aria-label="Move with 3D gizmo (W)"
         className={`p-1 rounded-xs transition-colors flex items-center text-xs cursor-pointer ${
           transformGizmoMode === 'translate'
-            ? 'bg-action text-white shadow-xs font-semibold'
+            ? 'bg-action text-on-action shadow-xs font-semibold'
             : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-container'
         }`}
       >
@@ -42,7 +42,7 @@ export const TransformGizmoItem: React.FC = () => {
         aria-label="Rotate with 3D gizmo (E)"
         className={`p-1 rounded-xs transition-colors flex items-center text-xs cursor-pointer ${
           transformGizmoMode === 'rotate'
-            ? 'bg-action text-white shadow-xs font-semibold'
+            ? 'bg-action text-on-action shadow-xs font-semibold'
             : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-container'
         }`}
       >

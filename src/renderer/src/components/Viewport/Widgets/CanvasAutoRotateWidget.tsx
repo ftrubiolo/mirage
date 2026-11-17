@@ -111,7 +111,7 @@ export const CanvasAutoRotateWidget: React.FC<CanvasAutoRotateWidgetProps> = ({
           onClick={toggleAutoRotate}
           className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xs font-medium border transition-colors cursor-pointer ${
             autoRotate
-              ? 'bg-action text-white border-action shadow-xs'
+              ? 'bg-action text-on-action border-action shadow-xs'
               : 'bg-surface-container/50 border-hairline text-ink-primary hover:bg-surface-high'
           }`}
         >
@@ -164,7 +164,7 @@ export const CanvasAutoRotateWidget: React.FC<CanvasAutoRotateWidgetProps> = ({
                 onClick={() => setAutoRotateSpeed(isClockwise ? p.value : -p.value)}
                 className={`py-0.5 text-center font-mono text-[10px] rounded-xs border transition-colors cursor-pointer ${
                   isSelected
-                    ? 'bg-action text-white border-action shadow-xs font-bold'
+                    ? 'bg-action text-on-action border-action shadow-xs font-bold'
                     : 'bg-surface-container/50 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high'
                 }`}
               >

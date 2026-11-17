@@ -129,7 +129,7 @@ export const CanvasSnapshotWidget: React.FC<CanvasSnapshotWidgetProps> = ({
         type="button"
         onClick={handleCapture}
         disabled={isCapturing}
-        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xs font-medium bg-action text-white border border-action shadow-xs hover:bg-action/90 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xs font-medium bg-action text-on-action border border-action shadow-xs hover:bg-action/90 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-50"
       >
         {isCapturing ? (
           <Loader2 size={15} className="animate-spin" />
@@ -172,7 +172,7 @@ export const CanvasSnapshotWidget: React.FC<CanvasSnapshotWidgetProps> = ({
               onClick={() => setSnapshotFormat('png')}
               className={`px-2 py-0.5 font-mono text-[10px] rounded-xs border transition-colors cursor-pointer ${
                 snapshotFormat === 'png'
-                  ? 'bg-action text-white border-action font-bold'
+                  ? 'bg-action text-on-action border-action font-bold'
                   : 'bg-surface-container border-hairline text-ink-tertiary hover:text-ink-primary'
               }`}
             >
@@ -183,7 +183,7 @@ export const CanvasSnapshotWidget: React.FC<CanvasSnapshotWidgetProps> = ({
               onClick={() => setSnapshotFormat('webp')}
               className={`px-2 py-0.5 font-mono text-[10px] rounded-xs border transition-colors cursor-pointer ${
                 snapshotFormat === 'webp'
-                  ? 'bg-action text-white border-action font-bold'
+                  ? 'bg-action text-on-action border-action font-bold'
                   : 'bg-surface-container border-hairline text-ink-tertiary hover:text-ink-primary'
               }`}
             >
@@ -203,7 +203,7 @@ export const CanvasSnapshotWidget: React.FC<CanvasSnapshotWidgetProps> = ({
             onClick={toggleSnapshotTransparent}
             className={`px-2 py-0.5 font-mono text-[10px] rounded-xs border transition-colors cursor-pointer ${
               snapshotTransparent
-                ? 'bg-action text-white border-action font-semibold'
+                ? 'bg-action text-on-action border-action font-semibold'
                 : 'bg-surface-container border-hairline text-ink-tertiary hover:text-ink-primary'
             }`}
           >

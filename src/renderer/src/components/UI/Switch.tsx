@@ -36,7 +36,7 @@ export const Switch: React.FC<SwitchProps> = ({
       {label && <span className="sr-only">{label}</span>}
       <span
         className={`pointer-events-none inline-block h-3.5 w-3.5 transform rounded-xs transition-transform duration-150 ${
-          checked ? 'translate-x-4 bg-white' : 'translate-x-0 bg-ink-tertiary'
+          checked ? 'translate-x-4 bg-on-action' : 'translate-x-0 bg-ink-tertiary'
         }`}
       />
     </button>

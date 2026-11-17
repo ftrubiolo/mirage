@@ -1,6 +1,7 @@
 import React from 'react';
-import { Box, ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { Spinner } from './Spinner';
+import { MetrologyTriadIcon } from './MirageLogo';
 
 export interface PieceCardProps {
   title: string;
@@ -59,7 +60,7 @@ export const PieceCard: React.FC<PieceCardProps> = ({
             className="w-full h-full object-contain p-2 transition-transform duration-300 group-hover:scale-105 select-none"
           />
         ) : (
-          <Box className="w-8 h-8 text-ink-tertiary" />
+          <MetrologyTriadIcon size={32} className="text-ink-tertiary" />
         )}
 
         {/* Top Actions Overlay (e.g. Open Folder, Delete) */}
@@ -133,7 +134,7 @@ export const PieceCard: React.FC<PieceCardProps> = ({
                 type="button"
                 onClick={onLoadPiece}
                 disabled={isPieceLoading}
-                className="w-full mt-2 py-1.5 bg-surface-container hover:bg-action hover:text-white text-ink-primary border border-hairline text-xs font-primary font-semibold uppercase tracking-wider rounded-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-60"
+                className="w-full mt-2 py-1.5 bg-surface-container hover:bg-action hover:text-on-action text-ink-primary border border-hairline text-xs font-primary font-semibold uppercase tracking-wider rounded-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-60"
               >
                 {isPieceLoading ? (
                   <>

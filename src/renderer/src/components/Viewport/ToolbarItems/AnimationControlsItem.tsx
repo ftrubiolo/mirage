@@ -119,7 +119,7 @@ export const AnimationControlsItem: React.FC<AnimationControlsItemProps> = ({
           title={isAnimationPlaying ? 'Pause (Space)' : 'Play (Space)'}
           className={`flex items-center justify-center w-6 h-6 rounded-xs transition-colors ${
             isAnimationPlaying
-              ? 'bg-action text-white hover:bg-action-hover'
+              ? 'bg-action text-on-action hover:bg-action-hover'
               : 'bg-surface-high/80 text-ink-primary hover:bg-surface-high'
           }`}
         >

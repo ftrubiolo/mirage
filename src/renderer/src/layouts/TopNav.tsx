@@ -4,6 +4,7 @@ import { useAppStore } from '../store/appStore';
 import { useModelStore } from '../store/modelStore';
 import { flushAutoSave } from '../utils/libraryBridge';
 import { IconButton } from '../components/UI/IconButton';
+import { MirageLogo } from '../components/UI/MirageLogo';
 
 interface TopNavProps {
   onOpenSaveModal?: () => void;
@@ -57,9 +58,10 @@ export const TopNav: React.FC<TopNavProps> = React.memo(({ onOpenSaveModal }) =>
           className="flex items-center gap-2 group cursor-pointer focus:outline-none"
           title="Go to Mirage Hub / Home"
         >
-          <div className="h-6 px-2 rounded-xs bg-action text-white font-primary font-bold text-xs tracking-wider flex items-center justify-center uppercase shadow-xs group-hover:bg-action-hover transition-colors">
-            3D
-          </div>
+          <MirageLogo
+            size={20}
+            className="text-ink-primary group-hover:text-action transition-colors shrink-0"
+          />
           <span className="font-primary font-semibold text-xs tracking-wider uppercase text-ink-primary group-hover:text-action transition-colors hidden sm:inline">
             MIRAGE
           </span>

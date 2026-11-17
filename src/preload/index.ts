@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
+import type { MirageThemeDefinition } from '../shared/themes';
 
 export interface PackOrmOptions {
   aoPath: string;
@@ -97,6 +98,10 @@ export interface ElectronAPI {
    */
   updateSettings: (partial: Record<string, unknown>) => Promise<{ success: boolean; settings: any }>;
   getSettingsPath: () => Promise<string>;
+  // Themes (.local/share/mirage/themes + Omarchy + Pywal live sync)
+  listThemes: () => Promise<MirageThemeDefinition[]>;
+  getThemesPath: () => Promise<string>;
+  onThemesChanged: (callback: (themes: MirageThemeDefinition[]) => void) => () => void;
 }
 
 function formatAssetUrl(filePath: string): string {
@@ -175,6 +180,16 @@ const api: ElectronAPI = {
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
   updateSettings: (partial) => ipcRenderer.invoke('settings:update', partial),
   getSettingsPath: () => ipcRenderer.invoke('settings:getPath'),
+  listThemes: () => ipcRenderer.invoke('themes:list'),
+  getThemesPath: () => ipcRenderer.invoke('themes:getPath'),
+  onThemesChanged: (callback) => {
+    const handler = (_event: Electron.IpcRendererEvent, themes: MirageThemeDefinition[]) =>
+      callback(themes);
+    ipcRenderer.on('themes:changed', handler);
+    return () => {
+      ipcRenderer.removeListener('themes:changed', handler);
+    };
+  },
   toAssetUrl: formatAssetUrl,
   getPathForFile: (file: File) => {
     try {

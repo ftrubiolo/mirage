@@ -14,7 +14,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const VARIANT_STYLES: Record<ButtonVariant, string> = {
   primary:
-    'bg-action hover:bg-action-hover active:bg-action-active text-white shadow-xs border border-transparent',
+    'bg-action hover:bg-action-hover active:bg-action-active text-on-action shadow-xs border border-transparent',
   secondary:
     'bg-surface-low hover:bg-surface-high text-ink-primary border border-hairline-strong shadow-xs',
   destructive:
@@ -59,7 +59,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {isLoading ? (
           <Spinner
             size={size === 'xs' ? 'xs' : 'sm'}
-            variant={variant === 'primary' || variant === 'destructive' ? 'white' : 'action'}
+            variant={
+              variant === 'primary'
+                ? 'on-action'
+                : variant === 'destructive'
+                  ? 'white'
+                  : 'action'
+            }
           />
         ) : (
           icon && <span className="shrink-0">{icon}</span>

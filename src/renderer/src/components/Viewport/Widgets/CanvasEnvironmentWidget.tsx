@@ -213,7 +213,7 @@ export const CanvasEnvironmentWidget: React.FC = () => {
             onClick={toggleEnvironmentBackground}
             className={`px-2 py-0.5 rounded-xs font-primary text-[10px] font-bold uppercase tracking-wider transition-colors border cursor-pointer ${
               showEnvironmentBackground
-                ? 'bg-action text-white border-action'
+                ? 'bg-action text-on-action border-action'
                 : 'bg-surface-lowest text-ink-tertiary border-hairline hover:text-ink-primary'
             }`}
           >

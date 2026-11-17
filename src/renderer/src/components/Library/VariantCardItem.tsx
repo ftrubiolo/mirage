@@ -153,7 +153,7 @@ export const VariantCardItem: React.FC<VariantCardItemProps> = ({
         size="sm"
         onClick={() => onOpenIn3D(variant.id)}
         iconRight={<ArrowUpRight className="w-3.5 h-3.5" />}
-        className="w-full mt-2 hover:bg-action hover:text-white"
+        className="w-full mt-2 hover:bg-action hover:text-on-action"
       >
         Open in 3D Workbench ({variant.name})
       </Button>

@@ -54,7 +54,7 @@ export function SegmentedControl<T extends string | number>({
 
         const activeStyles =
           variant === 'action'
-            ? 'bg-action text-white shadow-xs font-semibold'
+            ? 'bg-action text-on-action shadow-xs font-semibold'
             : 'text-action font-semibold';
 
         const inactiveStyles =

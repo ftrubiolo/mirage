@@ -25,6 +25,7 @@ export interface ViewportSettings {
 }
 
 export interface MirageSettings {
+  themeId: string;
   themeMode: 'dark' | 'light' | 'system';
   fontDensity: 'standard' | 'compact' | 'dense';
   defaultContactShadows: boolean;
@@ -44,6 +45,7 @@ export type DeepPartial<T> = {
 };
 
 export const DEFAULT_SETTINGS: MirageSettings = {
+  themeId: 'mirage',
   themeMode: 'dark',
   fontDensity: 'standard',
   defaultContactShadows: true,

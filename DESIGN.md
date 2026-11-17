@@ -1,6 +1,7 @@
 ---
-# Token values live in exactly one place: src/renderer/src/styles/globals.css
-# (`:root` for light, `.dark` for dark) and are mapped into Tailwind v4 by `@theme`.
+# Token values live in `src/shared/themes.ts` and `src/renderer/src/styles/globals.css`
+# (`:root` for light, `.dark` for dark, overridden dynamically via `data-theme`
+# and local/external theme files) and are mapped into Tailwind v4 by `@theme`.
 # Components consume the resulting utilities (`bg-surface-lowest`, `text-ink-primary`, …).
 name: Mirage Studio & Workbench Operations Design System
 system: Mirage Operations DS
@@ -10,50 +11,54 @@ brand:
   tagline: Architectural precision, data density, and operational utility for technical 3D workflows
 colors:
   light:
-    canvas: '#fdfdfd'
-    canvas-subtle: '#f7f5f2'
-    canvas-stone: '#efece6'
+    canvas: '#fcfcfd'
+    canvas-subtle: '#f4f6f8'
+    canvas-stone: '#eaeef2'
     surface-lowest: '#ffffff'
-    surface-low: '#f7f5f2'
-    surface-container: '#efece6'
-    surface-high: '#ded9d1'
-    surface-highest: '#d5cfc5'
-    ink-primary: '#161514'
-    ink-secondary: '#5c5854'
-    ink-tertiary: '#8e8a84'
-    hairline: 'rgba(22, 21, 20, 0.10)'
-    hairline-strong: 'rgba(22, 21, 20, 0.20)'
-    action: '#9a2716'
-    action-hover: '#801f10'
-    action-active: '#6b190d'
-    action-subtle: 'rgba(154, 39, 22, 0.08)'
+    surface-low: '#f4f6f8'
+    surface-container: '#eaeef2'
+    surface-high: '#dde3e9'
+    surface-highest: '#cfd7df'
+    ink-primary: '#181a1b'
+    ink-secondary: '#4a525a'
+    ink-tertiary: '#6c747c'
+    hairline: 'rgba(24, 26, 27, 0.10)'
+    hairline-strong: 'rgba(24, 26, 27, 0.24)'
+    action: '#2cb696'
+    action-hover: '#239b7f'
+    action-active: '#1b7d66'
+    action-subtle: 'rgba(65, 201, 180, 0.11)'
+    action-ink: '#115e4e'
+    on-action: '#0e1715'
   dark:
-    canvas: '#111110'
-    canvas-subtle: '#141412'
-    canvas-stone: '#1a1917'
-    surface-lowest: '#181816'
-    surface-low: '#1f1e1c'
-    surface-container: '#272523'
-    surface-high: '#32302c'
-    surface-highest: '#3e3b37'
-    ink-primary: '#f4f2ee'
-    ink-secondary: '#a8a39d'
-    ink-tertiary: '#6e6a64'
-    hairline: 'rgba(244, 242, 238, 0.08)'
-    hairline-strong: 'rgba(244, 242, 238, 0.16)'
-    action: '#b53420'
-    action-hover: '#c83e28'
-    action-active: '#9a2716'
-    action-subtle: 'rgba(181, 52, 32, 0.18)'
+    canvas: '#1e2123'
+    canvas-subtle: '#191c1e'
+    canvas-stone: '#282c30'
+    surface-lowest: '#24282b'
+    surface-low: '#282c30'
+    surface-container: '#2f3439'
+    surface-high: '#383e44'
+    surface-highest: '#434a52'
+    ink-primary: '#e7e9eb'
+    ink-secondary: '#b6bec5'
+    ink-tertiary: '#868f97'
+    hairline: 'rgba(255, 255, 255, 0.10)'
+    hairline-strong: 'rgba(255, 255, 255, 0.24)'
+    action: '#41c9b4'
+    action-hover: '#53d6c2'
+    action-active: '#2cb696'
+    action-subtle: 'rgba(65, 201, 180, 0.14)'
+    action-ink: '#9bf0e2'
+    on-action: '#0e1715'
 typography:
-  font-primary: '"Montserrat", -apple-system, BlinkMacSystemFont, sans-serif'
-  font-body: '"Manrope", -apple-system, BlinkMacSystemFont, sans-serif'
-  font-mono: '"JetBrains Mono", monospace'
+  font-primary: '"Instrument Sans", -apple-system, BlinkMacSystemFont, sans-serif'
+  font-body: '"Instrument Sans", -apple-system, BlinkMacSystemFont, sans-serif'
+  font-mono: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
 geometry:
   radius-default: '0px'
   radius-subtle: '2px'
-  hairline-border: '1px solid rgba(22, 21, 20, 0.10)'
-  hairline-border-dark: '1px solid rgba(244, 242, 238, 0.08)'
+  hairline-border: '1px solid rgba(24, 26, 27, 0.10)'
+  hairline-border-dark: '1px solid rgba(255, 255, 255, 0.10)'
 ---
 
 # Mirage Operations: Design System for 3D Studio & Workbench Applications
@@ -72,8 +77,8 @@ This document describes the system **as implemented in Mirage** (`src/renderer/s
 | :--- | :--- | :--- |
 | **Primary Goal** | Visual storytelling, open browsing | Task completion, metrology accuracy, rapid triage, utility |
 | **Layout & Flow** | Long-scroll landing pages, loose media splits | Workspace-specific (split panels, grids, tables, modals) |
-| **Typography** | Editorial Serif (`Source Serif 4`) + Display Titles | Sans-serif (`Montserrat` / `Manrope`) + Tabular Monospace |
-| **Themes** | Single daylight canvas | **Dual Light & Dark Mode from one token set** (`.dark` class + CSS custom properties) |
+| **Typography** | Editorial Serif (`Source Serif 4`) + Display Titles | Sans-serif (`Instrument Sans`) + Tabular Monospace (`JetBrains Mono`) |
+| **Themes** | Single daylight canvas | **Swappable Light & Dark Themes** (`Mirage Slate` default, `~/.config/mirage/themes/*.json` files & symlinks with hot-reload) |
 | **Pacing** | Slow-scroll reading | Fast keyboard navigation, quick scanning, dense data entry |
 | **Density** | Generous whitespace, relaxed margins | Compact, high information density, space efficiency |
 | **Imagery** | Atmospheric moodshots, lifestyle photography | High-contrast thumbnails, 1:1 crops, 3D wireframes, inspection views |
@@ -88,9 +93,9 @@ This document describes the system **as implemented in Mirage** (`src/renderer/s
 
 ---
 
-## 2. Token Foundations: One Definition, Two Modes
+## 2. Token Foundations: Swappable Themes, One Token Layer
 
-Dark mode in Mirage is inspired by **volcanic basalt, smoked charcoal, cast iron, and slate**. It rejects harsh `#000000` (which causes glare and eye fatigue during long 3D inspection sessions) and avoids generic cold blue-greys, preserving neutral surface contrast for accurate PBR material evaluation.
+Mirage's default main theme (**Mirage Slate**) is derived from the `portfolio` slate-charcoal (`#1e2123` / `#fcfcfd`) and teal-mint (`#41c9b4` / `#2cb696`) palette. Additional themes—including the original **Basalt Crimson** palette—are stored as editable JSON files in `~/.config/mirage/themes/` (which serve as templates for custom user themes, and support symlinks from external theme generators such as Omarchy or Pywal for instant hot-swapping).
 
 ### 2.1 The token layer is the mechanism
 
@@ -103,95 +108,97 @@ Dark mode in Mirage is inspired by **volcanic basalt, smoked charcoal, cast iron
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-primary: "Montserrat", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-primary: "Instrument Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "Instrument Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   --color-canvas: var(--canvas);
   --color-surface-lowest: var(--surface-lowest);
   --color-ink-primary: var(--ink-primary);
   --color-hairline: var(--hairline);
   --color-action: var(--action);
+  --color-action-ink: var(--action-ink);
+  --color-on-action: var(--on-action);
   /* …one mapping per token, see the tables below… */
 
   --radius-xs: 2px;
 }
 
 :root {
-  --canvas: #fdfdfd;
+  --canvas: #fcfcfd;
   --surface-lowest: #ffffff;
-  --ink-primary: #161514;
-  --hairline: rgba(22, 21, 20, 0.10);
-  --action: #9a2716;
+  --ink-primary: #181a1b;
+  --hairline: rgba(24, 26, 27, 0.10);
+  --action: #2cb696;
+  --on-action: #0e1715;
   /* …light values… */
 }
 
 .dark {
-  --canvas: #111110;
-  --surface-lowest: #181816;
-  --ink-primary: #f4f2ee;
-  --hairline: rgba(244, 242, 238, 0.08);
-  --action: #b53420;
+  --canvas: #1e2123;
+  --surface-lowest: #24282b;
+  --ink-primary: #e7e9eb;
+  --hairline: rgba(255, 255, 255, 0.10);
+  --action: #41c9b4;
+  --on-action: #0e1715;
   /* …dark values… */
 }
 ```
 
-Because the utility resolves to `var(--surface-lowest)`, **`bg-surface-lowest` is already mode-aware**. Writing a dark value by hand is not "extra safety" — it is a second source of truth that drifts.
+Because the utility resolves to `var(--surface-lowest)`, **`bg-surface-lowest` is already theme- and mode-aware**. Writing a dark value by hand is not "extra safety" — it is a second source of truth that drifts.
 
 ```tsx
-// ✅ Correct: one class, correct in both modes.
+// ✅ Correct: one class, correct in every theme and mode.
 <div className="bg-surface-lowest border border-hairline text-ink-primary">
+<button className="bg-action text-on-action hover:bg-action-hover">Save</button>
 
-// ❌ Forbidden: hardcoded dark hexes duplicated onto every class.
+// ❌ Forbidden: hardcoded dark hexes or assuming white text on bg-action.
 <div className="bg-white dark:bg-[#181816] border-black/10 dark:border-white/10 text-[#161514] dark:text-[#f4f2ee]">
 ```
 
 `designSystemCompliance.test.ts` asserts **zero** occurrences of `dark:(bg|text|border)-[#…]` in `src/renderer/src/components/**/*.tsx`. The only legal `dark:` colour variants are the non-tokenised semantic state colours of §3.
 
-The `.dark` class is applied to `<html>` by `useAppStore` (`themeMode: 'dark' | 'light' | 'system'`, persisted in `settings.json`); `src/renderer/index.html` ships with `class="dark"` so the first paint is already correct. Scrollbar colours are per-mode tokens too (`--scrollbar-track`, `--scrollbar-thumb`, `--scrollbar-thumb-hover`).
+`useAppStore` applies the active theme (`themeId`, `data-theme`, CSS variables injected from `src/shared/themes.ts`) and polarity (`.dark` class from `themeMode: 'dark' | 'light' | 'system'`, persisted in `settings.json`); `src/renderer/index.html` ships with `class="dark" data-theme="mirage"` so the first paint is already correct. Scrollbar colours are per-mode tokens too (`--scrollbar-track`, `--scrollbar-thumb`, `--scrollbar-thumb-hover`).
 
-### 2.2 Surface & Layering Architecture
+### 2.2 Surface & Layering Architecture (Default: Mirage Slate)
 
-| Token | Light Mode Value | Dark Mode Value (Basalt/Charcoal) | Purpose |
+| Token | Light Mode Value | Dark Mode Value (Slate Charcoal) | Purpose |
 | :--- | :--- | :--- | :--- |
-| `canvas` | `#FDFDFD` | `#111110` | Base viewport / application canvas |
-| `canvas-subtle` | `#F7F5F2` | `#141412` | Recessed strips, rail backgrounds |
-| `canvas-stone` | `#EFECE6` | `#1A1917` | Thumbnail wells, inert media frames |
-| `surface-lowest` | `#FFFFFF` | `#181816` | Main card, data table, and modal containers |
-| `surface-low` | `#F7F5F2` | `#1F1E1C` | Table header, toolbar, and sub-header fills |
-| `surface-container` | `#EFECE6` | `#272523` | Form inputs, divider chips, inactive pills |
-| `surface-high` | `#DED9D1` | `#32302C` | Hover state on neutral table rows / list items |
-| `surface-highest` | `#D5CFC5` | `#3E3B37` | Secondary button fills, prominent borders |
+| `canvas` | `#FCFCFD` | `#1E2123` | Base viewport / application canvas |
+| `canvas-subtle` | `#F4F6F8` | `#191C1E` | Recessed strips, rail backgrounds |
+| `canvas-stone` | `#EAEEF2` | `#282C30` | Thumbnail wells, inert media frames |
+| `surface-lowest` | `#FFFFFF` | `#24282B` | Main card, data table, and modal containers |
+| `surface-low` | `#F4F6F8` | `#282C30` | Table header, toolbar, and sub-header fills |
+| `surface-container` | `#EAEEF2` | `#2F3439` | Form inputs, divider chips, inactive pills |
+| `surface-high` | `#DDE3E9` | `#383E44` | Hover state on neutral table rows / list items |
+| `surface-highest` | `#CFD7DF` | `#434A52` | Secondary button fills, prominent borders |
 
 Utilities: `bg-canvas`, `bg-canvas-subtle`, `bg-canvas-stone`, `bg-surface-lowest`, `bg-surface-low`, `bg-surface-container`, `bg-surface-high`, `bg-surface-highest` (opacity modifiers such as `bg-surface-low/50` are permitted).
-
-> `canvas-subtle` and `surface-highest` are defined and mapped but not yet used by any component. Reach for them for the purposes listed above instead of inventing a new grey.
 
 ### 2.3 Inks & Hairlines
 
 | Token | Light Mode Value | Dark Mode Value | Purpose |
 | :--- | :--- | :--- | :--- |
-| `ink-primary` | `#161514` | `#F4F2EE` | Primary titles, active values, high-contrast text |
-| `ink-secondary` | `#5C5854` | `#A8A39D` | Secondary text, table cells, descriptive subtitles |
-| `ink-tertiary` | `#8E8A84` | `#6E6A64` | Micro-labels, input placeholders, disabled icons |
-| `hairline` | `rgba(22, 21, 20, 0.10)` | `rgba(244, 242, 238, 0.08)` | 1px structural table/card dividers |
-| `hairline-strong` | `rgba(22, 21, 20, 0.20)` | `rgba(244, 242, 238, 0.16)` | Input borders, card outlines, focused popovers |
+| `ink-primary` | `#181A1B` | `#E7E9EB` | Primary titles, active values, high-contrast text |
+| `ink-secondary` | `#4A525A` | `#B6BEC5` | Secondary text, table cells, descriptive subtitles |
+| `ink-tertiary` | `#6C747C` | `#868F97` | Micro-labels, input placeholders, disabled icons |
+| `hairline` | `rgba(24, 26, 27, 0.10)` | `rgba(255, 255, 255, 0.10)` | 1px structural table/card dividers |
+| `hairline-strong` | `rgba(24, 26, 27, 0.24)` | `rgba(255, 255, 255, 0.24)` | Input borders, card outlines, focused popovers |
 
 Utilities: `text-ink-primary`, `text-ink-secondary`, `text-ink-tertiary`, `border-hairline`, `border-hairline-strong`, `divide-hairline`, `placeholder:text-ink-tertiary`.
 
-### 2.4 Action Engine: Brick Crimson Accent
+### 2.4 Action Engine & Accessible Contrast (`--on-action`)
 
-The action red is calibrated per mode: `#9A2716` on the light canvas, `#B53420` on dark basalt (slightly lighter and more luminous, to hold contrast against dark surfaces).
+The default action accent is Teal Mint (`#2CB696` on light, `#41C9B4` on dark), paired with `--on-action` (`#0E1715`) so text and icons inside solid `bg-action` surfaces always exceed WCAG AA/AAA contrast across every swappable theme (dark-accent themes such as **Basalt Crimson** or **Blueprint Cobalt** automatically use `#FFFFFF` for `--on-action`).
 
 | State | Light Mode | Dark Mode | Token Utility |
 | :--- | :--- | :--- | :--- |
-| **Base Action** | `#9A2716` | `#B53420` | `bg-action`, `text-action`, `border-action` |
-| **Hover State** | `#801F10` | `#C83E28` | `hover:bg-action-hover` |
-| **Active State** | `#6B190D` | `#9A2716` | `active:bg-action-active` |
-| **Soft Container** | `rgba(154, 39, 22, 0.08)` | `rgba(181, 52, 32, 0.18)` | `bg-action-subtle` |
-| **Icon / Label Accent** | `#9A2716` | `#B53420` | `text-action` |
-
-> **Superseded:** `@theme` still declares `--color-terracotta`, `--color-terracotta-hover` and `--color-terracotta-active` (light values only, no dark pair). They are referenced **nowhere** in `src/renderer/src` and must not be used in new work — they do not respond to dark mode. `action` is the real action colour (≈390 usages).
+| **Base Action** | `#2CB696` | `#41C9B4` | `bg-action`, `text-action`, `border-action` |
+| **Hover State** | `#239B7F` | `#53D6C2` | `hover:bg-action-hover` |
+| **Active State** | `#1B7D66` | `#2CB696` | `active:bg-action-active` |
+| **Soft Container** | `rgba(65, 201, 180, 0.11)` | `rgba(65, 201, 180, 0.14)` | `bg-action-subtle` |
+| **On-Action Ink** | `#0E1715` | `#0E1715` | `text-on-action` |
+| **Surface Accent Ink** | `#115E4E` | `#9BF0E2` | `text-action-ink` |
 
 ### 2.5 Geometry & Radii
 
@@ -221,9 +228,9 @@ Coloured glow shadows (`shadow-emerald-500/50`, neon auras, `shadow-[0_0_25px_�
 
 | Token | Stack | Applied to |
 | :--- | :--- | :--- |
-| `--font-primary` | `"Montserrat", -apple-system, BlinkMacSystemFont, sans-serif` | All `h1`–`h6` (base layer), headers, labels, buttons (`font-primary`) |
-| `--font-body` | `"Manrope", -apple-system, BlinkMacSystemFont, sans-serif` | `<body>` default, tables, descriptive text (`font-body`) |
-| `--font-mono` | `"JetBrains Mono", monospace` | Identifiers, slugs, dimensions, currency (`font-mono`) |
+| `--font-primary` | `"Instrument Sans", -apple-system, BlinkMacSystemFont, sans-serif` | All `h1`–`h6` (base layer), headers, labels, buttons (`font-primary`) |
+| `--font-body` | `"Instrument Sans", -apple-system, BlinkMacSystemFont, sans-serif` | `<body>` default, tables, descriptive text (`font-body`) |
+| `--font-mono` | `"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace` | Identifiers, slugs, dimensions, telemetry (`font-mono`) |
 
 The base layer turns tabular numerals on for every monospace readout, so a component only has to declare `font-mono`:
 
@@ -237,6 +244,14 @@ The base layer turns tabular numerals on for every monospace readout, so a compo
 ```
 
 Serif faces (`Source Serif`, `font-serif`) are prohibited in non-webfront surfaces and the test fails on any occurrence.
+
+### 2.8 Swappable Themes & Brand Icons
+
+- **User Themes (`~/.config/mirage/themes/*.json`):** On startup, `src/main/themeService.ts` seeds `mirage.json`, `basalt.json`, `blueprint.json`, `amber-crt.json`, `_template.json`, and `README.txt` without overwriting user edits. Any `*.json` file or symlink placed in `~/.config/mirage/themes/` is discovered and hot-reloaded (watching resolved symlink targets as well so external generators such as Omarchy or Pywal can swap themes cleanly).
+- **Minimal Seeds:** `src/shared/themes.ts` (`normalizePalette`) expands minimal seeds (`canvas`, `inkPrimary`, `action`) into full stepped surfaces, hairlines, WCAG-calibrated `--on-action` contrast ink, and 3D viewport colors.
+- **Brand vs. Functional Marks (`UI/MirageLogo.tsx`):**
+  - `<MirageLogo />` renders the **M Horizon** brand mark (`TopNav`, `HubView`, `SystemInfoSection`, and `resources/icon.png` / `resources/icon.svg`).
+  - `<MetrologyTriadIcon />` renders the **Metrology Triad** 3D workbench & bounds mark (`NavSidebar`, `HubView` Workbench portal, `Canvas3D` empty state, `PieceCard` fallback).
 
 ---
 
@@ -266,12 +281,12 @@ Strict Rule: **Serif typefaces (`Source Serif 4`) are prohibited in non-webfront
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│ App / Screen Title: 24px Montserrat Bold, tracking-tight               │
-│ Subtitle: 12px Manrope Regular                                         │
+│ App / Screen Title: 24px Instrument Sans Bold, tracking-tight          │
+│ Subtitle: 12px Instrument Sans Regular                                 │
 ├────────────────────────────────────────────────────────────────────────┤
-│ Section Header: 14px Montserrat Semibold, uppercase                    │
-│ Field Overline: 10-11px Montserrat Semibold, uppercase, tracking-wider │
-│ Body & Cells: 12px / 13px Manrope Medium, leading-normal               │
+│ Section Header: 14px Instrument Sans Semibold, uppercase               │
+│ Field Overline: 10-11px Instrument Sans Semibold, uppercase, wider     │
+│ Body & Cells: 12px / 13px Instrument Sans Medium, leading-normal       │
 │ Numerals / SKUs: 12px JetBrains Mono, tabular-nums                     │
 └────────────────────────────────────────────────────────────────────────┘
 ```
@@ -280,18 +295,18 @@ Strict Rule: **Serif typefaces (`Source Serif 4`) are prohibited in non-webfront
 2. **Card & Section Headers:** `font-primary text-xs font-semibold uppercase tracking-wider text-ink-primary`
 3. **Micro-Labels & Overlines:** `text-[10px]` or `text-[11px] font-semibold uppercase tracking-wider text-ink-secondary` — the implementation uses `text-[9px]` / `text-[10px]` / `text-[11px]` for micro-type. Those three sizes are the sanctioned scale (see anti-pattern 10).
 4. **Data Grid & Cell Text:** `text-xs font-body text-ink-primary` / `text-ink-secondary`
-5. **Technical Numerals:** `font-mono tabular-nums text-ink-primary` (ARS currency, dimensions, slugs, polygon counts)
+5. **Technical Numerals:** `font-mono tabular-nums text-ink-primary` (dimensions, slugs, polygon counts, PBR scalars)
 
 ---
 
 ## 5. UI Component Catalog
 
-All visual elements across the application are componentized into **19 reusable primitives** located in `src/renderer/src/components/UI/` and exported via `index.ts`. Every primitive strictly encapsulates Mirage tokens, 0–2px border radii (`rounded-none` or `rounded-xs`), crisp hairlines, and accessible keyboard interactions.
+All visual elements across the application are componentized into **29 reusable primitives** located in `src/renderer/src/components/UI/` and exported via `index.ts`. Every primitive strictly encapsulates Mirage tokens, 0–2px border radii (`rounded-none` or `rounded-xs`), crisp hairlines, and accessible keyboard interactions.
 
 ### 5.1 Buttons & Action Controls (`UI/Button.tsx`, `UI/IconButton.tsx`, `UI/SegmentedControl.tsx`)
 
 ```tsx
-// Primary Committing Action (Brick Crimson)
+// Primary Committing Action (Theme Accent + --on-action text)
 <Button variant="primary" icon={<Save className="w-4 h-4" />}>
   Save
 </Button>
@@ -434,11 +449,11 @@ All operational tools in the Mirage ecosystem must strictly audit against and er
 
 ### 1. The "AI Purple-to-Cyan" Gradient & Neon Auras
 - ❌ **The Slop:** `bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-500`, neon glowing borders (`shadow-[0_0_25px_rgba(147,51,234,0.4)]`), or multi-color glowing aura backdrops behind cards.
-- ✅ **Mirage Standard:** Grounded mineral foundation. Flat opaque token surfaces (`bg-surface-lowest` on `bg-canvas`, which resolve to `#FFFFFF`/`#181816` and `#FDFDFD`/`#111110`). Action is strictly Brick Crimson via `bg-action`. Gradients and coloured glows are strictly forbidden — the compliance test fails on `bg-gradient-to-*`, `from-purple-*`, `via-indigo-*`, `to-cyan-*`.
+- ✅ **Mirage Standard:** Grounded mineral/slate foundation. Flat opaque token surfaces (`bg-surface-lowest` on `bg-canvas`). Action colour comes from the active theme via `bg-action` with `text-on-action`. Gradients and coloured glows are strictly forbidden — the compliance test fails on `bg-gradient-to-*`, `from-purple-*`, `via-indigo-*`, `to-cyan-*`.
 
 ### 2. The "Inter / Roboto" Monoculture
 - ❌ **The Slop:** Applying generic `font-sans` (Inter or Roboto) to every single label, heading, button, and table cell without intentional pairing or tracking.
-- ✅ **Mirage Standard:** Disciplined role-based pairing: tracked uppercase `Montserrat` (`font-primary`) for structural headers and micro-labels, `Manrope` (`font-body`) for readable body/table text, and `JetBrains Mono` (`font-mono`) with tabular numerals for all metrology, dimensions, and asset metrics. Serif faces are prohibited and test-enforced.
+- ✅ **Mirage Standard:** Disciplined role-based pairing: `Instrument Sans` (`font-primary` / `font-body`) paired with `JetBrains Mono` (`font-mono`) with tabular numerals for all metrology, dimensions, and asset metrics. Serif faces are prohibited and test-enforced.
 
 ### 3. The "Three-Card Triad" & Gratuitous Bento Boxes
 - ❌ **The Slop:** Forcing every feature, configuration screen, or setting into an identical 3-column bento grid where each card has a circular icon in a colored pastel background, a bold heading, and 2 lines of generic filler text.
@@ -485,8 +500,6 @@ The compliance suite tracks judgement calls instead of pretending a regex can ma
 | `rounded-full` | 16 | Spinners, colour swatches, status dots |
 | Coloured glow shadows | 1 | `Settings/AiProvidersSection.tsx` provider connection dot |
 | `group-hover:scale-105` | 3 | Poster thumbnails (2), collapsed-sidebar icon (1) |
-| Hardcoded backdrop hexes | 2 | `Viewport/Canvas3D.tsx` — the 3D canvas backdrop (`#111110` / `#f7f5f2`) tracks the **viewport** theme, which can differ from the app theme |
-| `--color-terracotta*` | defined, unused | `globals.css` `@theme`; superseded by the `action` family |
 
 The first two rows are enforced as ratchets by `designSystemCompliance.test.ts` — fixing an entry lowers its number, adding a new one fails the suite. The last three are conventions held by review, not by the test: treat them as ceilings, not as licence.
 

@@ -4,6 +4,7 @@ import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useViewportStore } from '../../store/viewportStore';
 import { useModelStore } from '../../store/modelStore';
+import { useAppStore } from '../../store/appStore';
 
 interface DynamicDimensionsProps {
   dimensions: {
@@ -17,6 +18,7 @@ export const DynamicDimensions: React.FC<DynamicDimensionsProps> = ({ dimensions
   const showDimensions = useViewportStore((state) => state.showDimensions);
   const unitType = useModelStore((state) => state.unitType);
   const viewportTheme = useViewportStore((state) => state.viewportTheme);
+  const activeTheme = useAppStore((state) => state.activeTheme);
   const { camera } = useThree();
 
   // Dynamic camera quadrant: signX (+1 or -1) and signZ (+1 or -1)
@@ -47,8 +49,8 @@ export const DynamicDimensions: React.FC<DynamicDimensionsProps> = ({ dimensions
   const maxDim = Math.max(width, height, depth);
   const offset = Math.max(maxDim * 0.04, 0.05);
 
-  // Brick Carmine / Terracotta accent
-  const lineColor = viewportTheme === 'dark' ? '#b53420' : '#9a2716';
+  // Active theme dimension accent
+  const lineColor = activeTheme[viewportTheme].viewport.dimensionLine;
   const { signX, signZ } = quadrant;
 
   // Format dimension cleanly according to scale

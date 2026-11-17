@@ -117,7 +117,7 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
             onClick={() => setTransformGizmoMode('translate')}
             className={`px-2 py-1 rounded-xs text-xs flex items-center justify-center gap-1.5 border transition-colors cursor-pointer ${
               transformGizmoMode === 'translate'
-                ? 'bg-action text-white border-action font-semibold'
+                ? 'bg-action text-on-action border-action font-semibold'
                 : 'bg-surface-low border-hairline text-ink-secondary hover:text-ink-primary'
             }`}
           >
@@ -128,7 +128,7 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
             onClick={() => setTransformGizmoMode('rotate')}
             className={`px-2 py-1 rounded-xs text-xs flex items-center justify-center gap-1.5 border transition-colors cursor-pointer ${
               transformGizmoMode === 'rotate'
-                ? 'bg-action text-white border-action font-semibold'
+                ? 'bg-action text-on-action border-action font-semibold'
                 : 'bg-surface-low border-hairline text-ink-secondary hover:text-ink-primary'
             }`}
           >

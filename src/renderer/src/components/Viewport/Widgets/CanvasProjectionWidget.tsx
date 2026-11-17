@@ -145,7 +145,7 @@ export const CanvasProjectionWidget: React.FC<CanvasProjectionWidgetProps> = ({
                     title={`${p.label} - ${p.desc} (${p.fov}° FOV)`}
                     className={`py-1 text-center font-mono text-[10px] rounded-xs border transition-colors cursor-pointer ${
                       isSelected
-                        ? 'bg-action text-white border-action shadow-xs font-bold'
+                        ? 'bg-action text-on-action border-action shadow-xs font-bold'
                         : 'bg-surface-container/50 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high'
                     }`}
                   >

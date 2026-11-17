@@ -86,7 +86,7 @@ export const CanvasLightingWidget: React.FC = () => {
           onClick={toggleContactShadows}
           className={`px-2 py-0.5 rounded-xs font-mono text-[10px] transition-colors border ${
             showContactShadows
-              ? 'bg-action text-white border-action font-bold'
+              ? 'bg-action text-on-action border-action font-bold'
               : 'bg-surface-lowest text-ink-tertiary border-hairline hover:text-ink-primary'
           }`}
         >

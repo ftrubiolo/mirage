@@ -101,7 +101,7 @@ export const CanvasTransformWidget: React.FC = () => {
         onClick={() => handleModeChange('none')}
         className={`flex items-center justify-center gap-1.5 py-1 px-2 rounded-xs transition-colors font-medium cursor-pointer ${
           transformGizmoMode === 'none'
-            ? 'bg-action text-white shadow-xs'
+            ? 'bg-action text-on-action shadow-xs'
             : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-high'
         }`}
         title="Cursor / Navigation (Q)"
@@ -114,7 +114,7 @@ export const CanvasTransformWidget: React.FC = () => {
         onClick={() => handleModeChange('translate')}
         className={`flex items-center justify-center gap-1.5 py-1 px-2 rounded-xs transition-colors font-medium cursor-pointer ${
           transformGizmoMode === 'translate'
-            ? 'bg-action text-white shadow-xs'
+            ? 'bg-action text-on-action shadow-xs'
             : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-high'
         }`}
         title="Translate with 3D axis handles (W)"
@@ -127,7 +127,7 @@ export const CanvasTransformWidget: React.FC = () => {
         onClick={() => handleModeChange('rotate')}
         className={`flex items-center justify-center gap-1.5 py-1 px-2 rounded-xs transition-colors font-medium cursor-pointer ${
           transformGizmoMode === 'rotate'
-            ? 'bg-action text-white shadow-xs'
+            ? 'bg-action text-on-action shadow-xs'
             : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-high'
         }`}
         title="Rotate with 3D rings (E)"

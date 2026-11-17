@@ -11,6 +11,7 @@ export * from './FormField';
 export * from './IconButton';
 export * from './ImageLightboxModal';
 export * from './InfoTooltip';
+export * from './MirageLogo';
 export * from './Modal';
 export * from './NumberInput';
 export * from './PieceCard';

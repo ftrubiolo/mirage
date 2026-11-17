@@ -119,7 +119,7 @@ export const CanvasThemeWidget: React.FC<CanvasThemeWidgetProps> = ({
           onClick={toggleEnvironmentBackground}
           className={`px-2 py-0.5 text-[10px] font-mono rounded-xs border transition-colors cursor-pointer ${
             showEnvironmentBackground
-              ? 'bg-action text-white border-action font-semibold'
+              ? 'bg-action text-on-action border-action font-semibold'
               : 'bg-surface-container border-hairline text-ink-tertiary hover:text-ink-primary'
           }`}
         >

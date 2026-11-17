@@ -24,23 +24,24 @@ The defining architectural constraint is that **the renderer parses untrusted bi
 │                      openExternal allowlist · graceful teardown           │
 │  accessPolicy.ts     ⭐ filesystem trust boundary (approved roots)         │
 │  ipcSchemas.ts       ⭐ zod schemas for every privileged IPC payload       │
-│  ipcHandlers.ts      44 ipcMain channels: containment + validation        │
+│  ipcHandlers.ts      49 ipcMain handlers: containment + validation       │
 │  protocol.ts         local-asset:// streaming, root-confined              │
 │  settingsService.ts  atomic settings (mutex + tmp/rename + debounce)      │
+│  themeService.ts     ~/.config/mirage/themes/*.json + symlink hot-reload  │
 │  vault.ts            API keys via safeStorage, atomic, corruption-safe    │
 │  thumbnailService.ts ⭐ in-process native sharp thumbnail engine & cache   │
 │  texturePacker.ts    sharp/libvips worker (system node preference)        │
 │  fileWatcher.ts      chokidar live-reload for the active model            │
-│  platform.ts         XDG data & cache paths, OS detection, explorer       │
+│  platform.ts         XDG config/data/cache paths, OS detection, explorer  │
 │  mcp/                MCP client manager + scoped environment resolver     │
 └───────────────────────────────────────────────────────────────────────────┘
                                     ▲
                                     │ contextBridge (sandboxed, no Node)
-                                    │ 45 typed methods · no business logic
+                                    │ 51 typed methods · no business logic
                                     ▼
 ┌───────────────────────────────────────────────────────────────────────────┐
 │ PRELOAD                                                     ~200 LOC      │
-│  index.ts   window.electronAPI — 45 typed methods, flat 1:1 forwarders     │
+│  index.ts   window.electronAPI — 51 typed methods, flat 1:1 forwarders     │
 └───────────────────────────────────────────────────────────────────────────┘
                                     ▲
                                     │  window.electronAPI
@@ -54,12 +55,12 @@ The defining architectural constraint is that **the renderer parses untrusted bi
 │  utils/     15 files · pbrController, viewportBridge, glbValidator, …     │
 │  agent/      3 files · tool registry, provider registry, scene serializer │
 │  components/ 70+ files · domain components (Viewport, Staging, Export, …) │
-│  components/UI/ 19 files · design-system primitives (Button, Modal, …)    │
-│  tests/     33 files · 611 tests (vitest + happy-dom)                     │
+│  components/UI/ 29 primitives · design-system UI (Button, MirageLogo, …)  │
+│  tests/     34 files · 616 tests (vitest + happy-dom)                     │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
-`src/main` and `src/renderer` share **no code**. The only contract between them is the `ElectronAPI` interface in `src/preload/index.ts` and the IPC channel names it invokes.
+`src/main` and `src/renderer` remain process-isolated, sharing only pure, dependency-free theme types and palette derivation in `src/shared/themes.ts`. All OS/IPC access crosses the `ElectronAPI` contract in `src/preload/index.ts`.
 
 ---
 
@@ -202,6 +203,7 @@ Four distinct mechanisms, deliberately chosen per data class:
 | Data | Mechanism | Why |
 | --- | --- | --- |
 | App settings (theme, density, viewport, camera) | `settings:update` IPC → `SettingsService` | deep-merged **in main** under a write mutex, atomic `tmp`+`rename`, debounce 350 ms with a 1500 ms max-wait |
+| User & linked themes | `~/.config/mirage/themes/*.json` via `themes:list` / `themes:changed` | seeded templates + symlink-aware `chokidar` watcher for live hot-swap |
 | Keybinds | `keybinds.json` via IPC | small, user-authored, written whole |
 | AI providers & chat sessions | `localStorage` | renderer-local, no secrets (keys live in the vault) |
 | Library entries | `<dataDir>/library/<slug>/entry.json` + assets | the durable artifact; user-visible on disk |
@@ -399,7 +401,7 @@ const { a, b } = useModelStore((s) => ({ a: s.a, b: s.b }));
 
 ```bash
 npm run typecheck   # tsc --noEmit — must exit 0
-npm test            # vitest run — 33 files, 611 tests
+npm test            # vitest run — 34 files, 616 tests
 npm run build       # electron-vite build
 ```
 
@@ -422,7 +424,7 @@ Note that `vitest` runs with `happy-dom` project-wide, so main-process modules a
 | add a top-level view | `views/` + a `currentView` value in `appStore`; wrap it in an `ErrorBoundary` in `App.tsx` |
 | add a reusable UI primitive | `components/UI/` + export from `components/UI/index.ts`; assert in `designSystemCompliance.test.ts` |
 | add a context menu | compose declarative items with `<ContextMenu>` from `components/UI` |
-| add a colour or surface token | `styles/globals.css` `:root` **and** `.dark`; never a `dark:bg-[#…]` override in a component |
+| add a colour or surface token | `src/shared/themes.ts` + `styles/globals.css` (`:root` **and** `.dark`); never a `dark:bg-[#…]` override in a component |
 
 ---
 

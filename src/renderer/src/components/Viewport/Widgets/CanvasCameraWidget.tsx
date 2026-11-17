@@ -31,7 +31,7 @@ export const CanvasCameraWidget: React.FC = () => {
           onClick={toggleOrthographic}
           className={`flex-1 py-1.5 px-2 rounded-xs font-mono text-[11px] font-bold border transition-colors flex items-center justify-center gap-1.5 ${
             isOrthographic
-              ? 'bg-action text-white border-action shadow-xs'
+              ? 'bg-action text-on-action border-action shadow-xs'
               : 'bg-surface-container/60 hover:bg-surface-high border-hairline text-ink-secondary'
           }`}
           title="Toggle between perspective and orthographic projection (5)"

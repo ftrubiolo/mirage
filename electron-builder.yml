@@ -13,12 +13,15 @@ extraResources:
     to: resources/draco
   - from: resources/scripts
     to: resources/scripts
+  - from: resources/icon.png
+    to: resources/icon.png
 asarUnpack:
   - "node_modules/sharp/**/*"
   - "node_modules/@janhapke/**/*"
   - "node_modules/@img/**/*"
   - "resources/scripts/**/*"
 linux:
+  icon: resources/icon.png
   target:
     - AppImage
     - tar.gz
@@ -29,6 +32,7 @@ mac:
     - dmg
   category: public.app-category.graphics-design
 win:
+  icon: resources/icon.png
   signAndEditExecutable: false
   target:
     - zip

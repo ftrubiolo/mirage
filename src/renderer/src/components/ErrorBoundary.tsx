@@ -81,7 +81,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="flex items-center gap-2 pt-1">
               <button
                 onClick={this.handleRetry}
-                className="px-4 py-2 bg-action hover:bg-action-hover active:bg-action-active text-white text-xs font-semibold uppercase tracking-wider transition-colors rounded-xs flex items-center gap-2"
+                className="px-4 py-2 bg-action hover:bg-action-hover active:bg-action-active text-on-action text-xs font-semibold uppercase tracking-wider transition-colors rounded-xs flex items-center gap-2"
               >
                 Retry
               </button>

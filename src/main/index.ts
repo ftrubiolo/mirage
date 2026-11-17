@@ -1,4 +1,5 @@
 import { app, BrowserWindow, shell, protocol, nativeTheme, session } from 'electron';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { registerLocalAssetProtocol } from './protocol';
@@ -83,7 +84,17 @@ function openExternalIfAllowed(rawUrl: string): void {
   }
 }
 
+function resolveWindowIconPath(): string | undefined {
+  const candidates = [
+    path.join(process.resourcesPath || '', 'resources', 'icon.png'),
+    path.join(app.getAppPath(), 'resources', 'icon.png'),
+    path.join(__dirname, '../../resources/icon.png')
+  ];
+  return candidates.find((candidate) => candidate && fs.existsSync(candidate));
+}
+
 function createWindow(): void {
+  const windowIcon = resolveWindowIconPath();
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -92,7 +103,8 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     title: 'Mirage — 3D Model & Texture Workbench',
-    backgroundColor: '#0f0f11',
+    backgroundColor: '#1e2123',
+    ...(windowIcon ? { icon: windowIcon } : {}),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       // The renderer parses untrusted 3D/2D asset binaries. It must not share a

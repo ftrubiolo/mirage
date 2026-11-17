@@ -31,6 +31,7 @@ describe('SettingsView and Decoupled Settings Components', () => {
 
     useAppStore.setState({
       settings: {
+        themeId: 'mirage',
         themeMode: 'dark',
         fontDensity: 'standard',
         defaultContactShadows: true,
@@ -100,25 +101,34 @@ describe('SettingsView and Decoupled Settings Components', () => {
   });
 
   describe('AppearanceSection Component', () => {
-    it('allows changing theme mode', () => {
+    it('allows changing theme preset and color mode', () => {
       act(() => {
         root.render(<AppearanceSection />);
       });
 
       expect(container.textContent).toContain('Appearance & Theme');
-      expect(container.textContent).toContain('Basalt (Dark)');
-      expect(container.textContent).toContain('Mineral (Light)');
+      expect(container.textContent).toContain('Mirage Slate');
+      expect(container.textContent).toContain('Basalt Crimson');
+      expect(container.textContent).toContain('Dark');
+      expect(container.textContent).toContain('Light');
       expect(container.textContent).toContain('Automatic (System)');
 
-      const lightCard = Array.from(container.querySelectorAll('h3')).find(
-        (h) => h.textContent?.includes('Mineral (Light)')
+      const basaltCard = Array.from(container.querySelectorAll('h3')).find(
+        (h) => h.textContent?.includes('Basalt Crimson')
       )?.closest('div');
+      expect(basaltCard).toBeDefined();
+      act(() => {
+        (basaltCard as HTMLElement)?.click();
+      });
+      expect(useAppStore.getState().settings.themeId).toBe('basalt');
 
+      const lightCard = Array.from(container.querySelectorAll('h3')).find(
+        (h) => h.textContent?.trim() === 'Light'
+      )?.closest('div');
       expect(lightCard).toBeDefined();
       act(() => {
         (lightCard as HTMLElement)?.click();
       });
-
       expect(useAppStore.getState().settings.themeMode).toBe('light');
     });
 

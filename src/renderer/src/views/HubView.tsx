@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
   Library,
   Settings,
   ArrowRight,
@@ -18,7 +17,9 @@ import {
   EmptyState,
   SectionHeader,
   Spinner,
-  Badge
+  Badge,
+  MirageLogo,
+  MetrologyTriadIcon
 } from '../components/UI';
 
 interface HubViewProps {
@@ -78,7 +79,7 @@ export const HubView: React.FC<HubViewProps> = () => {
   const portals: (PortalCardProps & { id: string })[] = [
     {
       id: 'workbench',
-      icon: <Box className="w-5 h-5 text-action" />,
+      icon: <MetrologyTriadIcon size={20} className="text-ink-primary" />,
       title: '3D Workbench',
       description:
         'Real-time PBR rendering canvas, metric scale calibration, and Sharp ORM texture packing.',
@@ -112,7 +113,8 @@ export const HubView: React.FC<HubViewProps> = () => {
         {/* Center Vertically: Left-aligned Title & Subtitle */}
         <div className="flex-1 flex flex-col justify-center items-start text-left w-full space-y-4 py-8">
           {/* Top Tag: 3D STUDIO WORKBENCH */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
+            <MirageLogo size={28} className="text-ink-primary shrink-0" />
             <Badge variant="action">3D</Badge>
             <span className="text-xs font-mono text-ink-secondary uppercase tracking-wider">
               Studio Workbench

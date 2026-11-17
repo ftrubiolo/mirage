@@ -14,7 +14,7 @@ export interface IconButtonProps
 
 const VARIANT_STYLES: Record<IconButtonVariant, string> = {
   primary:
-    'bg-action hover:bg-action-hover active:bg-action-active text-white shadow-xs border border-transparent',
+    'bg-action hover:bg-action-hover active:bg-action-active text-on-action shadow-xs border border-transparent',
   secondary:
     'bg-surface-low hover:bg-surface-high text-ink-primary border border-hairline-strong shadow-xs',
   ghost:
@@ -56,7 +56,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         {isLoading ? (
           <Spinner
             size="xs"
-            variant={variant === 'primary' ? 'white' : 'action'}
+            variant={variant === 'primary' ? 'on-action' : 'action'}
           />
         ) : (
           icon

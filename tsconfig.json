@@ -23,6 +23,7 @@
     }
   },
   "include": [
+    "src/shared/**/*",
     "src/renderer/src/**/*",
     "src/preload/**/*",
     "src/main/**/*",

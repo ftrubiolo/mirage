@@ -149,7 +149,7 @@ export const CanvasAnimationWidget: React.FC = () => {
             title={isAnimationPlaying ? 'Pause (Space)' : 'Play (Space)'}
             className={`flex items-center justify-center w-8 h-7 rounded-xs transition-colors shadow-xs ${
               isAnimationPlaying
-                ? 'bg-action text-white hover:bg-action-hover'
+                ? 'bg-action text-on-action hover:bg-action-hover'
                 : 'bg-surface-high text-ink-primary hover:bg-surface-container border border-hairline'
             }`}
           >
@@ -177,7 +177,7 @@ export const CanvasAnimationWidget: React.FC = () => {
                 onClick={() => setAnimationPlaybackSpeed(s)}
                 className={`px-1.5 py-0.5 text-[10px] font-mono tabular-nums transition-colors ${
                   s === animationPlaybackSpeed
-                    ? 'bg-action text-white font-bold'
+                    ? 'bg-action text-on-action font-bold'
                     : 'text-ink-secondary hover:bg-surface-high'
                 }`}
               >

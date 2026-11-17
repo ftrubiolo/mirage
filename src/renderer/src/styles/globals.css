@@ -3,9 +3,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-primary: "Montserrat", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-primary: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   --color-canvas: var(--canvas);
   --color-canvas-subtle: var(--canvas-subtle);
@@ -28,68 +28,73 @@
   --color-action-hover: var(--action-hover);
   --color-action-active: var(--action-active);
   --color-action-subtle: var(--action-subtle);
-
-  --color-terracotta: #9a2716;
-  --color-terracotta-hover: #801f10;
-  --color-terracotta-active: #6b190d;
+  --color-action-ink: var(--action-ink);
+  --color-on-action: var(--on-action);
 
   --radius-xs: 2px;
 }
 
+/* Default Main Theme: Mirage Slate (derived from portfolio) */
 :root {
-  --canvas: #fdfdfd;
-  --canvas-subtle: #f7f5f2;
-  --canvas-stone: #efece6;
+  --canvas: #fcfcfd;
+  --canvas-subtle: #f4f6f8;
+  --canvas-stone: #eaeef2;
 
   --surface-lowest: #ffffff;
-  --surface-low: #f7f5f2;
-  --surface-container: #efece6;
-  --surface-high: #ded9d1;
-  --surface-highest: #d5cfc5;
+  --surface-low: #f4f6f8;
+  --surface-container: #eaeef2;
+  --surface-high: #dde3e9;
+  --surface-highest: #cfd7df;
 
-  --ink-primary: #161514;
-  --ink-secondary: #5c5854;
-  --ink-tertiary: #8e8a84;
+  --ink-primary: #181a1b;
+  --ink-secondary: #4a525a;
+  --ink-tertiary: #6c747c;
 
-  --hairline: rgba(22, 21, 20, 0.10);
-  --hairline-strong: rgba(22, 21, 20, 0.20);
+  --hairline: rgba(24, 26, 27, 0.10);
+  --hairline-strong: rgba(24, 26, 27, 0.24);
 
-  --action: #9a2716;
-  --action-hover: #801f10;
-  --action-active: #6b190d;
-  --action-subtle: rgba(154, 39, 22, 0.08);
+  --action: #2cb696;
+  --action-hover: #239b7f;
+  --action-active: #1b7d66;
+  --action-subtle: rgba(65, 201, 180, 0.11);
+  --action-ink: #115e4e;
+  --on-action: #0e1715;
 
-  --scrollbar-track: #efece6;
-  --scrollbar-thumb: #ded9d1;
-  --scrollbar-thumb-hover: #d5cfc5;
+  --scrollbar-track: #eaeef2;
+  --scrollbar-thumb: #cfd7df;
+  --scrollbar-thumb-hover: #b6bec5;
+  color-scheme: light;
 }
 
 .dark {
-  --canvas: #111110;
-  --canvas-subtle: #141412;
-  --canvas-stone: #1a1917;
+  --canvas: #1e2123;
+  --canvas-subtle: #191c1e;
+  --canvas-stone: #282c30;
 
-  --surface-lowest: #181816;
-  --surface-low: #1f1e1c;
-  --surface-container: #272523;
-  --surface-high: #32302c;
-  --surface-highest: #3e3b37;
+  --surface-lowest: #24282b;
+  --surface-low: #282c30;
+  --surface-container: #2f3439;
+  --surface-high: #383e44;
+  --surface-highest: #434a52;
 
-  --ink-primary: #f4f2ee;
-  --ink-secondary: #a8a39d;
-  --ink-tertiary: #6e6a64;
+  --ink-primary: #e7e9eb;
+  --ink-secondary: #b6bec5;
+  --ink-tertiary: #868f97;
 
-  --hairline: rgba(244, 242, 238, 0.08);
-  --hairline-strong: rgba(244, 242, 238, 0.16);
+  --hairline: rgba(255, 255, 255, 0.10);
+  --hairline-strong: rgba(255, 255, 255, 0.24);
 
-  --action: #b53420;
-  --action-hover: #c83e28;
-  --action-active: #9a2716;
-  --action-subtle: rgba(181, 52, 32, 0.18);
+  --action: #41c9b4;
+  --action-hover: #53d6c2;
+  --action-active: #2cb696;
+  --action-subtle: rgba(65, 201, 180, 0.14);
+  --action-ink: #9bf0e2;
+  --on-action: #0e1715;
 
-  --scrollbar-track: #141412;
-  --scrollbar-thumb: #272523;
-  --scrollbar-thumb-hover: #3e3b37;
+  --scrollbar-track: #191c1e;
+  --scrollbar-thumb: #2f3439;
+  --scrollbar-thumb-hover: #434a52;
+  color-scheme: dark;
 }
 
 @layer base {
@@ -107,10 +112,9 @@
   /**
    * Interface density.
    *
-   * The Settings control has always written `data-density` onto <html>; these
-   * rules are what make it do something. Only two axes are scaled — text scale
-   * and control height — so layout keeps using the standard Tailwind spacing
-   * scale (DESIGN.md §6.10 bans arbitrary ad-hoc utilities).
+   * The Settings control writes `data-density` onto <html>; only text scale
+   * and control height are scaled so layout keeps using the standard Tailwind
+   * spacing scale.
    */
   html[data-density='standard'] {
     --density-font-scale: 1;

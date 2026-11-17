@@ -17,7 +17,7 @@ import { useAppStore } from '../../store/appStore';
 import { useKeybindsStore } from '../../utils/keybindsManager';
 import { viewportBridge } from '../../utils/viewportBridge';
 import { handleCanvasDrop } from '../../utils/canvasDropHandler';
-import { Spinner, Button } from '../UI';
+import { Spinner, Button, MetrologyTriadIcon } from '../UI';
 
 const ViewportBridgeSync: React.FC = () => {
   const { gl, scene, camera } = useThree();
@@ -151,18 +151,18 @@ const CanvasBackgroundSync: React.FC = () => {
   const { gl, scene } = useThree();
   const viewportTheme = useViewportStore((s) => s.viewportTheme);
   const showEnvironmentBackground = useViewportStore((s) => s.showEnvironmentBackground);
+  const activeTheme = useAppStore((s) => s.activeTheme);
+  const bgColor = activeTheme[viewportTheme].viewport.background;
 
   useEffect(() => {
-    const bgColor = viewportTheme === 'dark' ? '#111110' : '#f7f5f2';
-    const clearHex = viewportTheme === 'dark' ? 0x111110 : 0xf7f5f2;
-    gl.setClearColor(clearHex, 1.0);
+    gl.setClearColor(new THREE.Color(bgColor), 1.0);
     if (!showEnvironmentBackground) {
       scene.background = new THREE.Color(bgColor);
     }
-  }, [gl, scene, viewportTheme, showEnvironmentBackground]);
+  }, [gl, scene, bgColor, showEnvironmentBackground]);
 
   return !showEnvironmentBackground ? (
-    <color attach="background" args={[viewportTheme === 'dark' ? '#111110' : '#f7f5f2']} />
+    <color attach="background" args={[bgColor]} />
   ) : null;
 };
 
@@ -224,6 +224,8 @@ export const Canvas3D: React.FC = React.memo(() => {
   const autoRotateSpeed = useViewportStore((state) => state.autoRotateSpeed);
   const cameraZoomAction = useViewportStore((state) => state.cameraZoomAction);
   const viewportTheme = useViewportStore((state) => state.viewportTheme);
+  const activeTheme = useAppStore((state) => state.activeTheme);
+  const viewportBgColor = activeTheme[viewportTheme].viewport.background;
   const showEnvironmentBackground = useViewportStore((state) => state.showEnvironmentBackground);
   const canvasWidgets = useViewportStore((state) => state.canvasWidgets);
   const currentView = useAppStore((state) => state.currentView);
@@ -537,9 +539,8 @@ export const Canvas3D: React.FC = React.memo(() => {
   return (
     <div
       ref={containerRef}
-      className={`relative w-full h-full overflow-hidden select-none flex flex-col transition-colors duration-200 ${
-        viewportTheme === 'dark' ? 'bg-[#111110]' : 'bg-[#f7f5f2]'
-      }`}
+      style={{ backgroundColor: viewportBgColor }}
+      className="relative w-full h-full overflow-hidden select-none flex flex-col transition-colors duration-200"
     >
       {/* Top Viewport Toolbar: Full width, docked at top */}
       <ViewportToolbar />
@@ -624,7 +625,7 @@ export const Canvas3D: React.FC = React.memo(() => {
           canvas.addEventListener('webglcontextlost', handleContextLost);
           canvas.addEventListener('webglcontextrestored', handleContextRestored);
 
-          gl.setClearColor(viewportTheme === 'dark' ? 0x111110 : 0xf7f5f2, 1.0);
+          gl.setClearColor(new THREE.Color(viewportBgColor), 1.0);
 
           contextCleanupRef.current = () => {
             canvas.removeEventListener('webglcontextlost', handleContextLost);
@@ -720,9 +721,7 @@ export const Canvas3D: React.FC = React.memo(() => {
         {!modelUrl && !isModelLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-ink-tertiary">
             <div className="p-4 rounded-xs bg-surface-lowest border border-hairline shadow-xs mb-3">
-              <svg className="w-8 h-8 text-ink-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
+              <MetrologyTriadIcon size={32} className="text-ink-primary" />
             </div>
             <p className="text-xs font-semibold uppercase tracking-wider text-ink-primary">Mirage 3D Viewport</p>
             <p className="text-xs text-ink-secondary mt-1">Drop a .glb model or PBR texture maps (_baseColor, _normal, _orm...)</p>

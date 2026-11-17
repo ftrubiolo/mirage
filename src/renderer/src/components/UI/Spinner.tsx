@@ -2,7 +2,7 @@ import React from 'react';
 
 export interface SpinnerProps {
   size?: 'xs' | 'sm' | 'md' | 'lg';
-  variant?: 'action' | 'neutral' | 'white';
+  variant?: 'action' | 'neutral' | 'white' | 'on-action';
   className?: string;
   label?: string;
 }
@@ -17,7 +17,8 @@ const SIZE_MAP = {
 const VARIANT_MAP = {
   action: 'border-action border-t-transparent',
   neutral: 'border-ink-tertiary border-t-transparent',
-  white: 'border-white border-t-transparent'
+  white: 'border-white border-t-transparent',
+  'on-action': 'border-on-action border-t-transparent'
 };
 
 export const Spinner: React.FC<SpinnerProps> = ({

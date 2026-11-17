@@ -4,6 +4,7 @@ import { useThree, useFrame } from '@react-three/fiber';
 import { Environment } from '@react-three/drei';
 import { HorizontalBlurShader, VerticalBlurShader } from 'three-stdlib';
 import { useViewportStore } from '../../store/viewportStore';
+import { useAppStore } from '../../store/appStore';
 
 let cachedHdrUrl: string | null = null;
 
@@ -250,15 +251,18 @@ export const StoreEnvironment: React.FC = () => {
     contactShadowOpacity
   } = useViewportStore();
 
+  const activeTheme = useAppStore((s) => s.activeTheme);
+  const vpPalette = activeTheme[viewportTheme].viewport;
+
   const [offlineHdrUrl, setOfflineHdrUrl] = useState<string | null>(cachedHdrUrl);
 
   // Synchronize scene background with viewport theme to prevent transmission render targets
   // from defaulting to black when looking at glass against the canvas background.
   useEffect(() => {
     if (!showEnvironmentBackground) {
-      scene.background = new THREE.Color(viewportTheme === 'dark' ? '#111110' : '#f7f5f2');
+      scene.background = new THREE.Color(vpPalette.background);
     }
-  }, [scene, showEnvironmentBackground, viewportTheme]);
+  }, [scene, showEnvironmentBackground, vpPalette.background]);
 
   useEffect(() => {
     if (cachedHdrUrl) return;
@@ -277,8 +281,8 @@ export const StoreEnvironment: React.FC = () => {
     resolveHdr();
   }, []);
 
-  const gridPrimary = viewportTheme === 'dark' ? '#272523' : '#d5cfc5';
-  const gridSecondary = viewportTheme === 'dark' ? '#181816' : '#efece6';
+  const gridPrimary = vpPalette.gridPrimary;
+  const gridSecondary = vpPalette.gridSecondary;
 
   // Convert azimuth & elevation to Cartesian coordinates for Key Light
   const radAzimuth = (sunAzimuth * Math.PI) / 180;
@@ -306,8 +310,8 @@ export const StoreEnvironment: React.FC = () => {
       {/* Soft Ground Bounce Hemisphere Light for viewing underside without darkness */}
       <hemisphereLight
         args={[
-          viewportTheme === 'dark' ? '#2a2825' : '#ffffff',
-          viewportTheme === 'dark' ? '#1c1b19' : '#dfd9cc',
+          vpPalette.hemisphereSky,
+          vpPalette.hemisphereGround,
           0.45 * environmentIntensity
         ]}
       />

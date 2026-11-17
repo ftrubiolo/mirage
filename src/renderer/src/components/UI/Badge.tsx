@@ -11,7 +11,7 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 
 const VARIANT_STYLES: Record<BadgeVariant, string> = {
   neutral: 'bg-surface-container text-ink-secondary border border-hairline',
-  action: 'bg-action text-white shadow-xs border border-transparent',
+  action: 'bg-action text-on-action shadow-xs border border-transparent',
   outline: 'bg-transparent text-ink-secondary border border-hairline',
   contrast: 'bg-ink-primary text-surface-lowest border border-transparent'
 };

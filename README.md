@@ -100,7 +100,7 @@
 
 ### 🧭 Workbench Experience
 - **Resizable Sidebar System**: Drag-to-resize, auto-collapse, double-click reset, persisted widths, and `Ctrl+B` to toggle the studio panel.
-- **Light & Dark Theming**: `dark`, `light`, or `system`, driven by a single CSS-variable token layer, plus user-editable keybinds.
+- **Swappable Themes & Hot-Reload**: Built-in themes (**Mirage Slate** default, **Basalt Crimson**, **Blueprint Cobalt**, **Amber Instrument**) plus custom or symlinked `*.json` themes in `~/.config/mirage/themes/` (supporting external generators like Omarchy or Pywal) with `dark` / `light` / `system` modes, synced 3D viewport palettes, and user-editable keybinds.
 - **Inline Feedback**: Long-running jobs disable their trigger, show a spinner, and report the result in a persistent in-panel banner.
 - **Unified Context Menu Engine**: Declarative, portal-rendered context menus with boundary collision detection, directional submenus, keyboard Escape handling, and clean outside-click dismissal across the 3D viewport and staging panels.
 
@@ -164,9 +164,9 @@ Current state, verified on this checkout:
 | Gate | Command | Result |
 | :--- | :--- | :--- |
 | Type check | `npx tsc --noEmit` | Clean (exit 0) |
-| Tests | `npx vitest run` | **33 files, 611 tests, all passing** |
+| Tests | `npx vitest run` | **34 files, 616 tests, all passing** |
 
-The suite covers the PBR controller, multi-material staging, model and variant stores, GLB validation, AR bake pipeline, thumbnail service and pipeline, path-safety utilities, colour conversion, settings persistence, the Web & AR package exporter, sidebar resize math, platform explorer integration, and the command manager — plus adversarial suites for graphics state and shortcut handling, and a design-system compliance suite that enforces [`DESIGN.md`](DESIGN.md).
+The suite covers the PBR controller, multi-material staging, model and variant stores, GLB validation, AR bake pipeline, thumbnail service and pipeline, theme normalization and symlinked theme discovery, path-safety utilities, colour conversion, settings persistence, the Web & AR package exporter, sidebar resize math, platform explorer integration, and the command manager — plus adversarial suites for graphics state and shortcut handling, and a design-system compliance suite that enforces [`DESIGN.md`](DESIGN.md).
 
 ### Production Builds
 
@@ -201,31 +201,39 @@ mirage/
 ├── ARCHITECTURE.md           # Deep system map: processes, IPC, data flow
 ├── DESIGN.md                 # Mirage Operations design system (tokens, palette, components)
 ├── resources/
+│   ├── branding/             # Source SVGs (logo-horizon.svg, metrology-triad.svg)
 │   ├── draco/                # DRACO decoder/encoder for compressed glTF
 │   ├── environments/         # Bundled HDR environment maps (city.hdr)
-│   └── scripts/              # sharpWorker.cjs — isolated libvips worker
+│   ├── omarchy/              # Omarchy theme template (mirage.json.tpl)
+│   ├── pywal/                # Pywal theme template (mirage.json)
+│   ├── scripts/              # sharpWorker.cjs — isolated libvips worker
+│   ├── icon.png              # 512×512 app icon (rendered from logo-horizon.svg)
+│   └── icon.svg              # Vector app icon (M Horizon)
 ├── src/
+│   ├── shared/
+│   │   └── themes.ts         # Shared theme schema, palette derivation, and built-in presets
 │   ├── main/                 # Electron main process (all privileged work)
 │   │   ├── accessPolicy.ts   # Approved filesystem roots, path containment, whitelist persistence
 │   │   ├── fileWatcher.ts    # chokidar live-reload of the active .glb
 │   │   ├── index.ts          # Window creation, CSP, lifecycle, single instance
-│   │   ├── ipcHandlers.ts    # Dialogs, fs, library, vault, MCP, provider HTTP, thumbnails
+│   │   ├── ipcHandlers.ts    # Dialogs, fs, library, vault, MCP, provider HTTP, thumbnails, themes
 │   │   ├── ipcSchemas.ts     # Zod schemas for every privileged IPC payload
-│   │   ├── platform.ts       # OS data & cache paths, Wayland flags, explorer integration
+│   │   ├── platform.ts       # OS config, data & cache paths, Wayland flags, explorer integration
 │   │   ├── protocol.ts       # local-asset:// streaming, root-confined
 │   │   ├── settingsService.ts # Atomic settings.json persistence
 │   │   ├── texturePacker.ts  # Spawns the sharp worker process (system node preference)
+│   │   ├── themeService.ts   # ~/.config/mirage/themes/*.json seeding, symlink-aware hot-reload
 │   │   ├── thumbnailService.ts # Native in-process sharp thumbnail engine, threadpool & caching
 │   │   ├── vault.ts          # safeStorage-encrypted API-key vault
-│   │   └── mcp/              # MCP client manager + login-shell env resolver
+│   │   └── mcp/              # MCP client manager + scoped environment resolver
 │   ├── preload/              # contextBridge API surface (window.electronAPI)
 │   └── renderer/
-│       ├── index.html        # Shell (Montserrat / Manrope / JetBrains Mono)
+│       ├── index.html        # Shell (Instrument Sans / JetBrains Mono)
 │       └── src/
 │           ├── views/        # Route views: Hub, Workbench, Library, EntryDetail, Settings, AgentStudio
 │           ├── layouts/      # Application navigation chrome: TopNav and NavSidebar
 │           ├── components/
-│           │   ├── UI/       # 19 Design-system primitives: Button, Modal, ContextMenu, StatusBadge…
+│           │   ├── UI/       # 29 Design-system primitives: Button, Modal, MirageLogo, StatusBadge…
 │           │   ├── Viewport/ # R3F canvas, camera, dimension lines, gizmos, ViewportStatusBar, ToolbarItems/
 │           │   ├── Staging/  # Modular PBR studio (Geometry, SurfaceMaps, MicroGeometry, Advanced, Emissive), manifest cards
 │           │   ├── Library/  # Catalogue: variants, modals, technical sheet
@@ -237,7 +245,7 @@ mirage/
 │           ├── hooks/        # useResizableSidebar (pure resize math + hook)
 │           ├── store/        # Zustand: app, model, pbrMaterial, variant, viewport, agent
 │           ├── styles/       # globals.css — the design token layer
-│           ├── tests/        # Vitest suite (33 files, 611 tests)
+│           ├── tests/        # Vitest suite (34 files, 616 tests)
 │           ├── types/        # Config, library, and agent contracts
 │           └── utils/        # PBR controller, viewport bridge, glbValidator, arBakePipeline, mapSlotNaming, command manager
 ├── package.json

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Box, Library, Sparkles, Settings } from 'lucide-react';
+import { Library, Sparkles, Settings } from 'lucide-react';
 import { useAppStore, AppView } from '../store/appStore';
-import { IconButton } from '../components/UI';
+import { IconButton, MetrologyTriadIcon } from '../components/UI';
 
 interface NavButtonConfig {
   id: AppView;
@@ -9,12 +9,16 @@ interface NavButtonConfig {
   icon: React.ComponentType<{ className?: string }>;
 }
 
+const WorkbenchNavIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <MetrologyTriadIcon size={16} className={className} />
+);
+
 export const NavSidebar: React.FC = React.memo(() => {
   const currentView = useAppStore((s) => s.currentView);
   const setView = useAppStore((s) => s.setView);
 
   const mainViews: NavButtonConfig[] = [
-    { id: 'workbench', label: '3D Workbench', icon: Box },
+    { id: 'workbench', label: '3D Workbench', icon: WorkbenchNavIcon },
     { id: 'library', label: 'Model Library', icon: Library },
     { id: 'agent', label: 'AI Studio', icon: Sparkles }
   ];

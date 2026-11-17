@@ -1,8 +1,8 @@
 import React from 'react';
-import { Info } from 'lucide-react';
 import { useAppStore } from '../../store/appStore';
 import { Card, CardHeader, CardBody } from '../UI/Card';
 import { Badge } from '../UI/Badge';
+import { MirageLogo } from '../UI/MirageLogo';
 
 export const SystemInfoSection: React.FC = () => {
   const libraryPath = useAppStore((s) => s.libraryPath);
@@ -22,7 +22,7 @@ export const SystemInfoSection: React.FC = () => {
         <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Info className="w-4 h-4 text-action" />
+              <MirageLogo size={18} className="text-ink-primary shrink-0" />
               <h2 className="font-primary font-bold uppercase tracking-wider text-ink-primary text-sm">
                 Mirage 3D Workbench
               </h2>

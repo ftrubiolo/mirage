@@ -220,7 +220,7 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
                 setCloneFromVariantId(rawVariants[0]?.id || null);
                 setIsCreateModalOpen(true);
               }}
-              className="px-3 py-1.5 bg-action hover:bg-action-hover text-white rounded-xs shadow-xs text-xs font-primary font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-action hover:bg-action-hover text-on-action rounded-xs shadow-xs text-xs font-primary font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>New Variant</span>

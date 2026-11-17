@@ -12,8 +12,10 @@ import {
   getLegacyMirageDataDir,
   getKeybindsPath,
   getSettingsPath,
+  getThemesPath,
   openPathInSystemExplorer
 } from './platform';
+import { discoverThemes, startWatchingThemes, stopWatchingThemes } from './themeService';
 import { storeSecret, retrieveSecret, hasSecret, deleteSecret } from './vault';
 import { MCPClientManager, McpServerConfig } from './mcp/MCPClientManager';
 import { SettingsService } from './settingsService';
@@ -74,6 +76,7 @@ export function setTargetWindow(win: BrowserWindow | null): void {
  */
 export async function shutdownIpcResources(): Promise<void> {
   stopWatching();
+  stopWatchingThemes();
   try {
     await SettingsService.getInstance().flush();
   } catch (err) {
@@ -858,5 +861,19 @@ const DEFAULT_KEYBINDS: Record<string, string> = {
 
   ipcMain.handle('settings:getPath', handleSettingsGetPath);
   ipcMain.handle('mirage:settings:getPath', handleSettingsGetPath);
+
+  // --- Theme Discovery & Hot-Swap Watchers (.local/share/mirage/themes, Omarchy, Pywal) ---
+  void startWatchingThemes(() => targetWindow).catch((err) =>
+    console.warn('[Main] Could not start theme watcher:', err)
+  );
+
+  ipcMain.handle('themes:list', async () => {
+    await ensureMirageDir();
+    return discoverThemes();
+  });
+
+  ipcMain.handle('themes:getPath', () => {
+    return getThemesPath();
+  });
 }
 

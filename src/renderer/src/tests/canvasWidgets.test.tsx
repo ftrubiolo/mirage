@@ -181,7 +181,7 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       });
 
       // Overlay should show
-      expect(container.textContent).toContain('Soltar en Visor 3D');
+      expect(container.textContent).toContain('Drop into 3D Viewport');
 
       // Abort drag globally (e.g. user releases outside or hits Esc)
       act(() => {
@@ -189,7 +189,7 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       });
 
       // Overlay MUST be dismissed and not stuck!
-      expect(container.textContent).not.toContain('Soltar en Visor 3D');
+      expect(container.textContent).not.toContain('Drop into 3D Viewport');
     });
 
     it('dragging internal toolbar item does NOT trigger external file import modal', () => {
@@ -210,8 +210,8 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       });
 
       // Must NOT show external file import modal or widget drop indicator
-      expect(container.textContent).not.toContain('SOLTAR EN VISOR 3D');
-      expect(container.textContent).not.toContain('Soltar para anclar widget');
+      expect(container.textContent).not.toContain('Drop into 3D Viewport');
+      expect(container.textContent).not.toContain('Drop to dock widget');
     });
   });
 
@@ -221,17 +221,17 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
 
       act(() => {
         root.render(
-          <CanvasWidgetContainer id="animation-controls" title="Estudio de Animación" x={50} y={50}>
+          <CanvasWidgetContainer id="animation-controls" title="Animation Studio" x={50} y={50}>
             <CanvasAnimationWidget />
           </CanvasWidgetContainer>
         );
       });
 
-      expect(container.querySelector('[title*="Estudio de Animación"]')).toBeTruthy();
+      expect(container.querySelector('[title*="Animation Studio"]')).toBeTruthy();
       expect(container.textContent).toContain('04.50s');
-      expect(container.querySelector('button[title*="Retroceder 0.1s"]')).toBeTruthy();
-      expect(container.querySelector('button[title*="Avanzar 0.1s"]')).toBeTruthy();
-      expect(container.querySelector('button[title*="Volver al inicio"]')).toBeTruthy();
+      expect(container.querySelector('button[title*="Step back 0.1s"]')).toBeTruthy();
+      expect(container.querySelector('button[title*="Step forward 0.1s"]')).toBeTruthy();
+      expect(container.querySelector('button[title*="Return to start"]')).toBeTruthy();
       expect(container.textContent).toContain('1x');
       expect(container.textContent).toContain('1.5x');
     });
@@ -264,21 +264,21 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
 
     it('renders CanvasVariantWidget with variant cards and add action', () => {
       act(() => {
-        useVariantStore.getState().createVariant('Rojo Carmín');
-        useVariantStore.getState().createVariant('Azul Cobalto');
+        useVariantStore.getState().createVariant('Crimson Oxide');
+        useVariantStore.getState().createVariant('Cobalt Blue');
       });
 
       act(() => {
         root.render(
-          <CanvasWidgetContainer id="variant-picker" title="Variantes de Modelo" x={80} y={80}>
+          <CanvasWidgetContainer id="variant-picker" title="Model Variants" x={80} y={80}>
             <CanvasVariantWidget />
           </CanvasWidgetContainer>
         );
       });
 
-      expect(container.textContent).toContain('Rojo Carmín');
-      expect(container.textContent).toContain('Azul Cobalto');
-      expect(container.textContent).toContain('Nueva');
+      expect(container.textContent).toContain('Crimson Oxide');
+      expect(container.textContent).toContain('Cobalt Blue');
+      expect(container.textContent).toContain('New');
     });
 
     it('clicking dock back button on CanvasWidgetContainer returns widget to bar', () => {
@@ -286,13 +286,13 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
 
       act(() => {
         root.render(
-          <CanvasWidgetContainer id="model-stats" title="Metrología Geométrica" x={100} y={100}>
+          <CanvasWidgetContainer id="model-stats" title="Geometry Metrology" x={100} y={100}>
             <CanvasMetrologyWidget />
           </CanvasWidgetContainer>
         );
       });
 
-      const dockBtn = container.querySelector('button[title*="Anclar nuevamente a la barra"]') as HTMLButtonElement;
+      const dockBtn = container.querySelector('button[title*="Dock back to bar"]') as HTMLButtonElement;
       expect(dockBtn).toBeTruthy();
 
       act(() => {
@@ -306,17 +306,17 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
     it('renders CanvasTransformWidget with gizmo mode buttons and coordinate display', () => {
       act(() => {
         root.render(
-          <CanvasWidgetContainer id="transform-gizmo" title="Manipulación 3D" x={50} y={50}>
+          <CanvasWidgetContainer id="transform-gizmo" title="3D Gizmo" x={50} y={50}>
             <CanvasTransformWidget />
           </CanvasWidgetContainer>
         );
       });
 
       expect(container.textContent).toContain('Cursor');
-      expect(container.textContent).toContain('Mover');
-      expect(container.textContent).toContain('Rotar');
-      expect(container.textContent).toContain('Posición (X, Y, Z)');
-      expect(container.textContent).toContain('Alinear base al piso');
+      expect(container.textContent).toContain('Move');
+      expect(container.textContent).toContain('Rotate');
+      expect(container.textContent).toContain('Position (X, Y, Z)');
+      expect(container.textContent).toContain('Snap base to floor');
     });
 
     it('renders CanvasTransformWidget in compressed mode with only the 3 big buttons (no text, no margin)', () => {
@@ -324,7 +324,7 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
 
       act(() => {
         root.render(
-          <CanvasWidgetContainer id="transform-gizmo" title="Manipulación 3D" x={50} y={50}>
+          <CanvasWidgetContainer id="transform-gizmo" title="3D Gizmo" x={50} y={50}>
             <CanvasTransformWidget />
           </CanvasWidgetContainer>
         );
@@ -344,8 +344,8 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
 
       // Check aria-labels
       const cursorBtn = compressedView?.querySelector('button[aria-label="Cursor"]');
-      const moveBtn = compressedView?.querySelector('button[aria-label="Mover"]');
-      const rotateBtn = compressedView?.querySelector('button[aria-label="Rotar"]');
+      const moveBtn = compressedView?.querySelector('button[aria-label="Move"]');
+      const rotateBtn = compressedView?.querySelector('button[aria-label="Rotate"]');
       expect(cursorBtn).toBeDefined();
       expect(moveBtn).toBeDefined();
       expect(rotateBtn).toBeDefined();
@@ -353,7 +353,7 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       // Default horizontal orientation
       expect(compressedView?.getAttribute('data-orientation')).toBe('horizontal');
 
-      // Clicking Mover button updates transformGizmoMode
+      // Clicking Move button updates transformGizmoMode
       act(() => {
         (moveBtn as HTMLButtonElement)?.click();
       });
@@ -395,14 +395,14 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       });
 
       // Expandable header: initially ONLY move handle and "..." icon are visible
-      expect(card?.querySelector('[title*="Arrastrar para mover"]')).not.toBeNull();
-      const moreBtn = card?.querySelector('button[aria-label="Más opciones"]') as HTMLButtonElement;
+      expect(card?.querySelector('[title*="Drag to move"]')).not.toBeNull();
+      const moreBtn = card?.querySelector('button[aria-label="More options"]') as HTMLButtonElement;
       expect(moreBtn).not.toBeNull();
 
       // Action buttons are NOT visible initially
-      expect(card?.querySelector('button[title*="Anclar nuevamente a la barra"]')).toBeNull();
-      expect(card?.querySelector('button[title*="orientación"]')).toBeNull();
-      expect(card?.querySelector('button[title*="coordenadas"]')).toBeNull();
+      expect(card?.querySelector('button[title*="Dock back to bar"]')).toBeNull();
+      expect(card?.querySelector('button[title*="orientation"]')).toBeNull();
+      expect(card?.querySelector('button[title*="coordinates"]')).toBeNull();
 
       // Click "..." to expand
       act(() => {
@@ -410,9 +410,9 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       });
 
       // Action buttons are NOW visible in the expanded row
-      expect(card?.querySelector('button[title*="Anclar nuevamente a la barra"]')).not.toBeNull();
-      expect(card?.querySelector('button[title*="orientación"]')).not.toBeNull();
-      expect(card?.querySelector('button[title*="coordenadas"]')).not.toBeNull();
+      expect(card?.querySelector('button[title*="Dock back to bar"]')).not.toBeNull();
+      expect(card?.querySelector('button[title*="orientation"]')).not.toBeNull();
+      expect(card?.querySelector('button[title*="coordinates"]')).not.toBeNull();
 
       // Click "..." to collapse again
       act(() => {
@@ -420,9 +420,9 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       });
 
       // Actions are collapsed again
-      expect(card?.querySelector('button[title*="Anclar nuevamente a la barra"]')).toBeNull();
-      expect(card?.querySelector('button[title*="orientación"]')).toBeNull();
-      expect(card?.querySelector('button[title*="coordenadas"]')).toBeNull();
+      expect(card?.querySelector('button[title*="Dock back to bar"]')).toBeNull();
+      expect(card?.querySelector('button[title*="orientation"]')).toBeNull();
+      expect(card?.querySelector('button[title*="coordinates"]')).toBeNull();
     });
 
     it('toggles CanvasTransformWidget between full and compressed mode', () => {
@@ -450,31 +450,31 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
     it('renders CanvasLightingWidget with presets and intensity slider', () => {
       act(() => {
         root.render(
-          <CanvasWidgetContainer id="lighting-intensity" title="Estudio de Iluminación" x={50} y={50}>
+          <CanvasWidgetContainer id="lighting-intensity" title="Lighting Studio" x={50} y={50}>
             <CanvasLightingWidget />
           </CanvasWidgetContainer>
         );
       });
 
-      expect(container.textContent).toContain('Estudio');
+      expect(container.textContent).toContain('Studio');
       expect(container.textContent).toContain('Natural');
-      expect(container.textContent).toContain('Dramático');
-      expect(container.textContent).toContain('Intensidad de Entorno');
-      expect(container.textContent).toContain('Sombras de Contacto');
+      expect(container.textContent).toContain('Dramatic');
+      expect(container.textContent).toContain('Environment Intensity');
+      expect(container.textContent).toContain('Contact Shadows');
     });
 
     it('renders CanvasEnvironmentWidget with presets and background toggle', () => {
       act(() => {
         root.render(
-          <CanvasWidgetContainer id="environment-hdri" title="Entornos HDRI" x={50} y={50}>
+          <CanvasWidgetContainer id="environment-hdri" title="HDRI Environments" x={50} y={50}>
             <CanvasEnvironmentWidget />
           </CanvasWidgetContainer>
         );
       });
 
-      expect(container.textContent).toContain('Mostrar cielo/fondo 3D');
-      expect(container.textContent).toContain('Ciudad');
-      expect(container.textContent).toContain('Almacén');
+      expect(container.textContent).toContain('Show 3D sky/background');
+      expect(container.textContent).toContain('City');
+      expect(container.textContent).toContain('Warehouse');
     });
 
     it('renders CanvasEnvironmentWidget in compressed mode with big icons only', () => {
@@ -482,7 +482,7 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
 
       act(() => {
         root.render(
-          <CanvasWidgetContainer id="environment-hdri" title="Entornos HDRI" x={50} y={50}>
+          <CanvasWidgetContainer id="environment-hdri" title="HDRI Environments" x={50} y={50}>
             <CanvasEnvironmentWidget />
           </CanvasWidgetContainer>
         );
@@ -495,8 +495,8 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       const presetButtons = compressedView?.querySelectorAll('button[aria-label]');
       expect(presetButtons?.length).toBe(8);
 
-      const cityBtn = Array.from(presetButtons || []).find((b) => b.getAttribute('aria-label') === 'Ciudad');
-      const studioBtn = Array.from(presetButtons || []).find((b) => b.getAttribute('aria-label') === 'Estudio');
+      const cityBtn = Array.from(presetButtons || []).find((b) => b.getAttribute('aria-label') === 'City');
+      const studioBtn = Array.from(presetButtons || []).find((b) => b.getAttribute('aria-label') === 'Studio');
       expect(cityBtn).toBeDefined();
       expect(studioBtn).toBeDefined();
 
@@ -533,31 +533,31 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
     it('renders CanvasCameraWidget with CAD orientation buttons and FOV', () => {
       act(() => {
         root.render(
-          <CanvasWidgetContainer id="camera-orientation" title="Cámara & Vistas CAD" x={50} y={50}>
+          <CanvasWidgetContainer id="camera-orientation" title="Camera & CAD Views" x={50} y={50}>
             <CanvasCameraWidget />
           </CanvasWidgetContainer>
         );
       });
 
-      expect(container.textContent).toContain('Perspectiva');
-      expect(container.textContent).toContain('Encuadrar');
-      expect(container.textContent).toContain('Orientaciones Estándar CAD');
+      expect(container.textContent).toContain('Perspective');
+      expect(container.textContent).toContain('Fit');
+      expect(container.textContent).toContain('Standard CAD Views');
       expect(container.textContent).toContain('ISO');
     });
 
     it('renders CanvasChannelWidget with PBR diagnostic channel buttons', () => {
       act(() => {
         root.render(
-          <CanvasWidgetContainer id="channel-dropdown" title="Diagnóstico de Canales PBR" x={50} y={50}>
+          <CanvasWidgetContainer id="channel-dropdown" title="PBR Channel Diagnostics" x={50} y={50}>
             <CanvasChannelWidget />
           </CanvasWidgetContainer>
         );
       });
 
-      expect(container.textContent).toContain('PBR Completo');
+      expect(container.textContent).toContain('Full PBR');
       expect(container.textContent).toContain('Albedo (Color)');
-      expect(container.textContent).toContain('Normales');
-      expect(container.textContent).toContain('Malla Alámbrica');
+      expect(container.textContent).toContain('Normals');
+      expect(container.textContent).toContain('Wireframe');
     });
   });
 
@@ -845,7 +845,7 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       act(() => {
         root.render(
           <div>
-            <header aria-label="Barra de herramientas del visor 3D">
+            <header aria-label="3D viewport toolbar">
               <ToolbarItemWrapper itemId="fit-model" index={0} bar="toolbar">
                 <FitModelItem />
               </ToolbarItemWrapper>
@@ -952,7 +952,7 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       act(() => {
         root.render(
           <div>
-            <header aria-label="Barra de herramientas del visor 3D">
+            <header aria-label="3D viewport toolbar">
               <ToolbarItemWrapper itemId="fit-model" index={0} bar="toolbar">
                 <FitModelItem />
               </ToolbarItemWrapper>
@@ -1028,18 +1028,18 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       expect(compressed).toBeTruthy();
 
       // Only Grip and "..." button are visible initially
-      expect(container.querySelector('button[aria-label="Más opciones"]')).toBeTruthy();
-      expect(container.querySelector('button[aria-label="Cambiar orientación"]')).toBeFalsy();
+      expect(container.querySelector('button[aria-label="More options"]')).toBeTruthy();
+      expect(container.querySelector('button[aria-label="Toggle orientation"]')).toBeFalsy();
 
       // Click "..." to expand header actions
-      const moreBtn = container.querySelector('button[aria-label="Más opciones"]') as HTMLButtonElement;
+      const moreBtn = container.querySelector('button[aria-label="More options"]') as HTMLButtonElement;
       act(() => {
         moreBtn.click();
       });
 
       // Now orientation and mode toggle buttons are visible
-      const orientBtn = container.querySelector('button[aria-label="Cambiar orientación"]') as HTMLButtonElement;
-      const modeBtn = container.querySelector('button[aria-label="Alternar modo de widget"]') as HTMLButtonElement;
+      const orientBtn = container.querySelector('button[aria-label="Toggle orientation"]') as HTMLButtonElement;
+      const modeBtn = container.querySelector('button[aria-label="Toggle widget mode"]') as HTMLButtonElement;
       expect(orientBtn).toBeTruthy();
       expect(modeBtn).toBeTruthy();
 
@@ -1052,7 +1052,7 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       expect(card.className).toContain('w-[46px]');
 
       // Toggle mode to full using the freshly rendered button in the vertical header
-      const liveModeBtn = container.querySelector('button[aria-label="Alternar modo de widget"]') as HTMLButtonElement;
+      const liveModeBtn = container.querySelector('button[aria-label="Toggle widget mode"]') as HTMLButtonElement;
       expect(liveModeBtn).toBeTruthy();
       act(() => {
         liveModeBtn.click();
@@ -1067,10 +1067,10 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         root.render(<CanvasOverlaysWidget id="overlays" mode="compressed" orientation="horizontal" />);
       });
 
-      const gridBtn = container.querySelector('button[aria-label="Grilla de taller"]') as HTMLButtonElement;
-      const dimBtn = container.querySelector('button[aria-label="Cotas y dimensiones 3D"]') as HTMLButtonElement;
-      const shadowBtn = container.querySelector('button[aria-label="Sombras de contacto"]') as HTMLButtonElement;
-      const wireBtn = container.querySelector('button[aria-label="Malla Wireframe"]') as HTMLButtonElement;
+      const gridBtn = container.querySelector('button[aria-label="Viewport grid"]') as HTMLButtonElement;
+      const dimBtn = container.querySelector('button[aria-label="3D dimensions & guides"]') as HTMLButtonElement;
+      const shadowBtn = container.querySelector('button[aria-label="Contact shadows"]') as HTMLButtonElement;
+      const wireBtn = container.querySelector('button[aria-label="Wireframe mesh"]') as HTMLButtonElement;
 
       expect(gridBtn).toBeTruthy();
       expect(dimBtn).toBeTruthy();
@@ -1106,7 +1106,7 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
       });
       expect(useViewportStore.getState().contactShadowOpacity).toBeCloseTo(0.85);
 
-      const resetBtn = container.querySelector('button[title*="Restablecer"]') as HTMLButtonElement;
+      const resetBtn = container.querySelector('button[title*="Reset"]') as HTMLButtonElement;
       expect(resetBtn).toBeTruthy();
       act(() => {
         resetBtn.click();
@@ -1121,8 +1121,8 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         root.render(<CanvasProjectionWidget id="projection-toggle" mode="compressed" orientation="horizontal" />);
       });
 
-      const perspBtn = container.querySelector('button[aria-label="Perspectiva"]') as HTMLButtonElement;
-      const ortoBtn = container.querySelector('button[aria-label="Ortográfica"]') as HTMLButtonElement;
+      const perspBtn = container.querySelector('button[aria-label="Perspective"]') as HTMLButtonElement;
+      const ortoBtn = container.querySelector('button[aria-label="Orthographic"]') as HTMLButtonElement;
       expect(perspBtn).toBeTruthy();
       expect(ortoBtn).toBeTruthy();
 
@@ -1141,7 +1141,7 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         root.render(<CanvasProjectionWidget id="projection-toggle" mode="full" orientation="horizontal" />);
       });
 
-      expect(container.textContent).toContain('Campo de Visión (FOV)');
+      expect(container.textContent).toContain('Field of View (FOV)');
       const chip85 = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('85mm'));
       expect(chip85).toBeTruthy();
       act(() => {
@@ -1156,9 +1156,9 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         root.render(<CanvasFitModelWidget id="fit-model" mode="compressed" orientation="horizontal" />);
       });
 
-      const fitBtn = container.querySelector('button[aria-label="Reencuadrar 1:1"]') as HTMLButtonElement;
-      const originBtn = container.querySelector('button[aria-label="Centrar al origen"]') as HTMLButtonElement;
-      const resetCamBtn = container.querySelector('button[aria-label="Restablecer cámara"]') as HTMLButtonElement;
+      const fitBtn = container.querySelector('button[aria-label="Reframe 1:1"]') as HTMLButtonElement;
+      const originBtn = container.querySelector('button[aria-label="Center to origin"]') as HTMLButtonElement;
+      const resetCamBtn = container.querySelector('button[aria-label="Reset camera"]') as HTMLButtonElement;
       expect(fitBtn).toBeTruthy();
       expect(originBtn).toBeTruthy();
       expect(resetCamBtn).toBeTruthy();
@@ -1185,8 +1185,8 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         root.render(<CanvasFitModelWidget id="fit-model" mode="full" orientation="horizontal" />);
       });
 
-      const zoomInBtn = container.querySelector('button[aria-label="Acercar"]') as HTMLButtonElement;
-      const zoomOutBtn = container.querySelector('button[aria-label="Alejar"]') as HTMLButtonElement;
+      const zoomInBtn = container.querySelector('button[aria-label="Zoom in"]') as HTMLButtonElement;
+      const zoomOutBtn = container.querySelector('button[aria-label="Zoom out"]') as HTMLButtonElement;
       const prevZoom = useViewportStore.getState().cameraZoomAction;
 
       act(() => {
@@ -1205,9 +1205,9 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         root.render(<CanvasAutoRotateWidget id="auto-rotate" mode="compressed" orientation="horizontal" />);
       });
 
-      const playBtn = container.querySelector('button[aria-label="Reproducir o pausar giro"]') as HTMLButtonElement;
-      const dirBtn = container.querySelector('button[aria-label="Invertir sentido"]') as HTMLButtonElement;
-      const speedBtn = container.querySelector('button[aria-label="Alternar velocidad"]') as HTMLButtonElement;
+      const playBtn = container.querySelector('button[aria-label="Play or pause orbit"]') as HTMLButtonElement;
+      const dirBtn = container.querySelector('button[aria-label="Reverse direction"]') as HTMLButtonElement;
+      const speedBtn = container.querySelector('button[aria-label="Toggle speed"]') as HTMLButtonElement;
 
       expect(playBtn).toBeTruthy();
       expect(dirBtn).toBeTruthy();
@@ -1248,8 +1248,8 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         root.render(<CanvasThemeWidget id="theme-toggle" mode="compressed" orientation="horizontal" />);
       });
 
-      const darkBtn = container.querySelector('button[aria-label="Modo Oscuro"]') as HTMLButtonElement;
-      const lightBtn = container.querySelector('button[aria-label="Modo Claro"]') as HTMLButtonElement;
+      const darkBtn = container.querySelector('button[aria-label="Dark Mode"]') as HTMLButtonElement;
+      const lightBtn = container.querySelector('button[aria-label="Light Mode"]') as HTMLButtonElement;
 
       expect(darkBtn).toBeTruthy();
       expect(lightBtn).toBeTruthy();
@@ -1269,8 +1269,8 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         root.render(<CanvasThemeWidget id="theme-toggle" mode="full" orientation="horizontal" />);
       });
 
-      const skyBtn = (container.querySelector('button[type="button"]:has-text("ACTIVO"), button[type="button"]:has-text("SÓLIDO")') ||
-        Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('ACTIVO') || b.textContent?.includes('SÓLIDO'))) as HTMLButtonElement | undefined;
+      const skyBtn = (container.querySelector('button[type="button"]:has-text("ACTIVE"), button[type="button"]:has-text("SOLID")') ||
+        Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('ACTIVE') || b.textContent?.includes('SOLID'))) as HTMLButtonElement | undefined;
       expect(skyBtn).toBeTruthy();
 
       const prevSky = useViewportStore.getState().showEnvironmentBackground;
@@ -1285,7 +1285,7 @@ describe('Canvas Floating Widgets & Drag Overlay Isolation', () => {
         root.render(<CanvasSnapshotWidget id="snapshot-button" mode="compressed" orientation="horizontal" />);
       });
 
-      const transBtn = container.querySelector('button[aria-label="Alternar fondo transparente"]') as HTMLButtonElement;
+      const transBtn = container.querySelector('button[aria-label="Toggle transparent background"]') as HTMLButtonElement;
       expect(transBtn).toBeTruthy();
 
       const prevTrans = useViewportStore.getState().snapshotTransparent;

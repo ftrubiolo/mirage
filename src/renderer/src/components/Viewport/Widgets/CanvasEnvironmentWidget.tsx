@@ -28,14 +28,14 @@ interface PresetDefinition {
 }
 
 const ENVIRONMENT_PRESETS: PresetDefinition[] = [
-  { id: 'city', label: 'Ciudad', desc: 'Urbano, luz solar suave', icon: Building2 },
-  { id: 'studio', label: 'Estudio', desc: 'Neutral, alta fidelidad', icon: SunMedium },
-  { id: 'warehouse', label: 'Almacén', desc: 'Industrial, contrastado', icon: Warehouse },
-  { id: 'apartment', label: 'Apartamento', desc: 'Cálido, interiores', icon: Home },
-  { id: 'lobby', label: 'Lobby', desc: 'Arquitectónico, diáfano', icon: Landmark },
-  { id: 'sunset', label: 'Atardecer', desc: 'Tonos dorados y rasantes', icon: Sunset },
-  { id: 'night', label: 'Noche', desc: 'Luz fría y acentos', icon: Moon },
-  { id: 'park', label: 'Parque', desc: 'Follaje natural exterior', icon: Trees }
+  { id: 'city', label: 'City', desc: 'Urban, soft sunlight', icon: Building2 },
+  { id: 'studio', label: 'Studio', desc: 'Neutral, high fidelity', icon: SunMedium },
+  { id: 'warehouse', label: 'Warehouse', desc: 'Industrial, high contrast', icon: Warehouse },
+  { id: 'apartment', label: 'Apartment', desc: 'Warm, indoor ambient', icon: Home },
+  { id: 'lobby', label: 'Lobby', desc: 'Architectural, bright', icon: Landmark },
+  { id: 'sunset', label: 'Sunset', desc: 'Golden hour tones', icon: Sunset },
+  { id: 'night', label: 'Night', desc: 'Cool light & accents', icon: Moon },
+  { id: 'park', label: 'Park', desc: 'Natural outdoor foliage', icon: Trees }
 ];
 
 export const CanvasEnvironmentWidget: React.FC = () => {
@@ -59,7 +59,7 @@ export const CanvasEnvironmentWidget: React.FC = () => {
   const handlePickCustomHdr = async () => {
     if (window.electronAPI) {
       const file = await window.electronAPI.openFileDialog({
-        title: 'Seleccionar mapa de entorno HDRI (.hdr)',
+        title: 'Select HDRI Environment Map (.hdr)',
         filters: [{ name: 'HDRI Environment Map', extensions: ['hdr'] }]
       });
       if (file) {
@@ -88,8 +88,8 @@ export const CanvasEnvironmentWidget: React.FC = () => {
               onClick={toggleEnvironmentBackground}
               title={
                 showEnvironmentBackground
-                  ? 'Fondo 3D: Visible (Clic para ocultar)'
-                  : 'Fondo 3D: Oculto (Clic para mostrar)'
+                  ? '3D Background: Visible (Click to hide)'
+                  : '3D Background: Hidden (Click to show)'
               }
               className={`w-7 h-7 rounded-xs border transition-colors flex items-center justify-center cursor-pointer ${
                 showEnvironmentBackground
@@ -104,7 +104,7 @@ export const CanvasEnvironmentWidget: React.FC = () => {
             <button
               type="button"
               onClick={handlePickCustomHdr}
-              title={customHdrName ? `HDR activo: ${customHdrName} (Examinar...)` : 'Cargar archivo .hdr personalizado'}
+              title={customHdrName ? `Active HDR: ${customHdrName} (Browse...)` : 'Load custom .hdr file'}
               className="w-7 h-7 rounded-xs border border-hairline bg-surface-container/30 hover:bg-surface-container hover:border-hairline-strong text-ink-secondary hover:text-ink-primary transition-colors flex items-center justify-center cursor-pointer"
             >
               <FolderOpen size={14} className="text-action" />
@@ -115,7 +115,7 @@ export const CanvasEnvironmentWidget: React.FC = () => {
           <button
             type="button"
             onClick={toggleCanvasEnvironmentMode}
-            title="Cambiar a vista de lista detallada"
+            title="Switch to detailed list view"
             className="w-7 h-7 rounded-xs border border-hairline bg-surface-container/30 hover:bg-surface-container hover:border-hairline-strong text-ink-tertiary hover:text-ink-primary transition-colors flex items-center justify-center cursor-pointer"
           >
             <List size={13} />
@@ -123,7 +123,7 @@ export const CanvasEnvironmentWidget: React.FC = () => {
         </div>
 
         {/* Presets Grid: Big Icons */}
-        <div className="grid grid-cols-4 gap-1.5" role="group" aria-label="Presets de iluminación HDRI">
+        <div className="grid grid-cols-4 gap-1.5" role="group" aria-label="HDRI lighting presets">
           {ENVIRONMENT_PRESETS.map((preset) => {
             const isSelected = !customHdrName && environmentPreset === preset.id;
             const Icon = preset.icon;
@@ -152,7 +152,7 @@ export const CanvasEnvironmentWidget: React.FC = () => {
           <div className="flex flex-col gap-1 border-t border-hairline pt-1.5">
             <div className="flex items-center justify-between px-0.5">
               <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-ink-tertiary">
-                Mis Entornos
+                My Environments
               </span>
               <span className="text-[9px] font-mono text-ink-tertiary">
                 {customHdrs.length}
@@ -181,7 +181,7 @@ export const CanvasEnvironmentWidget: React.FC = () => {
                     <button
                       type="button"
                       onClick={(e) => handleDeleteCustomHdr(e, hdr.name)}
-                      title={`Eliminar ${hdr.displayName || hdr.name}`}
+                      title={`Delete ${hdr.displayName || hdr.name}`}
                       className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-surface-lowest border border-hairline text-ink-tertiary hover:text-rose-500 hover:border-rose-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-xs"
                     >
                       <X size={10} />
@@ -205,7 +205,7 @@ export const CanvasEnvironmentWidget: React.FC = () => {
       <div className="flex items-center justify-between px-2 py-1.5 bg-surface-container/20 rounded-xs border border-hairline">
         <div className="flex items-center gap-1.5 text-ink-secondary">
           {showEnvironmentBackground ? <Eye size={13} className="text-action" /> : <EyeOff size={13} className="text-ink-tertiary" />}
-          <span className="font-medium text-ink-primary">Mostrar cielo/fondo 3D</span>
+          <span className="font-medium text-ink-primary">Show 3D sky/background</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button
@@ -217,12 +217,12 @@ export const CanvasEnvironmentWidget: React.FC = () => {
                 : 'bg-surface-lowest text-ink-tertiary border-hairline hover:text-ink-primary'
             }`}
           >
-            {showEnvironmentBackground ? 'Visible' : 'Oculto'}
+            {showEnvironmentBackground ? 'Visible' : 'Hidden'}
           </button>
           <button
             type="button"
             onClick={toggleCanvasEnvironmentMode}
-            title="Cambiar a vista compacta de iconos grandes"
+            title="Switch to compact large icon view"
             className="p-1 rounded-xs border border-hairline bg-surface-container/30 hover:bg-surface-container hover:text-action text-ink-tertiary transition-colors cursor-pointer"
           >
             <LayoutGrid size={11} />
@@ -230,10 +230,10 @@ export const CanvasEnvironmentWidget: React.FC = () => {
         </div>
       </div>
 
-      {/* Presets de Taller List (Scrollable) */}
+      {/* Studio Presets List (Scrollable) */}
       <div className="flex flex-col gap-1">
         <span className="text-[10px] font-primary font-bold uppercase tracking-wider text-ink-tertiary px-0.5">
-          Presets de Taller
+          Studio Presets
         </span>
         <div className="max-h-36 overflow-y-auto flex flex-col gap-0.5 pr-0.5">
           {ENVIRONMENT_PRESETS.map((preset) => {
@@ -266,7 +266,7 @@ export const CanvasEnvironmentWidget: React.FC = () => {
       {customHdrs.length > 0 && (
         <div className="flex flex-col gap-1 border-t border-hairline pt-1.5">
           <span className="text-[10px] font-primary font-bold uppercase tracking-wider text-ink-tertiary px-0.5">
-            Mis Entornos
+            My Environments
           </span>
           <div className="max-h-36 overflow-y-auto flex flex-col gap-0.5 pr-0.5">
             {customHdrs.map((hdr) => {
@@ -296,7 +296,7 @@ export const CanvasEnvironmentWidget: React.FC = () => {
                     <button
                       type="button"
                       onClick={(e) => handleDeleteCustomHdr(e, hdr.name)}
-                      title={`Eliminar ${hdr.displayName || hdr.name}`}
+                      title={`Delete ${hdr.displayName || hdr.name}`}
                       className="opacity-0 group-hover:opacity-100 hover:text-red-500 text-ink-tertiary p-0.5 rounded transition-opacity"
                     >
                       <Trash2 size={13} />
@@ -318,10 +318,10 @@ export const CanvasEnvironmentWidget: React.FC = () => {
         <div className="flex items-center gap-1.5 truncate">
           <FolderOpen size={13} className="text-action shrink-0" />
           <span className="text-xs truncate font-medium">
-            {customHdrName || 'Cargar archivo .hdr personalizado'}
+            {customHdrName || 'Load custom .hdr file'}
           </span>
         </div>
-        <span className="text-[10px] font-primary uppercase font-bold text-ink-tertiary shrink-0 ml-1">Examinar</span>
+        <span className="text-[10px] font-primary uppercase font-bold text-ink-tertiary shrink-0 ml-1">Browse</span>
       </button>
     </div>
   );

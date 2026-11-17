@@ -23,18 +23,18 @@ export const MapSlotDeleteModal: React.FC<MapSlotDeleteModalProps> = ({
       isOpen={Boolean(deleteCandidate)}
       onClose={onClose}
       onConfirm={onConfirm}
-      title="¿Eliminar mapa en uso por otros perfiles?"
+      title="Delete map used by other variants?"
       variant="warning"
-      confirmText="Eliminar de Todos Modos"
+      confirmText="Delete Anyway"
       message={
         deleteCandidate ? (
           <div className="space-y-2">
             <p>
-              El mapa{' '}
+              The map{' '}
               <span className="font-mono text-ink-primary font-semibold">
                 {deleteCandidate.variant.name || deleteCandidate.variant.fileName}
               </span>{' '}
-              está siendo utilizado en los siguientes perfiles de esta pieza:
+              is currently used by the following variants of this model:
             </p>
             <div className="flex flex-wrap gap-1.5 pt-1">
               {deleteCandidate.affectedVariants.map((aff) => (
@@ -47,7 +47,7 @@ export const MapSlotDeleteModal: React.FC<MapSlotDeleteModalProps> = ({
               ))}
             </div>
             <p className="text-[11px] text-ink-tertiary">
-              Si confirmas la eliminación, este mapa se desvinculará de la pieza.
+              If you confirm deletion, this map will be unlinked from the model.
             </p>
           </div>
         ) : null

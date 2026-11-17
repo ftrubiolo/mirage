@@ -12,7 +12,7 @@ export const ScaleChecker: React.FC = () => {
   if (!modelStats) {
     return (
       <div className="p-4 rounded-xs bg-surface-lowest border border-hairline text-center text-xs text-ink-tertiary">
-        Carga un modelo .glb para auditar su escala real y cotas físicas.
+        Load a .glb model to inspect its real-world scale and physical dimensions.
       </div>
     );
   }
@@ -20,16 +20,16 @@ export const ScaleChecker: React.FC = () => {
   const { dimensions } = modelStats;
 
   const unitOptions = [
-    { type: 'm', label: 'Metros (m)', scale: 1.0, hint: '1 unidad = 1 m' },
-    { type: 'cm', label: 'Centímetros (cm)', scale: 0.01, hint: '1 unidad = 1 cm' },
-    { type: 'mm', label: 'Milímetros (mm)', scale: 0.001, hint: '1 unidad = 1 mm' },
-    { type: 'in', label: 'Pulgadas (in)', scale: 0.0254, hint: '1 unidad = 1 in' }
+    { type: 'm', label: 'Meters (m)', scale: 1.0, hint: '1 unit = 1 m' },
+    { type: 'cm', label: 'Centimeters (cm)', scale: 0.01, hint: '1 unit = 1 cm' },
+    { type: 'mm', label: 'Millimeters (mm)', scale: 0.001, hint: '1 unit = 1 mm' },
+    { type: 'in', label: 'Inches (in)', scale: 0.0254, hint: '1 unit = 1 in' }
   ] as const;
 
   const dimensionBoxes = [
-    { label: 'Ancho (X)', val: dimensions.width },
-    { label: 'Alto (Y)', val: dimensions.height },
-    { label: 'Fondo (Z)', val: dimensions.depth }
+    { label: 'Width (X)', val: dimensions.width },
+    { label: 'Height (Y)', val: dimensions.height },
+    { label: 'Depth (Z)', val: dimensions.depth }
   ];
 
   return (
@@ -37,14 +37,14 @@ export const ScaleChecker: React.FC = () => {
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-semibold uppercase tracking-wider font-primary text-ink-primary flex items-center gap-1.5">
           <Ruler className="w-4 h-4 text-action" />
-          Metrología & Escala Física
+          Metrology &amp; Physical Scale
         </h4>
       </div>
 
       {/* Unit Selector Selector */}
       <div className="space-y-1.5">
         <span className="text-[10px] text-ink-secondary uppercase tracking-wider font-semibold block font-primary">
-          Unidad de Exportación del Modelo
+          Model Export Unit
         </span>
         <SegmentedControl
           value={unitType}
@@ -80,7 +80,7 @@ export const ScaleChecker: React.FC = () => {
 
       {/* Custom scale multiplier */}
       <div className="flex items-center justify-between text-[11px] text-ink-secondary pt-2 border-t border-hairline">
-        <span>Multiplicador de escala:</span>
+        <span>Scale multiplier:</span>
         <NumberInput
           value={unitScale}
           onChange={(val) => setUnitScale(val, 'custom')}

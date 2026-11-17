@@ -20,28 +20,28 @@ interface DensityOption {
 const THEME_OPTIONS: ThemeOption[] = [
   {
     mode: 'dark',
-    label: 'Basalto (Oscuro)',
-    desc: 'Carbón volcánico y roble quemado. Ideal para talleres y baja luminosidad.',
+    label: 'Basalt (Dark)',
+    desc: 'Volcanic charcoal and warm stone. Ideal for low-light studio environments.',
     icon: Moon
   },
   {
     mode: 'light',
-    label: 'Mineral (Claro)',
-    desc: 'Piedra caliza y lino natural. Diseñado para luz diurna de estudio.',
+    label: 'Mineral (Light)',
+    desc: 'Warm limestone and raw linen tones. Designed for bright daylight studios.',
     icon: Sun
   },
   {
     mode: 'system',
-    label: 'Automático (Sistema)',
-    desc: 'Se adapta a las preferencias visuales del sistema operativo.',
+    label: 'Automatic (System)',
+    desc: 'Follows your operating system appearance preferences.',
     icon: Laptop
   }
 ];
 
 const DENSITY_OPTIONS: DensityOption[] = [
-  { id: 'standard', label: 'Estándar', desc: 'Espaciado amplio para pantallas de alta resolución' },
-  { id: 'compact', label: 'Compacto', desc: 'Mayor densidad de datos y controles optimizados' },
-  { id: 'dense', label: 'Denso', desc: 'Máxima compresión de métricas e inspección técnica' }
+  { id: 'standard', label: 'Standard', desc: 'Balanced spacing for high-resolution displays' },
+  { id: 'compact', label: 'Compact', desc: 'Higher information density and tighter controls' },
+  { id: 'dense', label: 'Dense', desc: 'Maximum compression for telemetry and technical inspection' }
 ];
 
 export const AppearanceSection: React.FC = () => {
@@ -51,18 +51,18 @@ export const AppearanceSection: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-100">
       <div>
         <h1 className="font-primary font-bold text-base tracking-tight uppercase text-ink-primary">
-          Apariencia & Cromatismo
+          Appearance &amp; Theme
         </h1>
         <p className="text-xs text-ink-secondary mt-0.5">
-          Personaliza el entorno cromático de trabajo y la densidad de información en pantalla.
+          Customize the workspace color palette and on-screen information density.
         </p>
       </div>
 
       {/* Theme Palette */}
       <section className="space-y-3">
         <SectionHeader
-          title="Tema Visual"
-          subtitle="Paleta de iluminación del entorno de trabajo"
+          title="Visual Theme"
+          subtitle="Workspace lighting and contrast palette"
           icon={<Palette className="w-4 h-4" />}
           bordered={false}
         />
@@ -105,8 +105,8 @@ export const AppearanceSection: React.FC = () => {
       {/* Font Density */}
       <section className="space-y-3 pt-4 border-t border-hairline">
         <SectionHeader
-          title="Densidad de Interfaz"
-          subtitle="Escalado de métricas y compactación de controles"
+          title="Interface Density"
+          subtitle="UI scale and control compactness"
           icon={<Type className="w-4 h-4" />}
           bordered={false}
         />

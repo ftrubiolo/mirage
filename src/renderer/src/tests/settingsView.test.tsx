@@ -71,14 +71,14 @@ describe('SettingsView and Decoupled Settings Components', () => {
         root.render(<SettingsSidebar activeTab="appearance" onSelectTab={handleSelect} />);
       });
 
-      expect(container.textContent).toContain('Configuración');
-      expect(container.textContent).toContain('Apariencia & Tema');
-      expect(container.textContent).toContain('Visor 3D & Parámetros');
-      expect(container.textContent).toContain('Atajos de Teclado');
-      expect(container.textContent).toContain('Almacenamiento Local');
-      expect(container.textContent).toContain('Modelos IA & Agentes');
-      expect(container.textContent).toContain('Información del Sistema');
-      expect(container.textContent).toContain('v1.0.0');
+      expect(container.textContent).toContain('Settings');
+      expect(container.textContent).toContain('Appearance & Theme');
+      expect(container.textContent).toContain('3D Viewport & Defaults');
+      expect(container.textContent).toContain('Keyboard Shortcuts');
+      expect(container.textContent).toContain('Local Storage');
+      expect(container.textContent).toContain('AI Models & Agents');
+      expect(container.textContent).toContain('System Information');
+      expect(container.textContent).toContain('v1.0.1');
     });
 
     it('triggers onSelectTab when clicking a tab button', () => {
@@ -88,7 +88,7 @@ describe('SettingsView and Decoupled Settings Components', () => {
       });
 
       const buttons = container.querySelectorAll('button');
-      const viewportBtn = Array.from(buttons).find((b) => b.textContent?.includes('Visor 3D'));
+      const viewportBtn = Array.from(buttons).find((b) => b.textContent?.includes('3D Viewport'));
       expect(viewportBtn).toBeDefined();
 
       act(() => {
@@ -105,13 +105,13 @@ describe('SettingsView and Decoupled Settings Components', () => {
         root.render(<AppearanceSection />);
       });
 
-      expect(container.textContent).toContain('Apariencia & Cromatismo');
-      expect(container.textContent).toContain('Basalto (Oscuro)');
-      expect(container.textContent).toContain('Mineral (Claro)');
-      expect(container.textContent).toContain('Automático (Sistema)');
+      expect(container.textContent).toContain('Appearance & Theme');
+      expect(container.textContent).toContain('Basalt (Dark)');
+      expect(container.textContent).toContain('Mineral (Light)');
+      expect(container.textContent).toContain('Automatic (System)');
 
       const lightCard = Array.from(container.querySelectorAll('h3')).find(
-        (h) => h.textContent?.includes('Mineral (Claro)')
+        (h) => h.textContent?.includes('Mineral (Light)')
       )?.closest('div');
 
       expect(lightCard).toBeDefined();
@@ -128,7 +128,7 @@ describe('SettingsView and Decoupled Settings Components', () => {
       });
 
       const denseCard = Array.from(container.querySelectorAll('h3')).find(
-        (h) => h.textContent?.includes('Denso')
+        (h) => h.textContent?.includes('Dense')
       )?.closest('div');
 
       expect(denseCard).toBeDefined();
@@ -146,10 +146,10 @@ describe('SettingsView and Decoupled Settings Components', () => {
         root.render(<ViewportSection />);
       });
 
-      expect(container.textContent).toContain('Parámetros por Defecto del Visor 3D');
-      expect(container.textContent).toContain('Sombras de Contacto en el Suelo');
-      expect(container.textContent).toContain('Grilla Milimétrica de Referencia');
-      expect(container.textContent).toContain('Rotación Automática Suave');
+      expect(container.textContent).toContain('3D Viewport Defaults');
+      expect(container.textContent).toContain('Ground Contact Shadows');
+      expect(container.textContent).toContain('Metric Reference Grid');
+      expect(container.textContent).toContain('Smooth Auto-Rotation');
 
       const switchButton = container.querySelector('button[role="switch"]') as HTMLButtonElement;
       expect(switchButton).not.toBeNull();
@@ -167,10 +167,10 @@ describe('SettingsView and Decoupled Settings Components', () => {
         root.render(<ViewportSection />);
       });
 
-      const select = container.querySelector('select[aria-label="Entorno HDRI por Defecto"]') as HTMLSelectElement;
+      const select = container.querySelector('select[aria-label="Default HDRI Environment"]') as HTMLSelectElement;
       expect(select).not.toBeNull();
-      expect(select.innerHTML).toContain('Presets de Taller');
-      expect(select.innerHTML).toContain('Mis Entornos');
+      expect(select.innerHTML).toContain('Studio Presets');
+      expect(select.innerHTML).toContain('Custom Environments');
       expect(select.innerHTML).toContain('Test Sunset');
 
       act(() => {
@@ -186,9 +186,9 @@ describe('SettingsView and Decoupled Settings Components', () => {
         root.render(<ViewportSection />);
       });
 
-      expect(container.textContent).toContain('Posición del Panel Lateral de Taller');
+      expect(container.textContent).toContain('Workbench Side Panel Position');
       const rightButton = Array.from(container.querySelectorAll('button')).find(
-        (b) => b.textContent?.trim() === 'Derecha'
+        (b) => b.textContent?.trim() === 'Right'
       );
       expect(rightButton).toBeDefined();
 
@@ -206,11 +206,11 @@ describe('SettingsView and Decoupled Settings Components', () => {
         root.render(<StorageSection />);
       });
 
-      expect(container.textContent).toContain('Almacenamiento Local de la Biblioteca');
+      expect(container.textContent).toContain('Local Library Storage');
       expect(container.textContent).toContain('/home/user/.local/share/mirage/');
 
       const revealBtn = Array.from(container.querySelectorAll('button')).find(
-        (b) => b.textContent?.includes('Revelar en Explorador')
+        (b) => b.textContent?.includes('Reveal in Explorer')
       );
       expect(revealBtn).toBeDefined();
 
@@ -230,13 +230,13 @@ describe('SettingsView and Decoupled Settings Components', () => {
         root.render(<SystemInfoSection />);
       });
 
-      expect(container.textContent).toContain('Información del Sistema');
-      expect(container.textContent).toContain('Mirage Atelier 3D Workbench');
+      expect(container.textContent).toContain('System Information');
+      expect(container.textContent).toContain('Mirage 3D Workbench');
       expect(container.textContent).toContain('Three.js r184');
       expect(container.textContent).toContain('Sharp ORM Packer');
       expect(container.textContent).toContain('Electron 34');
-      expect(container.textContent).toContain('v1.0.0');
-      expect(container.textContent).toContain('Producción');
+      expect(container.textContent).toContain('v1.0.1');
+      expect(container.textContent).toContain('Production');
     });
   });
 
@@ -247,29 +247,29 @@ describe('SettingsView and Decoupled Settings Components', () => {
       });
 
       // Default tab: Appearance
-      expect(container.textContent).toContain('Apariencia & Cromatismo');
+      expect(container.textContent).toContain('Appearance & Theme');
 
       // Click Viewport tab
       const navButtons = container.querySelectorAll<HTMLButtonElement>('nav button');
-      const viewportBtn = Array.from(navButtons).find((b) => b.textContent?.includes('Visor 3D'));
+      const viewportBtn = Array.from(navButtons).find((b) => b.textContent?.includes('3D Viewport'));
       act(() => {
         viewportBtn?.click();
       });
-      expect(container.textContent).toContain('Parámetros por Defecto del Visor 3D');
+      expect(container.textContent).toContain('3D Viewport Defaults');
 
       // Click Storage tab
-      const storageBtn = Array.from(navButtons).find((b) => b.textContent?.includes('Almacenamiento Local'));
+      const storageBtn = Array.from(navButtons).find((b) => b.textContent?.includes('Local Storage'));
       act(() => {
         storageBtn?.click();
       });
-      expect(container.textContent).toContain('Almacenamiento Local de la Biblioteca');
+      expect(container.textContent).toContain('Local Library Storage');
 
       // Click System tab
-      const systemBtn = Array.from(navButtons).find((b) => b.textContent?.includes('Información del Sistema'));
+      const systemBtn = Array.from(navButtons).find((b) => b.textContent?.includes('System Information'));
       act(() => {
         systemBtn?.click();
       });
-      expect(container.textContent).toContain('Información del Sistema');
+      expect(container.textContent).toContain('System Information');
     });
   });
 });

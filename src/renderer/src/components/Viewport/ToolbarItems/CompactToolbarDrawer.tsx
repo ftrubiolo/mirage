@@ -70,7 +70,7 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
       });
       const a = document.createElement('a');
       a.href = snap.dataUrl;
-      a.download = `mirage-atelier-${Date.now()}.png`;
+      a.download = `mirage-snapshot-${Date.now()}.png`;
       a.click();
       onClose();
     } catch (err) {
@@ -88,7 +88,7 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
       {/* Drawer Header */}
       <div className="pb-1.5 border-b border-hairline flex items-center justify-between">
         <span className="text-[10px] font-primary font-bold text-ink-tertiary uppercase tracking-wider">
-          Herramientas de Visor
+          Viewport Tools
         </span>
         <span className="text-[10px] font-mono text-ink-tertiary">Mirage 3D</span>
       </div>
@@ -97,7 +97,7 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-primary font-semibold text-ink-tertiary uppercase tracking-wider block">
-            Manipulador 3D
+            3D Gizmo
           </span>
           <span className="text-[10px] text-ink-tertiary font-mono">Q / W / E</span>
         </div>
@@ -111,7 +111,7 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
             }`}
           >
             <MousePointer className="w-3.5 h-3.5" />
-            <span>Cursor</span>
+            <span>Select</span>
           </button>
           <button
             onClick={() => setTransformGizmoMode('translate')}
@@ -122,7 +122,7 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
             }`}
           >
             <Move className="w-3.5 h-3.5" />
-            <span>Mover</span>
+            <span>Move</span>
           </button>
           <button
             onClick={() => setTransformGizmoMode('rotate')}
@@ -133,7 +133,7 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
             }`}
           >
             <Rotate3d className="w-3.5 h-3.5" />
-            <span>Rotar</span>
+            <span>Rotate</span>
           </button>
         </div>
       </div>
@@ -141,33 +141,33 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
       {/* Group 1: Scene Guides */}
       <div className="space-y-2 pt-1 border-t border-hairline">
         <span className="text-[10px] font-primary font-semibold text-ink-tertiary uppercase tracking-wider block">
-          Guías y Escena
+          Guides &amp; Scene
         </span>
         <div className="flex items-center justify-between text-ink-primary">
           <span className="flex items-center gap-2">
             <Grid className="w-3.5 h-3.5 text-ink-secondary" />
-            Grilla de taller
+            Reference grid
           </span>
           <Switch checked={showGrid} onChange={toggleGrid} />
         </div>
         <div className="flex items-center justify-between text-ink-primary">
           <span className="flex items-center gap-2">
             <Ruler className="w-3.5 h-3.5 text-ink-secondary" />
-            Cotas arquitectónicas
+            Bounding dimensions
           </span>
           <Switch checked={showDimensions} onChange={toggleDimensions} />
         </div>
         <div className="flex items-center justify-between text-ink-primary">
           <span className="flex items-center gap-2">
             <Box className="w-3.5 h-3.5 text-ink-secondary" />
-            Sombras de contacto
+            Contact shadows
           </span>
           <Switch checked={showContactShadows} onChange={toggleContactShadows} />
         </div>
         <div className="flex items-center justify-between text-ink-primary">
           <span className="flex items-center gap-2">
             <RotateCcw className="w-3.5 h-3.5 text-ink-secondary" />
-            Giro automático 360°
+            360° Auto-rotate
           </span>
           <Switch checked={autoRotate} onChange={toggleAutoRotate} />
         </div>
@@ -176,26 +176,26 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
       {/* Group 2: Camera & Projection */}
       <div className="space-y-2 pt-1 border-t border-hairline">
         <span className="text-[10px] font-primary font-semibold text-ink-tertiary uppercase tracking-wider block">
-          Cámara y Zoom
+          Camera &amp; Zoom
         </span>
         <div className="flex items-center justify-between text-ink-primary">
-          <span>Vista Ortográfica</span>
+          <span>Orthographic View</span>
           <Switch checked={isOrthographic} onChange={toggleOrthographic} />
         </div>
         <div className="flex items-center justify-between pt-1">
-          <span className="text-ink-secondary">Zoom 3D</span>
+          <span className="text-ink-secondary">3D Zoom</span>
           <div className="flex items-center gap-1">
             <button
               onClick={zoomOut3D}
               className="p-1 rounded-xs bg-surface-container hover:bg-surface-high transition-colors"
-              title="Alejar"
+              title="Zoom out"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={zoomIn3D}
               className="p-1 rounded-xs bg-surface-container hover:bg-surface-high transition-colors"
-              title="Acercar"
+              title="Zoom in"
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
@@ -206,10 +206,10 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
       {/* Group 3: Lighting & Environment */}
       <div className="space-y-2 pt-1 border-t border-hairline">
         <span className="text-[10px] font-primary font-semibold text-ink-tertiary uppercase tracking-wider block">
-          Iluminación
+          Lighting
         </span>
         <div className="flex items-center justify-between">
-          <span className="text-ink-primary">Fondo HDRI 360°</span>
+          <span className="text-ink-primary">360° HDRI Backdrop</span>
           <Switch
             checked={showEnvironmentBackground}
             onChange={toggleEnvironmentBackground}
@@ -217,7 +217,7 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
         </div>
         <div className="space-y-1">
           <div className="flex items-center justify-between text-ink-secondary text-[11px]">
-            <span>Intensidad de luz</span>
+            <span>Light intensity</span>
             <span className="font-mono tabular-nums">
               {environmentIntensity.toFixed(1)}x
             </span>
@@ -242,7 +242,7 @@ export const CompactToolbarDrawer: React.FC<CompactToolbarDrawerProps> = ({ isOp
           className="w-full px-2.5 py-1.5 rounded-xs bg-surface-low hover:bg-surface-container text-ink-primary flex items-center justify-center gap-2 transition-colors cursor-pointer border border-hairline disabled:opacity-50"
         >
           <Camera className="w-3.5 h-3.5 text-action" />
-          <span className="font-medium text-xs">Capturar imagen PNG</span>
+          <span className="font-medium text-xs">Capture PNG Snapshot</span>
         </button>
       </div>
     </div>

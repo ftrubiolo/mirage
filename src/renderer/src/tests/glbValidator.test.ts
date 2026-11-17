@@ -142,7 +142,7 @@ describe('glbValidator', () => {
       expect(res.status).toBe('error');
       expect(res.detectedUnitHint).toBe('millimeters');
       expect(res.message).toContain('850.0m');
-      expect(res.message).toContain('milímetros');
+      expect(res.message).toContain('millimeters');
     });
 
     it('flags dimensions between 5m and 50m as warning with centimeters hint', () => {
@@ -150,21 +150,21 @@ describe('glbValidator', () => {
       expect(res.status).toBe('warning');
       expect(res.detectedUnitHint).toBe('centimeters');
       expect(res.message).toContain('18.5m');
-      expect(res.message).toContain('centímetros');
+      expect(res.message).toContain('centimeters');
     });
 
     it('flags dimensions < 0.05m as warning with tiny scale hint', () => {
       const res = auditModelScale({ width: 0.02, height: 0.03, depth: 0.01 });
       expect(res.status).toBe('warning');
       expect(res.detectedUnitHint).toBe('unknown');
-      expect(res.message).toContain('sumamente pequeño');
+      expect(res.message).toContain('extremely small');
     });
 
     it('identifies dimensions between 0.05m and 5m as optimal in meters', () => {
       const res = auditModelScale({ width: 0.85, height: 1.2, depth: 0.6 });
       expect(res.status).toBe('optimal');
       expect(res.detectedUnitHint).toBe('meters');
-      expect(res.message).toContain('Escala correcta en metros');
+      expect(res.message).toContain('Valid scale in meters');
       expect(res.message).toContain('1.20m');
     });
 
@@ -306,7 +306,7 @@ describe('glbValidator', () => {
       expect(manifest?.textures.length).toBe(2);
       expect(manifest?.textures[0].name).toBe('base_img');
       expect(manifest?.textures[0].assignedSlots).toContain('BaseColor');
-      expect(manifest?.textures[1].assignedSlots).toContain('Transmisión');
+      expect(manifest?.textures[1].assignedSlots).toContain('Transmission');
 
       expect(manifest?.materials.length).toBe(1);
       const mat = manifest!.materials[0];

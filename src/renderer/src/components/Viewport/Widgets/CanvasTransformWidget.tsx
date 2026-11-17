@@ -58,7 +58,7 @@ export const CanvasTransformWidget: React.FC = () => {
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title="Cursor / Navegación libre (Q)"
+          title="Cursor / Free navigation (Q)"
           aria-label="Cursor"
         >
           <MousePointer size={20} className={transformGizmoMode === 'none' ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
@@ -71,8 +71,8 @@ export const CanvasTransformWidget: React.FC = () => {
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title="Mover: Desplazamiento con flechas 3D (W)"
-          aria-label="Mover"
+          title="Move: Translate with 3D axis handles (W)"
+          aria-label="Move"
         >
           <Move size={20} className={transformGizmoMode === 'translate' ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
         </button>
@@ -84,8 +84,8 @@ export const CanvasTransformWidget: React.FC = () => {
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title="Rotar: Rotación con aros 3D (E)"
-          aria-label="Rotar"
+          title="Rotate: Rotate with 3D rings (E)"
+          aria-label="Rotate"
         >
           <Rotate3d size={20} className={transformGizmoMode === 'rotate' ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
         </button>
@@ -104,7 +104,7 @@ export const CanvasTransformWidget: React.FC = () => {
             ? 'bg-action text-white shadow-xs'
             : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-high'
         }`}
-        title="Cursor / Navegación (Q)"
+        title="Cursor / Navigation (Q)"
       >
         <MousePointer size={13} />
         <span className="text-[11px]">Cursor</span>
@@ -117,10 +117,10 @@ export const CanvasTransformWidget: React.FC = () => {
             ? 'bg-action text-white shadow-xs'
             : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-high'
         }`}
-        title="Desplazamiento con flechas 3D (W)"
+        title="Translate with 3D axis handles (W)"
       >
         <Move size={13} />
-        <span className="text-[11px]">Mover</span>
+        <span className="text-[11px]">Move</span>
       </button>
       <button
         type="button"
@@ -130,10 +130,10 @@ export const CanvasTransformWidget: React.FC = () => {
             ? 'bg-action text-white shadow-xs'
             : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-high'
         }`}
-        title="Rotación con aros 3D (E)"
+        title="Rotate with 3D rings (E)"
       >
         <Rotate3d size={13} />
-        <span className="text-[11px]">Rotar</span>
+        <span className="text-[11px]">Rotate</span>
       </button>
     </div>
   );
@@ -146,11 +146,11 @@ export const CanvasTransformWidget: React.FC = () => {
       {/* Position Coordinates Table */}
       <div className="flex flex-col gap-1 bg-surface-container/30 p-2 rounded-xs border border-hairline">
         <div className="flex items-center justify-between text-[10px] uppercase font-mono font-bold tracking-wider text-ink-tertiary">
-          <span>Posición (X, Y, Z)</span>
+          <span>Position (X, Y, Z)</span>
           <button
             type="button"
             onClick={handleResetPosition}
-            title="Restablecer posición a (0, 0, 0)"
+            title="Reset position to (0, 0, 0)"
             className="hover:text-action flex items-center gap-0.5 lowercase"
           >
             <RotateCcw size={10} /> reset
@@ -175,11 +175,11 @@ export const CanvasTransformWidget: React.FC = () => {
       {/* Quick 90-degree Rotation Chips */}
       <div className="flex flex-col gap-1 bg-surface-container/30 p-2 rounded-xs border border-hairline">
         <div className="flex items-center justify-between text-[10px] uppercase font-mono font-bold tracking-wider text-ink-tertiary">
-          <span>Giro Rápido (+90°)</span>
+          <span>Quick Rotate (+90°)</span>
           <button
             type="button"
             onClick={handleResetRotation}
-            title="Restablecer rotación a 0°"
+            title="Reset rotation to 0°"
             className="hover:text-action flex items-center gap-0.5 lowercase"
           >
             <RotateCcw size={10} /> reset
@@ -191,21 +191,21 @@ export const CanvasTransformWidget: React.FC = () => {
             onClick={() => handleRotateAxis('x', 90)}
             className="py-1 px-1 rounded-xs bg-surface-lowest hover:bg-surface-high border border-hairline font-mono text-[10px] text-ink-secondary hover:text-ink-primary text-center"
           >
-            +90° en X ({Math.round(modelRotation.x)}°)
+            +90° on X ({Math.round(modelRotation.x)}°)
           </button>
           <button
             type="button"
             onClick={() => handleRotateAxis('y', 90)}
             className="py-1 px-1 rounded-xs bg-surface-lowest hover:bg-surface-high border border-hairline font-mono text-[10px] text-ink-secondary hover:text-ink-primary text-center"
           >
-            +90° en Y ({Math.round(modelRotation.y)}°)
+            +90° on Y ({Math.round(modelRotation.y)}°)
           </button>
           <button
             type="button"
             onClick={() => handleRotateAxis('z', 90)}
             className="py-1 px-1 rounded-xs bg-surface-lowest hover:bg-surface-high border border-hairline font-mono text-[10px] text-ink-secondary hover:text-ink-primary text-center"
           >
-            +90° en Z ({Math.round(modelRotation.z)}°)
+            +90° on Z ({Math.round(modelRotation.z)}°)
           </button>
         </div>
       </div>
@@ -217,7 +217,7 @@ export const CanvasTransformWidget: React.FC = () => {
         className="flex items-center justify-center gap-1.5 py-1.5 rounded-xs bg-surface-container hover:bg-surface-high border border-hairline text-ink-secondary hover:text-ink-primary font-mono text-[11px] transition-colors"
       >
         <ArrowDownToLine size={12} className="text-action" />
-        <span>Alinear base al piso (Y = 0)</span>
+        <span>Snap base to floor (Y = 0)</span>
       </button>
     </div>
   );

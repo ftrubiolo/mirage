@@ -182,8 +182,8 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
       const rawY = moveEv.clientY - dragStartOffset.current.y;
 
       // Detect if cursor is in top toolbar or bottom statusbar zone
-      const toolbarEl = document.querySelector('header[aria-label*="herramientas"]');
-      const statusbarEl = document.querySelector('footer[aria-label*="estado"]');
+      const toolbarEl = document.querySelector('header[aria-label*="toolbar"]');
+      const statusbarEl = document.querySelector('footer[aria-label*="Status bar"]');
 
       let activeBar: 'toolbar' | 'statusbar' | null = null;
       if (toolbarEl) {
@@ -501,7 +501,7 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
             {/* Row 1: Drag handle + Expandable "..." button */}
             <div className="flex items-center justify-between h-5 px-1.5">
               <div
-                title={title ? `${title} (Arrastrar para mover)` : 'Arrastrar para mover'}
+                title={title ? `${title} (Drag to move)` : 'Drag to move'}
                 className="flex items-center cursor-grab active:cursor-grabbing hover:text-ink-primary"
               >
                 <GripHorizontal size={11} className="text-ink-tertiary hover:text-action shrink-0" />
@@ -509,8 +509,8 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
               <button
                 type="button"
                 onClick={() => setIsHeaderExpanded((prev) => !prev)}
-                title={isHeaderExpanded ? 'Ocultar opciones' : 'Mostrar opciones'}
-                aria-label={isHeaderExpanded ? 'Ocultar opciones' : 'Más opciones'}
+                title={isHeaderExpanded ? 'Hide options' : 'Show options'}
+                aria-label={isHeaderExpanded ? 'Hide options' : 'More options'}
                 className={`flex items-center justify-center w-4 h-4 rounded-none transition-colors cursor-pointer ${
                   isHeaderExpanded
                     ? 'text-action bg-surface-high/80'
@@ -527,8 +527,8 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
                 <button
                   type="button"
                   onClick={() => removeCanvasWidget(id)}
-                  title="Anclar nuevamente a la barra"
-                  aria-label="Anclar nuevamente a la barra"
+                  title="Dock back to bar"
+                  aria-label="Dock back to bar"
                   className="flex items-center justify-center w-3.5 h-3.5 rounded-none text-ink-tertiary hover:text-action hover:bg-surface-high/80 transition-colors cursor-pointer"
                 >
                   <ArrowDownToLine size={9} />
@@ -542,7 +542,7 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
             className="flex items-center justify-between h-5 px-1.5 border-b border-hairline bg-surface-container/60 cursor-grab active:cursor-grabbing text-xs"
           >
             <div
-              title={title ? `${title} (Arrastrar para mover)` : 'Arrastrar para mover'}
+              title={title ? `${title} (Drag to move)` : 'Drag to move'}
               className="flex items-center gap-1 cursor-grab active:cursor-grabbing hover:text-ink-primary"
             >
               <GripHorizontal size={12} className="text-ink-tertiary hover:text-action shrink-0" />
@@ -555,8 +555,8 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
                   <button
                     type="button"
                     onClick={() => removeCanvasWidget(id)}
-                    title="Anclar nuevamente a la barra"
-                    aria-label="Anclar nuevamente a la barra"
+                    title="Dock back to bar"
+                    aria-label="Dock back to bar"
                     className="flex items-center justify-center w-4 h-4 rounded-none text-ink-tertiary hover:text-action hover:bg-surface-high/80 transition-colors cursor-pointer"
                   >
                     <ArrowDownToLine size={10} />
@@ -566,8 +566,8 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
               <button
                 type="button"
                 onClick={() => setIsHeaderExpanded((prev) => !prev)}
-                title={isHeaderExpanded ? 'Ocultar opciones' : 'Mostrar opciones'}
-                aria-label={isHeaderExpanded ? 'Ocultar opciones' : 'Más opciones'}
+                title={isHeaderExpanded ? 'Hide options' : 'Show options'}
+                aria-label={isHeaderExpanded ? 'Hide options' : 'More options'}
                 className={`flex items-center justify-center w-4 h-4 rounded-none transition-colors cursor-pointer ${
                   isHeaderExpanded
                     ? 'text-action bg-surface-high/80'
@@ -584,7 +584,7 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
             className="flex items-center justify-between h-5 px-1.5 border-b border-hairline bg-surface-container/60 cursor-grab active:cursor-grabbing text-xs"
           >
             <div
-              title={title ? `${title} (Arrastrar para mover)` : 'Arrastrar para mover'}
+              title={title ? `${title} (Drag to move)` : 'Drag to move'}
               className="flex items-center gap-1 cursor-grab active:cursor-grabbing hover:text-ink-primary"
             >
               <GripHorizontal size={12} className="text-ink-tertiary hover:text-action shrink-0" />
@@ -596,7 +596,7 @@ export const CanvasWidgetContainer: React.FC<CanvasWidgetContainerProps> = ({
               <button
                 type="button"
                 onClick={() => removeCanvasWidget(id)}
-                title="Anclar nuevamente a la barra"
+                title="Dock back to bar"
                 className="flex items-center justify-center w-4 h-4 rounded-none text-ink-tertiary hover:text-action hover:bg-surface-high/80 transition-colors cursor-pointer"
               >
                 <ArrowDownToLine size={10} />

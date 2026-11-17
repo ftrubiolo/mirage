@@ -82,7 +82,7 @@ export const AiProvidersSection: React.FC = () => {
     const trimmedKey = standardApiKey.trim();
 
     if (!trimmedKey) {
-      setStandardError('Debes ingresar una clave API para conectar este proveedor.');
+      setStandardError('Please enter an API key to connect this provider.');
       return;
     }
 
@@ -104,7 +104,7 @@ export const AiProvidersSection: React.FC = () => {
             fetchedModels = testRes.models;
           }
         } else {
-          throw new Error(testRes.error || 'La clave API o el servidor devolvieron un error.');
+          throw new Error(testRes.error || 'The API key or server returned an error.');
         }
       }
 
@@ -123,7 +123,7 @@ export const AiProvidersSection: React.FC = () => {
       setIsAddStandardOpen(false);
       setStandardApiKey('');
     } catch (err: any) {
-      setStandardError(err.message || 'Error de conexión al verificar el proveedor.');
+      setStandardError(err.message || 'Connection error while verifying provider.');
     } finally {
       setIsConnectingStandard(false);
     }
@@ -146,11 +146,11 @@ export const AiProvidersSection: React.FC = () => {
   const handleConnectCustom = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customName.trim()) {
-      setCustomError('Introduce un nombre para el proveedor.');
+      setCustomError('Enter a name for the provider.');
       return;
     }
     if (!customBaseUrl.trim()) {
-      setCustomError('Introduce la URL base (Base URL).');
+      setCustomError('Enter the Base URL.');
       return;
     }
 
@@ -189,7 +189,7 @@ export const AiProvidersSection: React.FC = () => {
       await saveProvider(newConfig, customKey.trim() || undefined);
       setIsAddCustomOpen(false);
     } catch (err: any) {
-      setCustomError(err.message || 'Error de conexión con el endpoint local.');
+      setCustomError(err.message || 'Connection error with local endpoint.');
     } finally {
       setIsConnectingCustom(false);
     }
@@ -252,18 +252,18 @@ export const AiProvidersSection: React.FC = () => {
         }
         setEditTestResult({
           success: true,
-          message: `Conexión verificada. ${res.models?.length ? `${res.models.length} modelos auto-cargados.` : 'OK'}`
+          message: `Connection verified. ${res.models?.length ? `${res.models.length} models loaded.` : 'OK'}`
         });
       } else {
         setEditTestResult({
           success: false,
-          message: res.error || 'Fallo en la prueba de conexión'
+          message: res.error || 'Connection test failed'
         });
       }
     } catch (err: any) {
       setEditTestResult({
         success: false,
-        message: err.message || 'Error de red'
+        message: err.message || 'Network error'
       });
     } finally {
       setIsTestingEdit(false);
@@ -298,10 +298,10 @@ export const AiProvidersSection: React.FC = () => {
       <div>
         <h2 className="font-primary font-bold text-sm uppercase tracking-wider text-ink-primary flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-action" />
-          Modelos & Proveedores IA
+          AI Models &amp; Providers
         </h2>
         <p className="text-xs text-ink-secondary mt-0.5">
-          Introduce tus claves API para conectar modelos externos o servidores locales al Atelier.
+          Enter your API keys to connect cloud AI models or local servers to Mirage.
         </p>
       </div>
 
@@ -309,8 +309,8 @@ export const AiProvidersSection: React.FC = () => {
       {providers.length === 0 ? (
         <EmptyState
           icon={<Sparkles className="w-6 h-6" />}
-          title="Sin proveedores de IA configurados"
-          description="Conecta tu primer proveedor (OpenAI, Anthropic, OpenRouter, Google, DeepSeek o servidor local) para activar el agente inteligente en Mirage."
+          title="No AI providers configured"
+          description="Connect your first provider (OpenAI, Anthropic, OpenRouter, Google, DeepSeek, or a local server) to enable the AI Studio assistant."
           action={
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Button
@@ -319,7 +319,7 @@ export const AiProvidersSection: React.FC = () => {
                 onClick={handleOpenAddStandard}
                 icon={<Plus className="w-4 h-4" />}
               >
-                Añadir Proveedor
+                Add Provider
               </Button>
               <Button
                 variant="secondary"
@@ -327,7 +327,7 @@ export const AiProvidersSection: React.FC = () => {
                 onClick={handleOpenAddCustom}
                 icon={<Server className="w-4 h-4 text-action" />}
               >
-                Añadir Servidor Local / Custom
+                Add Local / Custom Server
               </Button>
             </div>
           }
@@ -347,14 +347,14 @@ export const AiProvidersSection: React.FC = () => {
                     className={`w-2.5 h-2.5 rounded-full shrink-0 transition-colors ${
                       isConnected ? 'bg-emerald-500 shadow-xs shadow-emerald-500/50' : 'bg-amber-500'
                     }`}
-                    title={isConnected ? 'Conectado y listo' : 'Sin clave API'}
+                    title={isConnected ? 'Connected and ready' : 'No API key'}
                   />
                   <div>
                     <div className="font-primary font-semibold text-xs text-ink-primary tracking-wide">
                       {p.name}
                     </div>
                     <div className="text-[11px] font-mono text-ink-tertiary">
-                      Modelo activo: <span className="text-ink-secondary">{p.defaultModel || 'No seleccionado'}</span>
+                      Active model: <span className="text-ink-secondary">{p.defaultModel || 'Not selected'}</span>
                     </div>
                   </div>
                 </div>
@@ -366,7 +366,7 @@ export const AiProvidersSection: React.FC = () => {
                     onClick={() => handleOpenEdit(p)}
                     icon={<Edit2 className="w-3 h-3 text-ink-secondary" />}
                   >
-                    Editar
+                    Edit
                   </Button>
 
                   <IconButton
@@ -374,7 +374,7 @@ export const AiProvidersSection: React.FC = () => {
                     size="xs"
                     onClick={() => deleteProvider(p.id)}
                     icon={<Trash2 className="w-3.5 h-3.5" />}
-                    title="Eliminar proveedor"
+                    title="Delete provider"
                   />
                 </div>
               </div>
@@ -390,7 +390,7 @@ export const AiProvidersSection: React.FC = () => {
               icon={<Plus className="w-4 h-4 text-action" />}
               className="border-dashed"
             >
-              Añadir Proveedor
+              Add Provider
             </Button>
 
             <Button
@@ -400,7 +400,7 @@ export const AiProvidersSection: React.FC = () => {
               icon={<Server className="w-4 h-4 text-action" />}
               className="border-dashed"
             >
-              Añadir Servidor Local / Custom
+              Add Local / Custom Server
             </Button>
           </div>
         </div>
@@ -412,7 +412,7 @@ export const AiProvidersSection: React.FC = () => {
       <Modal
         isOpen={isAddStandardOpen}
         onClose={() => !isConnectingStandard && setIsAddStandardOpen(false)}
-        title="Añadir Proveedor de IA"
+        title="Add AI Provider"
         icon={<Sparkles className="w-4 h-4 text-action" />}
         size="md"
         footer={
@@ -423,7 +423,7 @@ export const AiProvidersSection: React.FC = () => {
               onClick={() => setIsAddStandardOpen(false)}
               disabled={isConnectingStandard}
             >
-              Cancelar
+              Cancel
             </Button>
             <Button
               variant="primary"
@@ -433,7 +433,7 @@ export const AiProvidersSection: React.FC = () => {
               isLoading={isConnectingStandard}
               icon={!isConnectingStandard ? <Check className="w-3.5 h-3.5" /> : undefined}
             >
-              Conectar Proveedor
+              Connect Provider
             </Button>
           </div>
         }
@@ -449,7 +449,7 @@ export const AiProvidersSection: React.FC = () => {
           {/* Provider Selector Dropdown */}
           <div className="space-y-1.5">
             <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
-              Selecciona el Proveedor
+              Select Provider
             </label>
             <select
               value={selectedProviderId}
@@ -489,11 +489,11 @@ export const AiProvidersSection: React.FC = () => {
                 rel="noreferrer"
                 className="text-action hover:underline inline-flex items-center gap-1 font-medium"
               >
-                <span>Obtener clave API en {activeStandardDef.name}</span>
+                <span>Get API key from {activeStandardDef.name}</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
               <span className="font-mono text-[10px] text-ink-tertiary">
-                Modelo base: {activeStandardDef.defaultModel}
+                Base model: {activeStandardDef.defaultModel}
               </span>
             </div>
           </div>
@@ -501,7 +501,7 @@ export const AiProvidersSection: React.FC = () => {
           {/* API Key Input */}
           <div className="space-y-1.5">
             <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
-              Clave API (API Key)
+              API Key
             </label>
             <TextInput
               type={showStandardKey ? 'text' : 'password'}
@@ -515,14 +515,14 @@ export const AiProvidersSection: React.FC = () => {
                   type="button"
                   onClick={() => setShowStandardKey(!showStandardKey)}
                   className="p-1 text-ink-tertiary hover:text-ink-primary transition-colors cursor-pointer"
-                  title={showStandardKey ? 'Ocultar clave' : 'Mostrar clave'}
+                  title={showStandardKey ? 'Hide key' : 'Show key'}
                 >
                   {showStandardKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 </button>
               }
             />
             <p className="text-[10px] text-ink-tertiary">
-              La clave se cifrará con el almacén seguro del sistema operativo (Electron SafeStorage).
+              Your key will be encrypted using your operating system&apos;s secure keyring (Electron SafeStorage).
             </p>
           </div>
         </form>
@@ -534,7 +534,7 @@ export const AiProvidersSection: React.FC = () => {
       <Modal
         isOpen={isAddCustomOpen}
         onClose={() => !isConnectingCustom && setIsAddCustomOpen(false)}
-        title="Añadir Servidor Local / Custom"
+        title="Add Local / Custom Server"
         icon={<Server className="w-4 h-4 text-action" />}
         size="md"
         footer={
@@ -545,7 +545,7 @@ export const AiProvidersSection: React.FC = () => {
               onClick={() => setIsAddCustomOpen(false)}
               disabled={isConnectingCustom}
             >
-              Cancelar
+              Cancel
             </Button>
             <Button
               variant="primary"
@@ -555,7 +555,7 @@ export const AiProvidersSection: React.FC = () => {
               isLoading={isConnectingCustom}
               icon={!isConnectingCustom ? <Check className="w-3.5 h-3.5" /> : undefined}
             >
-              Conectar Servidor
+              Connect Server
             </Button>
           </div>
         }
@@ -571,14 +571,14 @@ export const AiProvidersSection: React.FC = () => {
           {/* Provider Name */}
           <div className="space-y-1.5">
             <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
-              Nombre del Proveedor / Instancia
+              Provider / Instance Name
             </label>
             <TextInput
               type="text"
               autoFocus
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
-              placeholder="Ej: Ollama Local, LM Studio, vLLM Studio"
+              placeholder="e.g., Local Ollama, LM Studio, vLLM"
             />
           </div>
 
@@ -586,7 +586,7 @@ export const AiProvidersSection: React.FC = () => {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
-                URL Base del Servidor (OpenAI-compatible)
+                Server Base URL (OpenAI-compatible)
               </label>
               <div className="flex items-center gap-1.5 text-[10px]">
                 <button
@@ -618,13 +618,13 @@ export const AiProvidersSection: React.FC = () => {
           {/* Optional API Key */}
           <div className="space-y-1.5">
             <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
-              Clave API (Opcional para servidores locales)
+              API Key (Optional for local servers)
             </label>
             <TextInput
               type={showCustomKey ? 'text' : 'password'}
               value={customKey}
               onChange={(e) => setCustomKey(e.target.value)}
-              placeholder="Dejar vacío si no requiere autenticación..."
+              placeholder="Leave empty if authentication is not required..."
               mono
               suffix={
                 <button
@@ -641,13 +641,13 @@ export const AiProvidersSection: React.FC = () => {
           {/* Model ID */}
           <div className="space-y-1.5">
             <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
-              Identificador del Modelo (Opcional, se auto-detecta)
+              Model Identifier (Optional, auto-detected)
             </label>
             <TextInput
               type="text"
               value={customModel}
               onChange={(e) => setCustomModel(e.target.value)}
-              placeholder="Ej: llama3.3, qwen2.5-coder:14b, local-model"
+              placeholder="e.g., llama3.3, qwen2.5-coder:14b, local-model"
               mono
             />
           </div>
@@ -661,7 +661,7 @@ export const AiProvidersSection: React.FC = () => {
         <Modal
           isOpen={Boolean(editingProvider)}
           onClose={() => setEditingProvider(null)}
-          title={`Configurar ${editingProvider.name}`}
+          title={`Configure ${editingProvider.name}`}
           icon={<Key className="w-4 h-4 text-action" />}
           size="lg"
           footer={
@@ -671,7 +671,7 @@ export const AiProvidersSection: React.FC = () => {
                 size="sm"
                 onClick={() => setEditingProvider(null)}
               >
-                Cancelar
+                Cancel
               </Button>
               <Button
                 variant="primary"
@@ -679,7 +679,7 @@ export const AiProvidersSection: React.FC = () => {
                 onClick={handleSaveEdit}
                 icon={<Check className="w-3.5 h-3.5" />}
               >
-                Guardar Cambios
+                Save Changes
               </Button>
             </div>
           }
@@ -687,7 +687,7 @@ export const AiProvidersSection: React.FC = () => {
           <div className="space-y-4 text-xs font-body">
             {/* Base URL Glance */}
             <div className="p-3 bg-surface-low rounded-xs border border-hairline flex items-center justify-between text-ink-secondary">
-              <span className="font-mono text-[11px] text-ink-tertiary">URL Base:</span>
+              <span className="font-mono text-[11px] text-ink-tertiary">Base URL:</span>
               <span className="font-mono text-[11px] text-ink-primary truncate max-w-[320px]">
                 {editingProvider.baseUrl}
               </span>
@@ -696,13 +696,13 @@ export const AiProvidersSection: React.FC = () => {
             {/* API Key */}
             <div className="space-y-1.5">
               <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
-                Clave API (Hardware Encrypted)
+                API Key (Hardware Encrypted)
               </label>
               <TextInput
                 type={showEditKey ? 'text' : 'password'}
                 value={editApiKey}
                 onChange={(e) => setEditApiKey(e.target.value)}
-                placeholder="Introduce o actualiza la clave API..."
+                placeholder="Enter or update API key..."
                 mono
                 suffix={
                   <button
@@ -720,14 +720,14 @@ export const AiProvidersSection: React.FC = () => {
             <div className="space-y-2 pt-2 border-t border-hairline">
               <div className="flex items-center justify-between">
                 <label className="block text-[11px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
-                  Modelo por Defecto
+                  Default Model
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsManualModel(!isManualModel)}
                   className="text-[11px] text-action hover:underline cursor-pointer"
                 >
-                  {isManualModel ? 'Seleccionar de lista' : '+ Escribir ID manual'}
+                  {isManualModel ? 'Select from list' : '+ Enter manual ID'}
                 </button>
               </div>
 
@@ -736,7 +736,7 @@ export const AiProvidersSection: React.FC = () => {
                   type="text"
                   value={manualModelInput}
                   onChange={(e) => setManualModelInput(e.target.value)}
-                  placeholder="Ej: openai/gpt-5.6-luna o deepseek/deepseek-r1"
+                  placeholder="e.g., openai/gpt-5.6-luna or deepseek/deepseek-r1"
                   mono
                 />
               ) : (
@@ -746,7 +746,7 @@ export const AiProvidersSection: React.FC = () => {
                     <TextInput
                       value={modelSearch}
                       onChange={(e) => setModelSearch(e.target.value)}
-                      placeholder="Buscar modelo disponible..."
+                      placeholder="Search available models..."
                       mono
                     />
                   )}
@@ -777,7 +777,7 @@ export const AiProvidersSection: React.FC = () => {
                 isLoading={isTestingEdit}
                 icon={!isTestingEdit ? <RefreshCw className="w-3.5 h-3.5 text-action" /> : undefined}
               >
-                {isTestingEdit ? 'Probando conexión...' : 'Probar Conexión y Actualizar Modelos'}
+                {isTestingEdit ? 'Testing connection...' : 'Test Connection & Refresh Models'}
               </Button>
 
               {editTestResult && (

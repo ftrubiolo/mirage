@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import { EntryVariant, EntryVariantMapSlot } from '../types/library';
 import { bakeModelTransforms, viewportBridge } from './viewportBridge';
 import { loadTextureAsync } from './pbrController';
-import { slugifyCode } from './seraPackageExporter';
+import { slugifyCode } from './webPackageExporter';
 
 export interface ArBakeOptions {
   maxTextureSize?: 1024 | 2048;
@@ -57,7 +57,7 @@ async function resolveSlotTexture(
   try {
     return await loadTextureAsync(url, isSRGB);
   } catch (err) {
-    console.warn(`[arBakePipeline] No se pudo cargar textura para ${slot.fileName || url}:`, err);
+    console.warn(`[arBakePipeline] Could not load texture for ${slot.fileName || url}:`, err);
     return null;
   }
 }
@@ -103,8 +103,8 @@ export async function bakeVariantArtifacts(
     groundModel = true
   } = options;
 
-  const variantCode = slugifyCode(variant.name || variant.id || 'variante');
-  const variantLabel = variant.name || 'Variante';
+  const variantCode = slugifyCode(variant.name || variant.id || 'variant');
+  const variantLabel = variant.name || 'Variant';
 
   // 1. Clone model transforms & geometries without mutating the active viewport scene
   const bakedObject = bakeModelTransforms(baseModel);
@@ -235,11 +235,11 @@ export async function bakeVariantArtifacts(
 export async function createArPackageZip(options: ArPackageExportOptions = {}): Promise<Blob> {
   const targetObject = viewportBridge.modelGroup || viewportBridge.scene;
   if (!targetObject) {
-    throw new Error('No hay ningún modelo 3D cargado para exportar.');
+    throw new Error('No 3D model loaded to export.');
   }
 
   const {
-    productName = 'Modelo 3D',
+    productName = '3D Model',
     variants = [],
     maxTextureSize = 1024,
     includeGlb = true,
@@ -274,14 +274,14 @@ export async function createArPackageZip(options: ArPackageExportOptions = {}): 
 
   for (let i = 0; i < total; i++) {
     const v = variantsToProcess[i];
-    const name = v.name || `Variante ${i + 1}`;
+    const name = v.name || `Variant ${i + 1}`;
 
     onProgress?.({
       currentVariantIndex: i + 1,
       totalVariants: total,
       variantName: name,
       stage: 'preparing',
-      message: `Horneando variante ${i + 1} de ${total}: "${name}"...`
+      message: `Baking variant ${i + 1} of ${total}: "${name}"...`
     });
 
     const baked = await bakeVariantArtifacts(targetObject, v, {
@@ -325,7 +325,7 @@ export async function createArPackageZip(options: ArPackageExportOptions = {}): 
     totalVariants: total,
     variantName: '',
     stage: 'complete',
-    message: 'Comprimiendo archivo ZIP de Realidad Aumentada...'
+    message: 'Compressing Augmented Reality ZIP archive...'
   });
 
   return await zip.generateAsync({

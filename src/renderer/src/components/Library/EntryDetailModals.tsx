@@ -28,13 +28,13 @@ export const CreateVariantModal: React.FC<CreateVariantModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Añadir Perfil / Variante"
+      title="Add Finish Profile / Variant"
       icon={<Layers className="w-4 h-4 text-action" />}
       size="md"
       footer={
         <div className="flex items-center justify-end gap-2 w-full">
           <Button variant="secondary" onClick={onClose}>
-            Cancelar
+            Cancel
           </Button>
           <Button
             variant="primary"
@@ -44,29 +44,29 @@ export const CreateVariantModal: React.FC<CreateVariantModalProps> = ({
             }}
             disabled={!newVariantName.trim()}
           >
-            Crear Perfil
+            Create Variant
           </Button>
         </div>
       }
     >
       <form onSubmit={onSubmit} className="space-y-4">
-        <FormField label="Nombre de la Variante" required>
+        <FormField label="Variant Name" required>
           <TextInput
             required
             autoFocus
             value={newVariantName}
             onChange={(e) => setNewVariantName(e.target.value)}
-            placeholder="Ej: Nogal Oscuro & Cuero Negro"
+            placeholder="e.g., Brushed Steel & Matte Black"
           />
         </FormField>
 
-        <FormField label="Duplicar configuración inicial desde">
+        <FormField label="Clone initial configuration from">
           <select
             value={cloneFromVariantId || ''}
             onChange={(e) => setCloneFromVariantId(e.target.value || null)}
             className="w-full px-2.5 py-1.5 bg-surface-lowest border border-hairline text-xs font-body text-ink-primary focus:outline-none focus:border-action rounded-xs shadow-xs"
           >
-            <option value="">En blanco (Sin mapas)</option>
+            <option value="">Blank (No texture maps)</option>
             {rawVariants.map((v) => (
               <option key={v.id} value={v.id}>
                 {v.name} {v.isDefault ? '(Default)' : ''}
@@ -98,13 +98,13 @@ export const RenameVariantModal: React.FC<RenameVariantModalProps> = ({
     <Modal
       isOpen={Boolean(candidate)}
       onClose={onClose}
-      title="Renombrar Perfil"
+      title="Rename Variant"
       icon={<Edit2 className="w-4 h-4 text-action" />}
       size="sm"
       footer={
         <div className="flex items-center justify-end gap-2 w-full">
           <Button variant="secondary" onClick={onClose}>
-            Cancelar
+            Cancel
           </Button>
           <Button
             variant="primary"
@@ -114,13 +114,13 @@ export const RenameVariantModal: React.FC<RenameVariantModalProps> = ({
             }}
             disabled={!renameValue.trim()}
           >
-            Guardar Nombre
+            Save Name
           </Button>
         </div>
       }
     >
       <form onSubmit={onSubmit}>
-        <FormField label="Nuevo Nombre" required>
+        <FormField label="New Name" required>
           <TextInput
             required
             autoFocus
@@ -149,16 +149,16 @@ export const DeleteVariantModal: React.FC<DeleteVariantModalProps> = ({
       isOpen={Boolean(candidate)}
       onClose={onClose}
       onConfirm={onConfirm}
-      title={`¿Eliminar perfil "${candidate?.name}"?`}
-      confirmText="Eliminar Perfil"
+      title={`Delete variant "${candidate?.name}"?`}
+      confirmText="Delete Variant"
       variant="destructive"
       message={
         candidate ? (
           <div>
-            <p>Esta acción eliminará la configuración de mapas y parámetros de este perfil.</p>
+            <p>This action will remove the texture map and parameter configuration for this variant.</p>
             {candidate.isDefault && (
               <span className="block mt-1 text-action font-semibold">
-                Nota: Al ser el perfil por defecto, se promoverá automáticamente otro perfil como nuevo Default.
+                Note: Since this is the default variant, another variant will automatically be promoted as the new Default.
               </span>
             )}
           </div>

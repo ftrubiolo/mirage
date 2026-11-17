@@ -3,10 +3,10 @@ import { Sun, CloudSun, Moon, Sliders, ShieldCheck, Sparkles } from 'lucide-reac
 import { useViewportStore, LightingPreset } from '../../../store/viewportStore';
 
 const LIGHTING_PRESETS: { id: LightingPreset; label: string }[] = [
-  { id: 'studio', label: 'Estudio' },
+  { id: 'studio', label: 'Studio' },
   { id: 'natural', label: 'Natural' },
-  { id: 'dramatic', label: 'Dramático' },
-  { id: 'technical', label: 'Técnico' }
+  { id: 'dramatic', label: 'Dramatic' },
+  { id: 'technical', label: 'Technical' }
 ];
 
 export const CanvasLightingWidget: React.FC = () => {
@@ -45,7 +45,7 @@ export const CanvasLightingWidget: React.FC = () => {
         <div className="flex items-center justify-between text-[11px] font-medium text-ink-primary">
           <div className="flex items-center gap-1.5">
             <Sun size={13} className="text-action shrink-0" />
-            <span>Intensidad de Entorno (HDRI)</span>
+            <span>Environment Intensity (HDRI)</span>
           </div>
           <span className="font-mono text-[10px] tabular-nums text-ink-tertiary">
             {environmentIntensity.toFixed(1)}x
@@ -69,9 +69,9 @@ export const CanvasLightingWidget: React.FC = () => {
           className="w-full h-1.5 bg-surface-high rounded-none appearance-none cursor-pointer accent-action"
         />
         <div className="flex justify-between text-[9px] font-mono text-ink-tertiary">
-          <span>0.1x (Tenue)</span>
+          <span>0.1x (Dim)</span>
           <span>1.0x (Normal)</span>
-          <span>3.0x (Brillante)</span>
+          <span>3.0x (Bright)</span>
         </div>
       </div>
 
@@ -79,7 +79,7 @@ export const CanvasLightingWidget: React.FC = () => {
       <div className="flex items-center justify-between px-2 py-1.5 bg-surface-container/30 rounded-xs border border-hairline">
         <div className="flex items-center gap-1.5 text-[11px] text-ink-secondary">
           <ShieldCheck size={13} className={showContactShadows ? 'text-action' : 'text-ink-tertiary'} />
-          <span>Sombras de Contacto (Ground)</span>
+          <span>Contact Shadows (Ground)</span>
         </div>
         <button
           type="button"
@@ -90,7 +90,7 @@ export const CanvasLightingWidget: React.FC = () => {
               : 'bg-surface-lowest text-ink-tertiary border-hairline hover:text-ink-primary'
           }`}
         >
-          {showContactShadows ? 'Activo' : 'Inactivo'}
+          {showContactShadows ? 'Active' : 'Off'}
         </button>
       </div>
     </div>

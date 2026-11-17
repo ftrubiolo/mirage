@@ -12,7 +12,7 @@ import { loadWorkbenchState, resetWorkbenchStores } from '../store/workbenchActi
 import { useAppStore } from '../store/appStore';
 import {
   LibraryEntry,
-  FurnitureCategory,
+  ModelCategory,
   EntryVariant,
   EntryVariantMaterial,
   TexturePool,
@@ -298,7 +298,7 @@ export const loadEntryIntoWorkbench = async (entry: LibraryEntry, targetVariantI
 export const saveWorkbenchToLibrary = async (params: {
   title: string;
   slug: string;
-  category?: FurnitureCategory;
+  category?: ModelCategory;
   description?: string;
   status?: LibraryEntry['status'];
   skipPoster?: boolean;
@@ -308,9 +308,9 @@ export const saveWorkbenchToLibrary = async (params: {
   const variant = useVariantStore.getState();
   const currentActiveEntry = useAppStore.getState().activeEntry;
   const { slug, title } = params;
-  const category = params.category || currentActiveEntry?.category || 'otro';
+  const category = params.category || currentActiveEntry?.category || 'other';
   const description = params.description !== undefined ? params.description : (currentActiveEntry?.description || '');
-  const status = params.status || currentActiveEntry?.status || 'workshop';
+  const status = params.status || currentActiveEntry?.status || 'wip';
   const skipPoster = params.skipPoster ?? false;
 
   // 1. Snapshot poster (preserve existing poster if skipPoster is true)
@@ -618,9 +618,9 @@ export const flushAutoSave = async () => {
     const savedEntry = await saveWorkbenchToLibrary({
       title,
       slug: activeSlug,
-      category: activeEntry?.category || 'otro',
+      category: activeEntry?.category || 'other',
       description: activeEntry?.description,
-      status: activeEntry?.status || 'workshop',
+      status: activeEntry?.status || 'wip',
       skipPoster: true
     });
 
@@ -666,9 +666,9 @@ export const autoSaveActiveEntry = (immediate = false) => {
       const savedEntry = await saveWorkbenchToLibrary({
         title,
         slug: activeSlug,
-        category: activeEntry?.category || 'otro',
+        category: activeEntry?.category || 'other',
         description: activeEntry?.description,
-        status: activeEntry?.status || 'workshop',
+        status: activeEntry?.status || 'wip',
         skipPoster: true
       });
 

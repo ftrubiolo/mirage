@@ -96,13 +96,13 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
   };
 
   const defaultFilters = filters || [
-    { name: 'Imágenes / Texturas', extensions: ['webp', 'png', 'jpg', 'jpeg', 'tga'] }
+    { name: 'Images / Textures', extensions: ['webp', 'png', 'jpg', 'jpeg', 'tga'] }
   ];
 
   // Helper to add a new variant with a specific file path
   const handleAddVariantWithFile = async (filePath: string) => {
     const fileInfo = await window.electronAPI.getFileInfo(filePath);
-    const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
+    const activeSlug = useAppStore.getState().activeEntrySlug || 'model';
     const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
     const targetType = getNextSlotTargetType(slot, variants, activeSlug, curMat);
     let targetPath = filePath;
@@ -144,7 +144,7 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
   // Helper to replace an existing variant with a file path
   const handleReplaceVariantWithFile = async (variant: MapVariantItem, filePath: string) => {
     const fileInfo = await window.electronAPI.getFileInfo(filePath);
-    const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
+    const activeSlug = useAppStore.getState().activeEntrySlug || 'model';
     const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
 
     if (variant.url) {
@@ -230,7 +230,7 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
   // File picker handlers
   const handlePickAdd = async () => {
     const file = await window.electronAPI.openFileDialog({
-      title: pickTitle || `Seleccionar ${title}`,
+      title: pickTitle || `Select ${title}`,
       filters: defaultFilters
     });
     if (file) {
@@ -240,7 +240,7 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
 
   const handlePickReplace = async (variant: MapVariantItem) => {
     const file = await window.electronAPI.openFileDialog({
-      title: `Reemplazar textura para ${variant.name}`,
+      title: `Replace texture for ${variant.name}`,
       filters: defaultFilters
     });
     if (file) {
@@ -274,8 +274,8 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
         <MapSlotDropZone
           isAddZone={false}
           icon={icon}
-          label={loadFromCache ? 'Textura embebida en .glb (Arrastra para sobrescribir)' : placeholderText}
-          sublabel={loadFromCache ? 'Caché del binario activo' : subText}
+          label={loadFromCache ? 'Texture embedded in .glb (Drop to override)' : placeholderText}
+          sublabel={loadFromCache ? 'Active binary cache' : subText}
           isDragOver={isEmptyDragOver}
           onDragOver={(e) => {
             e.preventDefault();
@@ -312,8 +312,8 @@ export const MapSlotPicker: React.FC<MapSlotPickerProps> = React.memo(({
 
           <MapSlotDropZone
             isAddZone={true}
-            label={addVariantLabel || (slot === 'baseColor' ? 'Añadir Colorway (Arrastra imagen aquí)' : 'Añadir Variante (Arrastra imagen aquí)')}
-            sublabel={addVariantSubtext || (slot === 'baseColor' ? 'Variante de Textura BaseColor • WebP / PNG / JPG' : subText)}
+            label={addVariantLabel || (slot === 'baseColor' ? 'Add Colorway (Drop image here)' : 'Add Variant (Drop image here)')}
+            sublabel={addVariantSubtext || (slot === 'baseColor' ? 'BaseColor Texture Variant • WebP / PNG / JPG' : subText)}
             isDragOver={isAddDragOver}
             onDragOver={(e) => {
               e.preventDefault();

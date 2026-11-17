@@ -104,7 +104,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
       <button
         ref={triggerRef}
         type="button"
-        aria-label="Más información"
+        aria-label="More information"
         onMouseEnter={show}
         onMouseLeave={hide}
         onFocus={show}

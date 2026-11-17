@@ -24,7 +24,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   title,
   message,
   confirmText,
-  cancelText = 'Cancelar',
+  cancelText = 'Cancel',
   variant = 'destructive',
   isLoading = false
 }) => {
@@ -44,7 +44,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     );
 
   const defaultConfirmText =
-    variant === 'destructive' ? 'Eliminar' : variant === 'warning' ? 'Continuar' : 'Confirmar';
+    variant === 'destructive' ? 'Delete' : variant === 'warning' ? 'Continue' : 'Confirm';
 
   return (
     <Modal

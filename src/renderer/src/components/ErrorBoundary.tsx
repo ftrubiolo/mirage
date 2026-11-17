@@ -53,7 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return this.props.children;
     }
 
-    const title = this.props.fallbackTitle || 'Componente';
+    const title = this.props.fallbackTitle || 'Component';
 
     return (
       <div
@@ -64,14 +64,13 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="w-full max-w-2xl bg-surface-lowest border border-rose-500/40 rounded-xs overflow-hidden">
           <div className="px-5 py-3 border-b border-hairline bg-surface-low flex items-center gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-              Fallo en la interfaz · {title}
+              UI Error · {title}
             </span>
           </div>
 
           <div className="p-5 space-y-3">
             <p className="text-xs text-ink-secondary font-body">
-              Este panel se ha detenido para evitar que el fallo se propague al resto de la
-              aplicación. El resto de la interfaz sigue operativa.
+              This panel was isolated to prevent the error from propagating. The rest of the application remains operational.
             </p>
 
             <pre className="p-3 bg-canvas-stone border border-hairline rounded-xs text-[10px] font-mono text-ink-secondary overflow-auto max-h-48 whitespace-pre-wrap">
@@ -84,13 +83,13 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={this.handleRetry}
                 className="px-4 py-2 bg-action hover:bg-action-hover active:bg-action-active text-white text-xs font-semibold uppercase tracking-wider transition-colors rounded-xs flex items-center gap-2"
               >
-                Reintentar
+                Retry
               </button>
               <button
                 onClick={this.handleReload}
                 className="px-4 py-2 bg-surface-container hover:bg-surface-high text-ink-primary text-xs font-semibold uppercase tracking-wider transition-colors rounded-xs border border-hairline flex items-center gap-2"
               >
-                Reiniciar aplicación
+                Reload App
               </button>
             </div>
           </div>

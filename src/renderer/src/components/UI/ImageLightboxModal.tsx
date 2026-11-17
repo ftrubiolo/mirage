@@ -152,7 +152,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
           </div>
           <div className="truncate min-w-0">
             <h3 className="font-primary font-bold text-xs uppercase tracking-wider text-white truncate">
-              {title || 'Inspección de Textura PBR'}
+              {title || 'PBR Texture Inspection'}
             </h3>
             {subtitle && (
               <p className="font-mono text-[10px] text-white/60 truncate">
@@ -167,7 +167,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
           <button
             onClick={handleZoomOut}
             className="p-1.5 rounded-xs bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-            title="Alejar Zoom (-)"
+            title="Zoom Out (-)"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
@@ -175,7 +175,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
           <button
             onClick={handleResetZoom}
             className="px-2 py-1 rounded-xs bg-white/10 hover:bg-white/20 text-white font-mono text-xs tabular-nums transition-colors cursor-pointer min-w-[54px] text-center"
-            title="Restablecer escala 1:1 (0)"
+            title="Reset 1:1 scale (0)"
           >
             {Math.round(scale * 100)}%
           </button>
@@ -183,7 +183,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
           <button
             onClick={handleZoomIn}
             className="p-1.5 rounded-xs bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-            title="Acercar Zoom (+)"
+            title="Zoom In (+)"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
@@ -193,7 +193,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
           <button
             onClick={handleDoubleClick}
             className="p-1.5 rounded-xs bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
-            title="Alternar Vista Rápida 200% (Doble clic)"
+            title="Toggle 200% Quick Zoom (Double-click)"
           >
             <Maximize2 className="w-4 h-4" />
           </button>
@@ -203,7 +203,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
           <button
             onClick={onClose}
             className="p-1.5 rounded-xs bg-white/10 hover:bg-rose-500/80 text-white transition-colors cursor-pointer"
-            title="Cerrar visor (Esc)"
+            title="Close viewer (Esc)"
           >
             <X className="w-4 h-4" />
           </button>
@@ -235,7 +235,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
         >
           <img
             src={imageUrl}
-            alt={title || 'Textura PBR'}
+            alt={title || 'PBR Texture'}
             draggable={false}
             className="max-h-[82vh] max-w-[85vw] object-contain rounded-xs shadow-2xl border border-white/10 select-none pointer-events-none"
           />
@@ -243,7 +243,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
 
         {/* Floating Hint Overlay at Bottom */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-xs bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-mono text-white/70 pointer-events-none">
-          Arrastra para mover • Rueda para zoom • Doble clic para 200% • Esc para cerrar
+          Drag to pan • Scroll to zoom • Double-click for 200% • Esc to close
         </div>
       </main>
     </div>,

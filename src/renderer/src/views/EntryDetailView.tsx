@@ -55,12 +55,12 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 bg-canvas text-ink-secondary gap-3 select-none">
         <Box className="w-8 h-8 text-ink-tertiary stroke-[1.25]" />
-        <span className="text-xs font-medium">No se ha seleccionado ninguna pieza.</span>
+        <span className="text-xs font-medium">No model selected.</span>
         <button
           onClick={onBack}
           className="px-3 py-1.5 bg-surface-container hover:bg-surface-high text-ink-primary text-xs font-semibold uppercase tracking-wider rounded-xs border border-hairline transition-colors cursor-pointer"
         >
-          Volver a Biblioteca
+          Back to Library
         </button>
       </div>
     );
@@ -207,7 +207,7 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-action" />
               <h2 className="font-primary font-bold text-sm uppercase tracking-wider text-ink-primary">
-                Perfiles de Acabado & Variantes
+                Finish Profiles &amp; Variants
               </h2>
               <span className="text-xs font-mono font-bold text-ink-secondary bg-surface-container px-2 py-0.5 rounded-xs border border-hairline">
                 {rawVariants.length}
@@ -216,14 +216,14 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
 
             <button
               onClick={() => {
-                setNewVariantName(`Variante ${rawVariants.length + 1}`);
+                setNewVariantName(`Variant ${rawVariants.length + 1}`);
                 setCloneFromVariantId(rawVariants[0]?.id || null);
                 setIsCreateModalOpen(true);
               }}
               className="px-3 py-1.5 bg-action hover:bg-action-hover text-white rounded-xs shadow-xs text-xs font-primary font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Nuevo Perfil</span>
+              <span>New Variant</span>
             </button>
           </div>
 
@@ -240,7 +240,7 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
                   setRenameValue(variant.name);
                 }}
                 onClone={(variant) => {
-                  setNewVariantName(`${variant.name} (Copia)`);
+                  setNewVariantName(`${variant.name} (Copy)`);
                   setCloneFromVariantId(variant.id);
                   setIsCreateModalOpen(true);
                 }}
@@ -253,7 +253,7 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
         {isDragging && <ResizeDragOverlay />}
       </div>
 
-      {/* Modal: Crear Nuevo Perfil */}
+      {/* Modal: Create New Profile */}
       <CreateVariantModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
@@ -265,7 +265,7 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
         rawVariants={rawVariants}
       />
 
-      {/* Modal: Renombrar Perfil */}
+      {/* Modal: Rename Profile */}
       <RenameVariantModal
         candidate={renameCandidate}
         renameValue={renameValue}
@@ -274,7 +274,7 @@ export const EntryDetailView: React.FC<EntryDetailViewProps> = ({ entry, onBack 
         onSubmit={handleConfirmRename}
       />
 
-      {/* Modal: Confirmar Eliminación de Perfil */}
+      {/* Modal: Confirm Profile Deletion */}
       <DeleteVariantModal
         candidate={deleteCandidate}
         onClose={() => setDeleteCandidate(null)}

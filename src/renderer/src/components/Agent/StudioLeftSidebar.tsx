@@ -63,7 +63,7 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
           isDragging={isDragging}
           onMouseDown={onMouseDown}
           onDoubleClick={onDoubleClick}
-          title="Arrastra para redimensionar panel izquierdo (Doble clic para restablecer)"
+          title="Drag to resize left panel (Double-click to reset)"
         />
       )}
       {/* Top: Mini Interactive 3D Canvas */}
@@ -74,10 +74,10 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
         {/* Active Model Header */}
         <div className="space-y-1">
           <span className="text-[10px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
-            Pieza Activa del Taller
+            Active Workbench Model
           </span>
-          <div className="font-semibold text-ink-primary text-sm truncate" title={productName || 'Modelo no guardado'}>
-            {productName || 'Modelo no guardado'}
+          <div className="font-semibold text-ink-primary text-sm truncate" title={productName || 'Unsaved model'}>
+            {productName || 'Unsaved model'}
           </div>
         </div>
 
@@ -86,7 +86,7 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
           <div className="flex items-center justify-between text-ink-secondary">
             <span className="flex items-center gap-1.5 font-sans text-xs">
               <Box className="w-3.5 h-3.5 text-action" />
-              Polígonos:
+              Polygons:
             </span>
             <span className="text-ink-primary font-semibold">
               {modelStats ? modelStats.triangleCount.toLocaleString() : '—'}
@@ -96,7 +96,7 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
           <div className="flex items-center justify-between text-ink-secondary">
             <span className="flex items-center gap-1.5 font-sans text-xs">
               <Layers className="w-3.5 h-3.5 text-action" />
-              Mallas / Vértices:
+              Meshes / Vertices:
             </span>
             <span className="text-ink-primary">
               {modelStats ? `${modelStats.meshCount} / ${modelStats.vertexCount.toLocaleString()}` : '—'}
@@ -104,7 +104,7 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
           </div>
 
           <div className="flex items-center justify-between text-ink-secondary pt-1 border-t border-hairline">
-            <span className="font-sans text-xs">Dimensiones:</span>
+            <span className="font-sans text-xs">Dimensions:</span>
             <span className="text-ink-primary truncate max-w-[140px]" title={dimText}>
               {dimText}
             </span>
@@ -114,15 +114,15 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
         {/* Active PBR Parameters Glance */}
         <div className="space-y-1.5">
           <span className="text-[10px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
-            Parámetros Físicos PBR
+            PBR Physical Parameters
           </span>
           <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
             <div className="p-2 bg-surface-low rounded-xs border border-hairline flex flex-col">
-              <span className="text-ink-tertiary text-[10px]">Rugosidad</span>
+              <span className="text-ink-tertiary text-[10px]">Roughness</span>
               <span className="text-ink-primary font-semibold">{roughnessFactor.toFixed(2)}</span>
             </div>
             <div className="p-2 bg-surface-low rounded-xs border border-hairline flex flex-col">
-              <span className="text-ink-tertiary text-[10px]">Metalicidad</span>
+              <span className="text-ink-tertiary text-[10px]">Metalness</span>
               <span className="text-ink-primary font-semibold">{metalnessFactor.toFixed(2)}</span>
             </div>
             <div className="p-2 bg-surface-low rounded-xs border border-hairline flex flex-col">
@@ -130,7 +130,7 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
               <span className="text-ink-primary font-semibold">{normalScale.toFixed(2)}</span>
             </div>
             <div className="p-2 bg-surface-low rounded-xs border border-hairline flex flex-col">
-              <span className="text-ink-tertiary text-[10px]">Oclusión (AO)</span>
+              <span className="text-ink-tertiary text-[10px]">Occlusion (AO)</span>
               <span className="text-ink-primary font-semibold">{aoIntensity.toFixed(2)}</span>
             </div>
           </div>
@@ -139,7 +139,7 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
         {/* PBR Slot Maps List */}
         <div className="space-y-1.5">
           <span className="text-[10px] font-primary font-bold uppercase tracking-wider text-ink-secondary">
-            Ranuras de Textura
+            Texture Slots
           </span>
           <div className="space-y-1">
             {ALL_SLOT_NAMES.slice(0, 7).map((slot) => {
@@ -157,7 +157,7 @@ export const StudioLeftSidebar: React.FC<StudioLeftSidebarProps> = ({
                     variant={hasMap ? (isEnabled ? 'active' : 'pending') : 'neutral'}
                     size="sm"
                   >
-                    {hasMap ? (isEnabled ? 'Asignado' : 'Inactivo') : 'Vacío'}
+                    {hasMap ? (isEnabled ? 'Assigned' : 'Inactive') : 'Empty'}
                   </StatusBadge>
                 </div>
               );

@@ -68,7 +68,7 @@ export const VariantCardItem: React.FC<VariantCardItemProps> = ({
             icon={<Edit2 className="w-3.5 h-3.5" />}
             size="xs"
             variant="ghost"
-            title="Renombrar perfil"
+            title="Rename variant"
             onClick={() => onStartRename(variant)}
           />
 
@@ -76,7 +76,7 @@ export const VariantCardItem: React.FC<VariantCardItemProps> = ({
             icon={<Copy className="w-3.5 h-3.5" />}
             size="xs"
             variant="ghost"
-            title="Duplicar este perfil"
+            title="Duplicate this variant"
             onClick={() => onClone(variant)}
           />
 
@@ -85,7 +85,7 @@ export const VariantCardItem: React.FC<VariantCardItemProps> = ({
               icon={<Star className="w-3.5 h-3.5" />}
               size="xs"
               variant="ghost"
-              title="Establecer como variante por defecto"
+              title="Set as default variant"
               onClick={() => onSetDefault(variant.id)}
               className="hover:text-amber-600 hover:bg-amber-500/10"
             />
@@ -96,7 +96,7 @@ export const VariantCardItem: React.FC<VariantCardItemProps> = ({
               icon={<Trash2 className="w-3.5 h-3.5" />}
               size="xs"
               variant="destructive"
-              title="Eliminar perfil"
+              title="Delete variant"
               onClick={() => onStartDelete(variant)}
             />
           )}
@@ -108,11 +108,11 @@ export const VariantCardItem: React.FC<VariantCardItemProps> = ({
         {/* Assigned Maps */}
         <div>
           <span className="text-[10px] font-primary font-semibold uppercase tracking-wider text-ink-tertiary block mb-1">
-            Mapas de Textura Asignados ({mapsList.length})
+            Assigned Texture Maps ({mapsList.length})
           </span>
           {mapsList.length === 0 ? (
             <div className="p-2 bg-surface-low rounded-xs border border-dashed border-hairline text-ink-tertiary text-[11px]">
-              Sin mapas PBR asignados a este perfil
+              No PBR maps assigned to this variant
             </div>
           ) : (
             <div className="flex flex-wrap gap-1.5">
@@ -133,15 +133,15 @@ export const VariantCardItem: React.FC<VariantCardItemProps> = ({
         {/* Material Factors Summary */}
         <div className="p-2.5 bg-surface-low/60 rounded-xs border border-hairline grid grid-cols-3 gap-2 text-[11px] font-mono tabular-nums text-ink-secondary">
           <div>
-            <span className="text-[9px] text-ink-tertiary uppercase block">Rugosidad</span>
+            <span className="text-[9px] text-ink-tertiary uppercase block">Roughness</span>
             <span className="font-semibold text-ink-primary">{s.roughnessFactor ?? 1.0}</span>
           </div>
           <div>
-            <span className="text-[9px] text-ink-tertiary uppercase block">Metálico</span>
+            <span className="text-[9px] text-ink-tertiary uppercase block">Metalness</span>
             <span className="font-semibold text-ink-primary">{s.metalnessFactor ?? 1.0}</span>
           </div>
           <div>
-            <span className="text-[9px] text-ink-tertiary uppercase block">Prof. Normal</span>
+            <span className="text-[9px] text-ink-tertiary uppercase block">Normal Scale</span>
             <span className="font-semibold text-ink-primary">{s.normalScale ?? 1.0}x</span>
           </div>
         </div>
@@ -155,7 +155,7 @@ export const VariantCardItem: React.FC<VariantCardItemProps> = ({
         iconRight={<ArrowUpRight className="w-3.5 h-3.5" />}
         className="w-full mt-2 hover:bg-action hover:text-white"
       >
-        Abrir en Taller 3D ({variant.name})
+        Open in 3D Workbench ({variant.name})
       </Button>
     </Card>
   );

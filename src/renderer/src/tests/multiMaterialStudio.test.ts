@@ -6,7 +6,7 @@ import { useVariantStore } from '../store/variantStore';
 import { useAppStore } from '../store/appStore';
 import { loadWorkbenchState } from '../store/workbenchActions';
 import { saveWorkbenchToLibrary, loadEntryIntoWorkbench } from '../utils/libraryBridge';
-import { buildModel3dJson } from '../utils/seraPackageExporter';
+import { buildModel3dJson } from '../utils/webPackageExporter';
 import {
   extractModelMaterialsInfo,
   captureOriginalMaterials,
@@ -736,7 +736,7 @@ describe('Multi-Material Support in Mirage', () => {
     });
   });
 
-  describe('seraPackageExporter multi-material manifest', () => {
+  describe('webPackageExporter multi-material manifest', () => {
     it('declares materials array and variant slots in buildModel3dJson', () => {
       const variants = [
         {

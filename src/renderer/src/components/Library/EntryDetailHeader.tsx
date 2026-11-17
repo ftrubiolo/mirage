@@ -27,9 +27,9 @@ export const EntryDetailHeader: React.FC<EntryDetailHeaderProps> = ({
           size="sm"
           onClick={onBack}
           icon={<ArrowLeft className="w-3.5 h-3.5" />}
-          title="Volver a la vista general de la biblioteca"
+          title="Back to library overview"
         >
-          <span className="hidden sm:inline">Biblioteca</span>
+          <span className="hidden sm:inline">Library</span>
         </Button>
 
         <div className="h-4 w-px bg-hairline" />
@@ -51,9 +51,9 @@ export const EntryDetailHeader: React.FC<EntryDetailHeaderProps> = ({
           size="sm"
           onClick={onOpenFolder}
           icon={<FolderOpen className="w-3.5 h-3.5 text-action" />}
-          title="Abrir carpeta en el explorador"
+          title="Open folder in file explorer"
         >
-          <span className="hidden sm:inline">Carpeta</span>
+          <span className="hidden sm:inline">Folder</span>
         </Button>
 
         <Button
@@ -63,7 +63,7 @@ export const EntryDetailHeader: React.FC<EntryDetailHeaderProps> = ({
           isLoading={isLoading}
           iconRight={<ArrowUpRight className="w-3.5 h-3.5" />}
         >
-          Abrir en Taller 3D
+          Open in 3D Workbench
         </Button>
       </div>
     </div>

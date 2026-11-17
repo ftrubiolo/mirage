@@ -1,5 +1,52 @@
-import { LibraryEntry, EntryVariant, EntryVariantMaterial, TexturePool, TextureAssetItem, FurnitureCategory } from '../types/library';
+import {
+  LibraryEntry,
+  EntryVariant,
+  EntryVariantMaterial,
+  TexturePool,
+  TextureAssetItem,
+  ModelCategory,
+  EntryStatus
+} from '../types/library';
 import { ALL_SLOT_NAMES, SlotName } from '../store/pbrMaterialStore';
+
+const LEGACY_CATEGORY_MAP: Record<string, ModelCategory> = {
+  asientos: 'products',
+  mesas: 'products',
+  almacenamiento: 'products',
+  camas: 'products',
+  iluminacion: 'products',
+  accesorios: 'props',
+  otro: 'other',
+  props: 'props',
+  architecture: 'architecture',
+  characters: 'characters',
+  vehicles: 'vehicles',
+  environments: 'environments',
+  products: 'products',
+  other: 'other'
+};
+
+const LEGACY_STATUS_MAP: Record<string, EntryStatus> = {
+  active: 'active',
+  wip: 'wip',
+  workshop: 'wip',
+  pending: 'pending',
+  approved: 'approved',
+  madeToOrder: 'approved',
+  published: 'published',
+  dispatched: 'published',
+  neutral: 'neutral'
+};
+
+export function normalizeCategory(rawCategory?: string | null): ModelCategory {
+  if (!rawCategory) return 'other';
+  return LEGACY_CATEGORY_MAP[rawCategory] || 'other';
+}
+
+export function normalizeStatus(rawStatus?: string | null): EntryStatus {
+  if (!rawStatus) return 'wip';
+  return LEGACY_STATUS_MAP[rawStatus] || 'wip';
+}
 
 /**
  * Checks whether an entry is already fully normalized to the modern schema:
@@ -35,9 +82,9 @@ export function migrateEntrySchema(raw: any): LibraryEntry {
       id: raw.id,
       title: raw.title,
       slug: raw.slug,
-      category: (raw.category || 'otro') as FurnitureCategory,
+      category: normalizeCategory(raw.category),
       description: raw.description || '',
-      status: raw.status || 'workshop',
+      status: normalizeStatus(raw.status),
       createdAt: raw.createdAt || new Date().toISOString(),
       updatedAt: raw.updatedAt || new Date().toISOString(),
       posterUrl: raw.posterUrl || null,
@@ -253,7 +300,7 @@ export function migrateEntrySchema(raw: any): LibraryEntry {
 
     return {
       id: v.id || `var-${idx === 0 ? 'default' : idx}`,
-      name: v.name || (idx === 0 ? 'Default' : `Variante ${idx + 1}`),
+      name: v.name || (idx === 0 ? 'Default' : `Variant ${idx + 1}`),
       isDefault: v.isDefault ?? idx === 0,
       posterUrl: v.posterUrl || null,
       posterFileName: v.posterFileName || null,
@@ -266,11 +313,11 @@ export function migrateEntrySchema(raw: any): LibraryEntry {
 
   return {
     id: raw.id || `entry-${Date.now()}`,
-    title: raw.title || raw.slug || 'Modelo',
-    slug: raw.slug || 'modelo',
-    category: (raw.category || 'otro') as FurnitureCategory,
+    title: raw.title || raw.slug || 'Model',
+    slug: raw.slug || 'model',
+    category: normalizeCategory(raw.category),
     description: raw.description || '',
-    status: raw.status || 'workshop',
+    status: normalizeStatus(raw.status),
     createdAt: raw.createdAt || new Date().toISOString(),
     updatedAt: raw.updatedAt || new Date().toISOString(),
     posterUrl: raw.posterUrl || null,

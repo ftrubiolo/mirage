@@ -217,7 +217,7 @@ describe('ViewportToolbar Decoupling & Reorderable Items with Dynamic Spacers', 
       // The very first child in header must be the sidebar toggle container, not a toolbar item
       expect(firstChild?.getAttribute('data-toolbar-item')).toBeNull();
       const sidebarBtn = firstChild?.querySelector('button');
-      expect(sidebarBtn?.getAttribute('title')).toContain('Colapsar panel lateral');
+      expect(sidebarBtn?.getAttribute('title')).toContain('Collapse workbench sidebar');
     });
 
     it('remains pinned to the far right when sidebar position is right, regardless of item reordering', () => {
@@ -233,7 +233,7 @@ describe('ViewportToolbar Decoupling & Reorderable Items with Dynamic Spacers', 
       // The last child in header must be the sidebar toggle container, not a toolbar item
       expect(lastChild?.getAttribute('data-toolbar-item')).toBeNull();
       const sidebarBtn = lastChild?.querySelector('button');
-      expect(sidebarBtn?.getAttribute('title')).toContain('Colapsar panel lateral');
+      expect(sidebarBtn?.getAttribute('title')).toContain('Collapse workbench sidebar');
     });
   });
 
@@ -309,7 +309,7 @@ describe('ViewportToolbar Decoupling & Reorderable Items with Dynamic Spacers', 
       });
 
       const channelItem = container.querySelector('[data-toolbar-item="channel-dropdown"]');
-      expect(channelItem?.textContent).toContain('PBR Completo');
+      expect(channelItem?.textContent).toContain('Full PBR');
 
       // Toggle channel-dropdown to icon-only
       act(() => {
@@ -317,7 +317,7 @@ describe('ViewportToolbar Decoupling & Reorderable Items with Dynamic Spacers', 
       });
 
       expect(useViewportStore.getState().iconOnlyToolbarItems).toContain('channel-dropdown');
-      expect(channelItem?.textContent).not.toContain('PBR Completo');
+      expect(channelItem?.textContent).not.toContain('Full PBR');
 
       // Toggle channel-dropdown back to full text
       act(() => {
@@ -325,7 +325,7 @@ describe('ViewportToolbar Decoupling & Reorderable Items with Dynamic Spacers', 
       });
 
       expect(useViewportStore.getState().iconOnlyToolbarItems).not.toContain('channel-dropdown');
-      expect(channelItem?.textContent).toContain('PBR Completo');
+      expect(channelItem?.textContent).toContain('Full PBR');
     });
 
     it('sets all items with text to icon-only via setAllToolbarItemsIconOnly', () => {
@@ -333,16 +333,16 @@ describe('ViewportToolbar Decoupling & Reorderable Items with Dynamic Spacers', 
         root.render(<ViewportToolbar />);
       });
 
-      expect(container.textContent).toContain('Isométrica');
-      expect(container.textContent).toContain('PBR Completo');
+      expect(container.textContent).toContain('Isometric');
+      expect(container.textContent).toContain('Full PBR');
 
       // Switch all to icon-only
       act(() => {
         useViewportStore.getState().setAllToolbarItemsIconOnly(true);
       });
 
-      expect(container.textContent).not.toContain('Isométrica');
-      expect(container.textContent).not.toContain('PBR Completo');
+      expect(container.textContent).not.toContain('Isometric');
+      expect(container.textContent).not.toContain('Full PBR');
 
       // Reset restores all text
       act(() => {
@@ -350,8 +350,8 @@ describe('ViewportToolbar Decoupling & Reorderable Items with Dynamic Spacers', 
       });
 
       expect(useViewportStore.getState().iconOnlyToolbarItems).toEqual([]);
-      expect(container.textContent).toContain('Isométrica');
-      expect(container.textContent).toContain('PBR Completo');
+      expect(container.textContent).toContain('Isometric');
+      expect(container.textContent).toContain('Full PBR');
     });
   });
 });

@@ -3,6 +3,10 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 const getVaultPath = (): string => {
+  return path.join(app.getPath('userData'), 'mirage_vault.enc');
+};
+
+const getLegacyVaultPath = (): string => {
   return path.join(app.getPath('userData'), 'sera_vault.enc');
 };
 
@@ -43,9 +47,26 @@ async function readVault(): Promise<VaultData> {
   try {
     raw = await fs.readFile(filePath, 'utf-8');
   } catch (err: any) {
-    if (err?.code === 'ENOENT') return {};
+    if (err?.code === 'ENOENT') {
+      // One-time migration from legacy sera_vault.enc if present
+      const legacyPath = getLegacyVaultPath();
+      try {
+        const legacyRaw = await fs.readFile(legacyPath, 'utf-8');
+        const legacyParsed = JSON.parse(legacyRaw);
+        if (legacyParsed && typeof legacyParsed === 'object' && !Array.isArray(legacyParsed)) {
+          await writeVault(legacyParsed as VaultData);
+          console.log(`[Vault] Migrated legacy vault from ${legacyPath} to ${filePath}`);
+          return legacyParsed as VaultData;
+        }
+      } catch (legacyErr: any) {
+        if (legacyErr?.code !== 'ENOENT') {
+          console.warn('[Vault] Legacy vault migration skipped (unreadable or corrupt):', legacyErr);
+        }
+      }
+      return {};
+    }
     console.warn('[Vault] Could not read vault file:', err);
-    throw new Error('El almacén de credenciales no se pudo leer');
+    throw new Error('Credential vault could not be read');
   }
 
   try {
@@ -63,7 +84,7 @@ async function readVault(): Promise<VaultData> {
       );
     } catch (renameErr) {
       console.error('[Vault] Vault file is corrupt and could not be moved aside:', renameErr);
-      throw new Error('El almacén de credenciales está dañado');
+      throw new Error('Credential vault is damaged');
     }
     return {};
   }

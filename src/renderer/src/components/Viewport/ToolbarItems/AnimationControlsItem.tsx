@@ -116,7 +116,7 @@ export const AnimationControlsItem: React.FC<AnimationControlsItemProps> = ({
         <button
           type="button"
           onClick={toggleAnimationPlayback}
-          title={isAnimationPlaying ? 'Pausar (Espacio)' : 'Reproducir (Espacio)'}
+          title={isAnimationPlaying ? 'Pause (Space)' : 'Play (Space)'}
           className={`flex items-center justify-center w-6 h-6 rounded-xs transition-colors ${
             isAnimationPlaying
               ? 'bg-action text-white hover:bg-action-hover'
@@ -168,10 +168,10 @@ export const AnimationControlsItem: React.FC<AnimationControlsItemProps> = ({
               type="button"
               onClick={() => setClipMenuOpen((prev) => !prev)}
               className="flex items-center gap-1 px-1.5 py-0.5 h-6 rounded-xs bg-surface-high/60 hover:bg-surface-high text-[11px] text-ink-primary border border-hairline transition-colors"
-              title="Seleccionar animación"
+              title="Select animation"
             >
               <Film size={11} className="text-ink-tertiary" />
-              <span className="truncate max-w-[90px]">{activeClip?.name || 'Animación'}</span>
+              <span className="truncate max-w-[90px]">{activeClip?.name || 'Animation'}</span>
               <ChevronDown size={10} className="text-ink-tertiary" />
             </button>
 
@@ -210,7 +210,7 @@ export const AnimationControlsItem: React.FC<AnimationControlsItemProps> = ({
           <button
             type="button"
             onClick={cycleSpeed}
-            title={`Velocidad de reproducción (${animationPlaybackSpeed}x)`}
+            title={`Playback speed (${animationPlaybackSpeed}x)`}
             className="flex items-center justify-center px-1.5 h-6 rounded-xs bg-surface-high/50 hover:bg-surface-high text-[10px] font-mono tabular-nums text-ink-secondary hover:text-ink-primary transition-colors border border-hairline"
           >
             {animationPlaybackSpeed}x
@@ -221,7 +221,7 @@ export const AnimationControlsItem: React.FC<AnimationControlsItemProps> = ({
         <button
           type="button"
           onClick={toggleAnimationLoop}
-          title={isAnimationLooping ? 'Repetir en bucle (Activado)' : 'Reproducir una vez (Desactivado)'}
+          title={isAnimationLooping ? 'Loop playback (On)' : 'Play once (Off)'}
           className={`flex items-center justify-center w-6 h-6 rounded-xs transition-colors ${
             isAnimationLooping
               ? 'text-action bg-action/10 hover:bg-action/20'

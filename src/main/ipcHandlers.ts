@@ -105,7 +105,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle('dialog:openFile', async (_event, options: unknown) => {
     const parsed = parseOrThrow(OpenFileDialogOptionsSchema, options, 'openFile options');
     const dialogOptions = {
-      title: parsed?.title || 'Seleccionar archivo',
+      title: parsed?.title || 'Select file',
       properties: ['openFile' as const],
       filters: parsed?.filters
     };
@@ -124,7 +124,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   // Open directory dialog
   ipcMain.handle('dialog:openDirectory', async () => {
     const dialogOptions = {
-      title: 'Seleccionar carpeta',
+      title: 'Select folder',
       properties: ['openDirectory' as const]
     };
     const result = targetWindow
@@ -142,7 +142,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle('dialog:saveFile', async (_event, options: unknown) => {
     const parsed = parseOrThrow(SaveFileDialogOptionsSchema, options, 'saveFile options');
     const dialogOptions = {
-      title: parsed?.title || 'Guardar archivo',
+      title: parsed?.title || 'Save file',
       defaultPath: parsed?.defaultPath,
       filters: parsed?.filters
     };
@@ -332,7 +332,7 @@ const DEFAULT_KEYBINDS: Record<string, string> = {
 };
 
 
-  // --- Mirage Atelier Library IPC Handlers ---
+  // --- Mirage Library IPC Handlers ---
 
   ipcMain.handle('library:getBaseDir', async () => {
     await ensureMirageDir();
@@ -742,7 +742,7 @@ const DEFAULT_KEYBINDS: Record<string, string> = {
     } catch (err: any) {
       return {
         success: false,
-        error: err.message || 'Error de conexión'
+        error: err.message || 'Connection error'
       };
     }
   });
@@ -789,7 +789,7 @@ const DEFAULT_KEYBINDS: Record<string, string> = {
     } catch (err: any) {
       return {
         success: false,
-        error: err.message || 'Error de conexión o tiempo de espera agotado'
+        error: err.message || 'Connection error or request timed out'
       };
     }
   });

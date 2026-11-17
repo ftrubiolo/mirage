@@ -79,28 +79,28 @@ export const HubView: React.FC<HubViewProps> = () => {
     {
       id: 'workbench',
       icon: <Box className="w-5 h-5 text-action" />,
-      title: 'Mesa de Trabajo 3D',
+      title: '3D Workbench',
       description:
-        'Lienzo de renderizado PBR en tiempo real, calibración milimétrica de escalas y empaquetado Sharp ORM.',
-      actionText: 'Abrir Mesa de Trabajo',
+        'Real-time PBR rendering canvas, metric scale calibration, and Sharp ORM texture packing.',
+      actionText: 'Open Workbench',
       onClick: handleOpenEmptyWorkbench,
     },
     {
       id: 'library',
       icon: <Library className="w-5 h-5 text-action" />,
-      title: 'Biblioteca de Piezas',
+      title: 'Model Library',
       description:
-        'Catálogo técnico local con modelos .GLB, texturas por ranura, instantáneas y estado de taller.',
-      actionText: 'Explorar Biblioteca',
+        'Local asset catalog with .GLB models, slot-based PBR textures, snapshots, and variant tracking.',
+      actionText: 'Browse Library',
       onClick: () => setView('library')
     },
     {
       id: 'settings',
       icon: <Settings className="w-5 h-5 text-action" />,
-      title: 'Configuración del Atelier',
+      title: 'Studio Settings',
       description:
-        'Tema de visualización (Basalto/Mineral/Sistema), escala de densidad tipográfica y rutas del sistema.',
-      actionText: 'Ajustar Preferencias',
+        'Display theme (Dark/Light/System), typography density scale, keybinds, and storage paths.',
+      actionText: 'Preferences',
       onClick: () => setView('settings')
     }
   ];
@@ -111,11 +111,11 @@ export const HubView: React.FC<HubViewProps> = () => {
       <div className="w-full lg:w-1/3 xl:w-[32%] bg-surface-lowest border-b lg:border-b-0 lg:border-r border-hairline flex flex-col justify-between p-8 lg:p-10 shrink-0 select-none">
         {/* Center Vertically: Left-aligned Title & Subtitle */}
         <div className="flex-1 flex flex-col justify-center items-start text-left w-full space-y-4 py-8">
-          {/* Top Tag: SERA ATELIER 3D OPERATIONS */}
+          {/* Top Tag: 3D STUDIO WORKBENCH */}
           <div className="flex items-center gap-2">
-            <Badge variant="action">SERA</Badge>
+            <Badge variant="action">3D</Badge>
             <span className="text-xs font-mono text-ink-secondary uppercase tracking-wider">
-              Atelier 3D Operations
+              Studio Workbench
             </span>
           </div>
 
@@ -126,23 +126,23 @@ export const HubView: React.FC<HubViewProps> = () => {
 
           {/* Subtitle */}
           <p className="text-xs text-ink-secondary font-body leading-relaxed max-w-sm">
-            Sistema de verificación geométrica, empaquetado de texturas PBR y gestión milimétrica de mobiliario de alta gama.
+            Geometric verification, PBR texture packing, and multi-variant 3D asset management for web &amp; AR.
           </p>
         </div>
 
-        {/* Bottom: Active Piece Button pushed down */}
+        {/* Bottom: Active Model Button pushed down */}
         {modelFilePath && (
           <div className="w-full shrink-0 pt-4">
             <div className="p-3.5 bg-surface-low border border-hairline rounded-xs flex items-center justify-between gap-3 text-left shadow-xs">
               <div className="space-y-0.5 min-w-0">
                 <span className="text-[10px] uppercase font-primary font-semibold text-ink-tertiary tracking-wider block">
-                  Pieza en Curso
+                  Active Model
                 </span>
                 <span
                   className="font-primary font-bold text-xs text-ink-primary truncate max-w-[150px] block"
                   title={productName}
                 >
-                  {productName || 'Sin título'}
+                  {productName || 'Untitled'}
                 </span>
               </div>
               <Button
@@ -151,7 +151,7 @@ export const HubView: React.FC<HubViewProps> = () => {
                 onClick={handleOpenExistingWorkbench}
                 iconRight={<ArrowRight className="w-3.5 h-3.5" />}
               >
-                Continuar
+                Resume
               </Button>
             </div>
           </div>
@@ -176,10 +176,10 @@ export const HubView: React.FC<HubViewProps> = () => {
             ))}
           </div>
 
-          {/* Recent Pieces Section */}
+          {/* Recent Models Section */}
           <div className="space-y-4 pt-2">
             <SectionHeader
-              title="Piezas Técnicas Recientes"
+              title="Recent 3D Models"
               icon={<Clock className="w-4 h-4" />}
               action={
                 <Button
@@ -189,25 +189,25 @@ export const HubView: React.FC<HubViewProps> = () => {
                   iconRight={<ArrowRight className="w-3.5 h-3.5" />}
                   className="text-action hover:text-action-hover"
                 >
-                  Ver Catálogo Completo
+                  View Full Catalog
                 </Button>
               }
             />
 
             {isLoadingRecents ? (
               <div className="p-8 text-center">
-                <Spinner size="md" label="Cargando piezas recientes..." />
+                <Spinner size="md" label="Loading recent models..." />
               </div>
             ) : recentEntries.length === 0 ? (
               <EmptyState
-                description="No hay piezas registradas en la biblioteca aún. Puedes comenzar cargando un modelo en la Mesa de Trabajo o creando una nueva pieza."
+                description="No models registered in the library yet. Start by loading a model in the 3D Workbench or creating a new entry."
                 action={
                   <>
                     <Button variant="secondary" onClick={handleOpenEmptyWorkbench}>
-                      Abrir Mesa Vacía
+                      Open Empty Workbench
                     </Button>
                     <Button variant="primary" onClick={() => setView('library')}>
-                      Ir a Biblioteca
+                      Go to Library
                     </Button>
                   </>
                 }

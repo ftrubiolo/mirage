@@ -38,10 +38,10 @@ export const ExportStudio: React.FC = () => {
         <div>
           <h3 className="text-xs font-semibold uppercase tracking-wider font-primary text-ink-primary flex items-center gap-1.5">
             <PackageCheck className="w-4 h-4 text-action" />
-            Centro de Exportación & Entrega
+            Export &amp; Delivery Center
           </h3>
           <p className="text-[11px] text-ink-secondary mt-0.5">
-            Optimiza, hornea geometrías y genera paquetes para catalogación o render web.
+            Optimize, bake geometry, and generate bundles for web catalogs and AR viewers.
           </p>
         </div>
       </div>

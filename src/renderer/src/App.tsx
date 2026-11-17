@@ -102,7 +102,7 @@ export const App: React.FC = () => {
             }`}
             style={{ visibility: currentView === 'workbench' ? 'visible' : 'hidden' }}
           >
-            <ErrorBoundary fallbackTitle="Mesa de trabajo">
+            <ErrorBoundary fallbackTitle="3D Workbench">
               <WorkbenchView />
             </ErrorBoundary>
           </div>
@@ -110,7 +110,7 @@ export const App: React.FC = () => {
           {/* Hub View */}
           {currentView === 'hub' && (
             <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-              <ErrorBoundary fallbackTitle="Inicio">
+              <ErrorBoundary fallbackTitle="Home">
                 <HubView />
               </ErrorBoundary>
             </div>
@@ -119,7 +119,7 @@ export const App: React.FC = () => {
           {/* Library View */}
           {currentView === 'library' && (
             <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-              <ErrorBoundary fallbackTitle="Biblioteca">
+              <ErrorBoundary fallbackTitle="Library">
                 <LibraryView />
               </ErrorBoundary>
             </div>
@@ -128,7 +128,7 @@ export const App: React.FC = () => {
           {/* Entry Detail View (Split 1/3 - 2/3) */}
           {currentView === 'entryDetail' && (
             <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-              <ErrorBoundary fallbackTitle="Detalle de pieza">
+              <ErrorBoundary fallbackTitle="Model Details">
                 <EntryDetailView
                   entry={selectedEntryForDetail}
                   onBack={() => setView('library')}
@@ -140,7 +140,7 @@ export const App: React.FC = () => {
           {/* Settings View */}
           {currentView === 'settings' && (
             <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-              <ErrorBoundary fallbackTitle="Configuración">
+              <ErrorBoundary fallbackTitle="Settings">
                 <SettingsView />
               </ErrorBoundary>
             </div>
@@ -149,7 +149,7 @@ export const App: React.FC = () => {
           {/* Agent Studio View */}
           {currentView === 'agent' && (
             <div className="absolute inset-0 z-20 flex bg-canvas overflow-hidden">
-              <ErrorBoundary fallbackTitle="Estudio IA">
+              <ErrorBoundary fallbackTitle="AI Studio">
                 <AgentStudioView />
               </ErrorBoundary>
             </div>
@@ -158,12 +158,12 @@ export const App: React.FC = () => {
       </div>
 
       {/* Global Sharp ORM Texture Packer Dialog Modal */}
-      <ErrorBoundary fallbackTitle="Empaquetador ORM">
+      <ErrorBoundary fallbackTitle="ORM Packer">
         <OrmPackerModal />
       </ErrorBoundary>
 
       {/* Save Current Workbench State to Library Modal */}
-      <ErrorBoundary fallbackTitle="Guardar en biblioteca">
+      <ErrorBoundary fallbackTitle="Save to Library">
         <SaveToLibraryModal
           isOpen={isSaveModalActive}
           onClose={handleCloseSaveModal}

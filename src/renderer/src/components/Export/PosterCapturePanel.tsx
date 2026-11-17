@@ -43,7 +43,7 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
       setCapturedPosterUrl(dataUrl);
       setCapturedPosterBlob(blob);
     } catch (err: any) {
-      onError(`Error al capturar poster: ${err.message || err}`);
+      onError(`Error capturing poster: ${err.message || err}`);
     } finally {
       setIsCapturing(false);
     }
@@ -52,9 +52,9 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
   const handleSavePoster = async () => {
     if (!capturedPosterBlob) return;
     const ext = posterFormat;
-    const defaultName = `${productId || 'modelo'}_poster.${ext}`;
+    const defaultName = `${productId || 'model'}_poster.${ext}`;
     const filePath = await window.electronAPI.saveFileDialog({
-      title: 'Guardar Poster / Miniatura',
+      title: 'Save Poster / Thumbnail',
       defaultPath: defaultName,
       filters: [{ name: ext.toUpperCase(), extensions: [ext] }]
     });
@@ -62,7 +62,7 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
     if (filePath) {
       const arrayBuffer = await capturedPosterBlob.arrayBuffer();
       await window.electronAPI.writeBinaryFile(filePath, arrayBuffer);
-      onSuccess(`Poster guardado en: ${filePath}`);
+      onSuccess(`Poster saved to: ${filePath}`);
     }
   };
 
@@ -71,7 +71,7 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-semibold uppercase tracking-wider font-primary text-ink-primary flex items-center gap-1.5">
           <Camera className="w-4 h-4 text-action" />
-          Generador de Posters y Miniaturas
+          Poster &amp; Thumbnail Generator
         </h4>
         <span className="text-[10px] font-mono tabular-nums text-ink-tertiary">
           model-viewer poster
@@ -82,7 +82,7 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
         {/* Resolution Presets */}
         <div className="space-y-1.5">
           <span className="text-[10px] text-ink-secondary font-primary font-semibold uppercase tracking-wider block">
-            Resolución
+            Resolution
           </span>
           <SegmentedControl
             options={[
@@ -100,7 +100,7 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
         {/* Format Selection */}
         <div className="space-y-1.5">
           <span className="text-[10px] text-ink-secondary font-primary font-semibold uppercase tracking-wider block">
-            Formato
+            Format
           </span>
           <SegmentedControl
             options={[
@@ -120,7 +120,7 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
         <Checkbox
           checked={transparentBg}
           onChange={setTransparentBg}
-          label={<span className="text-xs text-ink-secondary">Fondo Transparente (Canal Alpha)</span>}
+          label={<span className="text-xs text-ink-secondary">Transparent Background (Alpha Channel)</span>}
         />
       </div>
 
@@ -135,7 +135,7 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
           isLoading={isCapturing}
           icon={!isCapturing ? <Camera className="w-3.5 h-3.5 text-action" /> : undefined}
         >
-          {isCapturing ? 'Capturando...' : 'Capturar Vista Actual'}
+          {isCapturing ? 'Capturing...' : 'Capture Current View'}
         </Button>
 
         {capturedPosterUrl && (
@@ -145,7 +145,7 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
             onClick={handleSavePoster}
             icon={<Download className="w-3.5 h-3.5" />}
           >
-            Guardar {posterFormat.toUpperCase()}
+            Save {posterFormat.toUpperCase()}
           </Button>
         )}
       </div>
@@ -157,12 +157,12 @@ export const PosterCapturePanel: React.FC<PosterCapturePanelProps> = ({
             <img src={capturedPosterUrl} alt="Poster preview" className="max-w-full max-h-full object-contain" />
           </div>
           <div className="text-[11px] text-ink-secondary space-y-0.5">
-            <span className="font-semibold text-ink-primary block">Miniatura lista</span>
+            <span className="font-semibold text-ink-primary block">Thumbnail ready</span>
             <span className="font-mono tabular-nums">
               {posterRes === '1080' ? '1920×1080' : `${posterRes}×${posterRes}px`} • {posterFormat.toUpperCase()}
             </span>
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-mono">
-              {transparentBg ? 'Fondo transparente' : 'Fondo de escena'}
+              {transparentBg ? 'Transparent background' : 'Scene background'}
             </span>
           </div>
         </div>

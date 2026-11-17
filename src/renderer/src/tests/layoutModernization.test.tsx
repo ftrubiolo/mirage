@@ -76,10 +76,10 @@ describe('Layout Modernization & Movable Sidebar', () => {
       expect(buttons.length).toBe(4);
 
       const titles = Array.from(buttons).map((b) => b.getAttribute('title'));
-      expect(titles).toContain('Mesa de Trabajo 3D');
-      expect(titles).toContain('Biblioteca Técnica');
-      expect(titles).toContain('Estudio IA');
-      expect(titles).toContain('Configuración del Atelier');
+      expect(titles).toContain('3D Workbench');
+      expect(titles).toContain('Model Library');
+      expect(titles).toContain('AI Studio');
+      expect(titles).toContain('Settings');
     });
 
     it('switches views when buttons are clicked', () => {
@@ -88,8 +88,8 @@ describe('Layout Modernization & Movable Sidebar', () => {
       });
 
       const buttons = container.querySelectorAll('button');
-      const libraryButton = Array.from(buttons).find((b) => b.getAttribute('title') === 'Biblioteca Técnica')!;
-      const settingsButton = Array.from(buttons).find((b) => b.getAttribute('title') === 'Configuración del Atelier')!;
+      const libraryButton = Array.from(buttons).find((b) => b.getAttribute('title') === 'Model Library')!;
+      const settingsButton = Array.from(buttons).find((b) => b.getAttribute('title') === 'Settings')!;
 
       act(() => {
         libraryButton.click();
@@ -110,7 +110,7 @@ describe('Layout Modernization & Movable Sidebar', () => {
       });
 
       expect(container.textContent).toContain('Default');
-      expect(container.textContent).toContain('Sin geometría cargada');
+      expect(container.textContent).toContain('No geometry loaded');
     });
 
     it('renders model polygon count and dimensions when modelStats are present', () => {
@@ -150,14 +150,14 @@ describe('Layout Modernization & Movable Sidebar', () => {
 
       const header = container.querySelector('header');
       expect(header).not.toBeNull();
-      expect(header?.getAttribute('aria-label')).toBe('Barra de herramientas del visor 3D');
+      expect(header?.getAttribute('aria-label')).toBe('3D viewport toolbar');
       expect(header?.className).toContain('w-full');
       expect(header?.className).toContain('border-b');
 
       // Camera preset button
-      expect(container.textContent).toContain('Isométrica');
+      expect(container.textContent).toContain('Isometric');
       // PBR channel button
-      expect(container.textContent).toContain('PBR Completo');
+      expect(container.textContent).toContain('Full PBR');
     });
 
     it('renders sidebar toggle button on the right when workbenchSidebarPosition is right', () => {
@@ -168,7 +168,7 @@ describe('Layout Modernization & Movable Sidebar', () => {
 
       const buttons = container.querySelectorAll('button');
       const expandBtn = Array.from(buttons).find(
-        (b) => b.getAttribute('title')?.includes('Mostrar panel lateral')
+        (b) => b.getAttribute('title')?.includes('Show workbench sidebar')
       );
       expect(expandBtn).toBeDefined();
 
@@ -187,7 +187,7 @@ describe('Layout Modernization & Movable Sidebar', () => {
 
       const buttons = container.querySelectorAll('button');
       const expandBtn = Array.from(buttons).find(
-        (b) => b.getAttribute('title')?.includes('Mostrar panel lateral')
+        (b) => b.getAttribute('title')?.includes('Show workbench sidebar')
       );
       expect(expandBtn).toBeDefined();
 

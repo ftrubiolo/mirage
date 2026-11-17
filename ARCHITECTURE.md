@@ -55,7 +55,7 @@ The defining architectural constraint is that **the renderer parses untrusted bi
 │  agent/      3 files · tool registry, provider registry, scene serializer │
 │  components/ 70+ files · domain components (Viewport, Staging, Export, …) │
 │  components/UI/ 19 files · design-system primitives (Button, Modal, …)    │
-│  tests/     27 files · 472 tests (vitest + happy-dom)                     │
+│  tests/     33 files · 611 tests (vitest + happy-dom)                     │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -124,7 +124,7 @@ Every privileged payload is parsed by a zod schema before use. Two rules are wor
 
 ### 3.6 Secrets — `src/main/vault.ts`
 
-API keys live in `<userData>/sera_vault.enc`, encrypted with Electron's `safeStorage`, written atomically (`tmp` + `rename`, mode `0600`). Each entry is tagged with the scheme that produced it (`enc:v1:` / `plain:v1:`), so a value written while no OS keyring was available is still readable later, and vice versa. If the vault file is corrupt it is **moved aside** rather than treated as empty — treating it as empty would make the next write silently destroy every other stored secret.
+API keys live in `<userData>/mirage_vault.enc` (with automatic one-time migration from legacy `sera_vault.enc`), encrypted with Electron's `safeStorage`, written atomically (`tmp` + `rename`, mode `0600`). Each entry is tagged with the scheme that produced it (`enc:v1:` / `plain:v1:`), so a value written while no OS keyring was available is still readable later, and vice versa. If the vault file is corrupt it is **moved aside** rather than treated as empty — treating it as empty would make the next write silently destroy every other stored secret.
 
 > **Caveat:** when `safeStorage.isEncryptionAvailable()` is false (common on Linux without libsecret/gnome-keyring), the vault logs a warning and stores values **obfuscated, not encrypted**. There is no silent fallback.
 
@@ -337,7 +337,7 @@ Rules for new mutations:
 
 Two levels:
 
-- **Root** — `main.tsx` wraps `<App/>` in an `ErrorBoundary` with `isFatal`, so a throw that escapes everything still renders a recovery panel with *Reintentar* / *Reiniciar aplicación* rather than a blank window.
+- **Root** — `main.tsx` wraps `<App/>` in an `ErrorBoundary` with `isFatal`, so a throw that escapes everything still renders a recovery panel with *Retry* / *Restart application* rather than a blank window.
 - **Per view** — every top-level view (Workbench, Hub, Library, Entry detail, Settings, Agent Studio) and both global modals have their own boundary, so a failure in one view does not take down the rest of the application.
 
 A desktop application has no address bar to recover from, which is why the boundaries are not optional.
@@ -371,7 +371,7 @@ Everything else respects the table above: `grep -rn "from '.*components" src/ren
 
 ### 9.1 Standard UI Primitive System & Context Menu Engine
 
-All visual presentation across the application is anchored in `src/renderer/src/components/UI/` (exported via `index.ts`), enforcing Sera Operations Design System tokens (hairlines, 0–2px radii, tabular numbers):
+All visual presentation across the application is anchored in `src/renderer/src/components/UI/` (exported via `index.ts`), enforcing Mirage Operations Design System tokens (hairlines, 0–2px radii, tabular numbers):
 
 - **19 Reusable Primitives:** `Button`, `IconButton`, `Card`, `PieceCard`, `TextInput`, `SearchInput`, `TextArea`, `FormField`, `SegmentedControl`, `Modal`, `ConfirmModal`, `Spinner`, `Badge`, `StatusBadge`, `AlertBanner`, `EmptyState`, `SectionHeader`, `Table`, and `ContextMenu`.
 - **Standard ContextMenu Engine (`components/UI/ContextMenu.tsx`):**
@@ -399,7 +399,7 @@ const { a, b } = useModelStore((s) => ({ a: s.a, b: s.b }));
 
 ```bash
 npm run typecheck   # tsc --noEmit — must exit 0
-npm test            # vitest run — 27 files, 472 tests
+npm test            # vitest run — 33 files, 611 tests
 npm run build       # electron-vite build
 ```
 

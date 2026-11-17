@@ -282,7 +282,7 @@ export const PBRModelViewer: React.FC<PBRModelViewerProps> = ({
               const mixer = new THREE.AnimationMixer(scene);
               viewportBridge.registerAnimations(mixer, gltf.animations);
               const storeClips = gltf.animations.map((c, i) => ({
-                name: c.name || `Animación ${i + 1}`,
+                name: c.name || `Animation ${i + 1}`,
                 duration: Number(c.duration.toFixed(2))
               }));
               useViewportStore.getState().setAnimations(storeClips);

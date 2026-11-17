@@ -54,13 +54,13 @@ export const MapVariantRowItem: React.FC<MapVariantRowItemProps> = React.memo(({
   const validateName = (val: string): { valid: boolean; error: string } => {
     const trimmed = val.trim();
     if (!trimmed) {
-      return { valid: false, error: 'El nombre no puede estar vacío' };
+      return { valid: false, error: 'Name cannot be empty' };
     }
     const isDuplicate = allVariants.some(
       (other) => other.id !== variant.id && other.name.trim().toLowerCase() === trimmed.toLowerCase()
     );
     if (isDuplicate) {
-      return { valid: false, error: 'Ya existe una variante con este nombre' };
+      return { valid: false, error: 'A variant with this name already exists' };
     }
     return { valid: true, error: '' };
   };
@@ -163,7 +163,7 @@ export const MapVariantRowItem: React.FC<MapVariantRowItemProps> = React.memo(({
         <div className="flex items-center gap-3 truncate min-w-0 flex-1">
           <div
             onClick={handleThumbnailClick}
-            title={isActive ? 'Clic para inspeccionar textura (Zoom & Pan)' : 'Clic para seleccionar variante'}
+            title={isActive ? 'Click to inspect texture (Zoom & Pan)' : 'Click to select variant'}
             className={`relative group/thumb shrink-0 rounded-xs overflow-hidden ${
               isActive ? 'cursor-zoom-in' : 'cursor-pointer'
             }`}
@@ -192,7 +192,7 @@ export const MapVariantRowItem: React.FC<MapVariantRowItemProps> = React.memo(({
                 onChange={handleInputChange}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
-                title={hasError ? errorMessage : 'Haz clic para renombrar'}
+                title={hasError ? errorMessage : 'Click to rename'}
                 className={`text-xs font-mono tabular-nums font-medium block truncate w-full px-1.5 py-0.5 rounded-xs outline-none transition-colors ${
                   hasError
                     ? 'border border-rose-500 bg-rose-500/10 text-rose-600 dark:text-rose-400'
@@ -228,7 +228,7 @@ export const MapVariantRowItem: React.FC<MapVariantRowItemProps> = React.memo(({
                 ? 'bg-surface-high text-ink-primary opacity-100'
                 : 'text-ink-tertiary hover:text-ink-primary hover:bg-surface-high opacity-0 group-hover:opacity-100'
             }`}
-            title="Opciones de variante (o clic derecho)"
+            title="Variant options (or right-click)"
           >
             <MoreVertical className="w-4 h-4" />
           </button>

@@ -126,7 +126,7 @@ export const CanvasAnimationWidget: React.FC = () => {
           <button
             type="button"
             onClick={resetToStart}
-            title="Volver al inicio (0s)"
+            title="Return to start (0s)"
             className="flex items-center justify-center w-7 h-7 rounded-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-high border border-hairline transition-colors"
           >
             <RotateCcw size={12} />
@@ -136,7 +136,7 @@ export const CanvasAnimationWidget: React.FC = () => {
           <button
             type="button"
             onClick={() => stepTime(-0.1)}
-            title="Retroceder 0.1s"
+            title="Step back 0.1s"
             className="flex items-center justify-center w-7 h-7 rounded-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-high border border-hairline transition-colors"
           >
             <StepBack size={12} />
@@ -146,7 +146,7 @@ export const CanvasAnimationWidget: React.FC = () => {
           <button
             type="button"
             onClick={toggleAnimationPlayback}
-            title={isAnimationPlaying ? 'Pausar (Espacio)' : 'Reproducir (Espacio)'}
+            title={isAnimationPlaying ? 'Pause (Space)' : 'Play (Space)'}
             className={`flex items-center justify-center w-8 h-7 rounded-xs transition-colors shadow-xs ${
               isAnimationPlaying
                 ? 'bg-action text-white hover:bg-action-hover'
@@ -160,7 +160,7 @@ export const CanvasAnimationWidget: React.FC = () => {
           <button
             type="button"
             onClick={() => stepTime(0.1)}
-            title="Avanzar 0.1s"
+            title="Step forward 0.1s"
             className="flex items-center justify-center w-7 h-7 rounded-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-high border border-hairline transition-colors"
           >
             <StepForward size={12} />
@@ -190,7 +190,7 @@ export const CanvasAnimationWidget: React.FC = () => {
           <button
             type="button"
             onClick={toggleAnimationLoop}
-            title={isAnimationLooping ? 'Repetir en bucle (Activado)' : 'Reproducir una vez'}
+            title={isAnimationLooping ? 'Loop playback (On)' : 'Play once'}
             className={`flex items-center justify-center w-7 h-7 rounded-xs transition-colors border ${
               isAnimationLooping
                 ? 'text-action bg-action/10 border-action/30'

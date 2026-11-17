@@ -42,21 +42,21 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
           isDragging={isDragging}
           onMouseDown={onMouseDown}
           onDoubleClick={onDoubleClick}
-          title="Arrastra para redimensionar panel derecho (Doble clic para restablecer)"
+          title="Drag to resize right panel (Double-click to reset)"
         />
       )}
       {/* Sessions Header */}
       <div className="p-3.5 border-b border-hairline bg-surface-low flex items-center justify-between shrink-0">
         <span className="font-primary font-bold text-xs uppercase tracking-wider text-ink-primary flex items-center gap-1.5">
           <MessageSquare className="w-3.5 h-3.5 text-action" />
-          Historial de Sesiones
+          Session History
         </span>
         <IconButton
           icon={<Plus className="w-4 h-4" />}
           size="xs"
           variant="ghost"
           onClick={() => createSession()}
-          title="Crear nueva sesión de chat"
+          title="Create new chat session"
         />
       </div>
 
@@ -77,7 +77,7 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
               <div className="truncate flex-1 pr-2">
                 <div className="truncate text-xs">{s.title}</div>
                 <div className="text-[10px] text-ink-tertiary font-mono flex items-center gap-1.5 truncate mt-0.5">
-                  <span>{s.messages.length} mensajes</span>
+                  <span>{s.messages.length} messages</span>
                   {s.modelId && (
                     <>
                       <span>·</span>
@@ -98,7 +98,7 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
                     e.stopPropagation();
                     deleteSession(s.id);
                   }}
-                  title="Eliminar sesión"
+                  title="Delete session"
                   className="opacity-0 group-hover:opacity-100 hover:text-rose-500"
                 />
               )}
@@ -116,7 +116,7 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
           className="w-full"
           onClick={clearCurrentSession}
         >
-          Limpiar Chat Actual
+          Clear Current Chat
         </Button>
       </div>
 
@@ -124,10 +124,10 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
       <div className="p-3 border-b border-hairline bg-surface-low shrink-0 flex items-center justify-between">
         <span className="font-primary font-bold text-xs uppercase tracking-wider text-ink-primary flex items-center gap-1.5">
           <Wrench className="w-3.5 h-3.5 text-action" />
-          Catálogo de Herramientas
+          Tools Catalog
         </span>
         <span className="text-[10px] font-mono text-ink-tertiary">
-          {MIRAGE_INTERNAL_TOOLS.length + mcpTools.length} listas
+          {MIRAGE_INTERNAL_TOOLS.length + mcpTools.length} ready
         </span>
       </div>
 
@@ -136,12 +136,12 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
         {/* Internal Tools */}
         <div className="space-y-1.5">
           <span className="text-[10px] font-primary font-semibold uppercase text-ink-tertiary block">
-            Herramientas 3D del Taller
+            3D Workbench Tools
           </span>
           {MIRAGE_INTERNAL_TOOLS.map((t) => (
             <button
               key={t.name}
-              onClick={() => onInsertPrompt?.(`Ejecutar ${t.name}: `)}
+              onClick={() => onInsertPrompt?.(`Run ${t.name}: `)}
               className="w-full p-2 bg-surface-low hover:bg-surface-high border border-hairline rounded-xs text-left transition-colors group cursor-pointer"
             >
               <div className="font-mono text-[11px] font-semibold text-ink-primary group-hover:text-action truncate">
@@ -158,7 +158,7 @@ export const StudioRightSidebar: React.FC<StudioRightSidebarProps> = ({
         {mcpTools.length > 0 && (
           <div className="space-y-1.5 pt-2 border-t border-hairline">
             <span className="text-[10px] font-primary font-semibold uppercase text-ink-tertiary block">
-              Servidores MCP Conectados
+              Connected MCP Servers
             </span>
             {mcpTools.map((m) => (
               <div

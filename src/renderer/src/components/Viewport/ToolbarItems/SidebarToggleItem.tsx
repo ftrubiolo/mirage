@@ -32,8 +32,8 @@ export const SidebarToggleItem: React.FC<SidebarToggleItemProps> = ({ position }
           onClick={toggleWorkbenchSidebar}
           title={
             isWorkbenchSidebarCollapsed
-              ? 'Mostrar panel lateral de taller (Ctrl+B)'
-              : 'Colapsar panel lateral de taller (Ctrl+B)'
+              ? 'Show workbench sidebar (Ctrl+B)'
+              : 'Collapse workbench sidebar (Ctrl+B)'
           }
           className={isWorkbenchSidebarCollapsed ? 'bg-action/10 border-action/30' : ''}
         />
@@ -58,8 +58,8 @@ export const SidebarToggleItem: React.FC<SidebarToggleItemProps> = ({ position }
         onClick={toggleWorkbenchSidebar}
         title={
           isWorkbenchSidebarCollapsed
-            ? 'Mostrar panel lateral de taller (Ctrl+B)'
-            : 'Colapsar panel lateral de taller (Ctrl+B)'
+            ? 'Show workbench sidebar (Ctrl+B)'
+            : 'Collapse workbench sidebar (Ctrl+B)'
         }
         className={isWorkbenchSidebarCollapsed ? 'bg-action/10 border-action/30' : ''}
       />

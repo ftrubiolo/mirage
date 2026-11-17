@@ -100,8 +100,8 @@ export const AgentStudioView: React.FC = () => {
               isStreaming={isStreaming}
               placeholder={
                 hasConfiguredProvider
-                  ? 'Escribe una instrucción para el modelo o consulta técnica... (Enter para enviar)'
-                  : 'Configura un proveedor en Ajustes para habilitar el chat'
+                  ? 'Type an instruction for the model or a technical question... (Enter to send)'
+                  : 'Configure a provider in Settings to enable chat'
               }
             />
 

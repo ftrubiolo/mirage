@@ -62,31 +62,31 @@ export function auditModelScale(dimensions: { width: number; height: number; dep
   const maxDim = Math.max(dimensions.width, dimensions.height, dimensions.depth);
 
   if (maxDim > 50) {
-    // Highly likely millimeters (e.g. 850mm for a chair)
+    // Highly likely millimeters (e.g. 850mm)
     return {
       status: 'error',
-      message: `El modelo mide ${maxDim.toFixed(1)}m. Es muy probable que se haya exportado en milímetros (mm) en lugar de metros.`,
+      message: `Model measures ${maxDim.toFixed(1)}m. It was likely exported in millimeters (mm) instead of meters.`,
       detectedUnitHint: 'millimeters'
     };
   } else if (maxDim > 5) {
-    // Likely centimeters (e.g. 85cm for a chair)
+    // Likely centimeters (e.g. 85cm)
     return {
       status: 'warning',
-      message: `El modelo mide ${maxDim.toFixed(1)}m. Podría estar exportado en centímetros (cm) en vez de metros.`,
+      message: `Model measures ${maxDim.toFixed(1)}m. It may have been exported in centimeters (cm) instead of meters.`,
       detectedUnitHint: 'centimeters'
     };
   } else if (maxDim < 0.05) {
     // Very tiny (less than 5cm)
     return {
       status: 'warning',
-      message: `El modelo es sumamente pequeño (${(maxDim * 100).toFixed(1)}cm). Comprueba la escala de exportación.`,
+      message: `Model is extremely small (${(maxDim * 100).toFixed(1)}cm). Check the export scale.`,
       detectedUnitHint: 'unknown'
     };
   }
 
   return {
     status: 'optimal',
-    message: `Escala correcta en metros (1 unidad = 1 metro). Dimensión máxima: ${maxDim.toFixed(2)}m.`,
+    message: `Valid scale in meters (1 unit = 1 meter). Max dimension: ${maxDim.toFixed(2)}m.`,
     detectedUnitHint: 'meters'
   };
 }
@@ -207,11 +207,11 @@ export function extractGlbManifest(source: any): GlbManifest | null {
     linkTex(pbr.baseColorTexture, 'BaseColor');
     linkTex(m.normalTexture, 'Normal');
     linkTex(pbr.metallicRoughnessTexture, 'Metal-Roughness');
-    linkTex(m.occlusionTexture, 'Oclusión (AO)');
-    linkTex(m.emissiveTexture, 'Emisivo');
+    linkTex(m.occlusionTexture, 'Occlusion (AO)');
+    linkTex(m.emissiveTexture, 'Emissive');
 
     if (ext.KHR_materials_transmission) {
-      linkTex(ext.KHR_materials_transmission.transmissionTexture, 'Transmisión');
+      linkTex(ext.KHR_materials_transmission.transmissionTexture, 'Transmission');
     }
     if (ext.KHR_materials_clearcoat) {
       linkTex(ext.KHR_materials_clearcoat.clearcoatTexture, 'Clearcoat');
@@ -249,7 +249,7 @@ export function extractGlbManifest(source: any): GlbManifest | null {
     totalTexturesByteLength,
     animationsCount: Array.isArray(gltf.animations) ? gltf.animations.length : 0,
     animationNames: Array.isArray(gltf.animations)
-      ? gltf.animations.map((a: any, i: number) => a.name || `Animación ${i + 1}`)
+      ? gltf.animations.map((a: any, i: number) => a.name || `Animation ${i + 1}`)
       : [],
     camerasCount: Array.isArray(gltf.cameras) ? gltf.cameras.length : 0,
     lightsCount: Array.isArray(gltf.extensions?.KHR_lights_punctual?.lights)

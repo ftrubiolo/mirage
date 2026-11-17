@@ -58,8 +58,8 @@ export const CanvasAutoRotateWidget: React.FC<CanvasAutoRotateWidgetProps> = ({
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title={autoRotate ? 'Pausar giro automático (Espacio)' : 'Iniciar giro automático de 360°'}
-          aria-label="Reproducir o pausar giro"
+          title={autoRotate ? 'Pause auto-rotate (Space)' : 'Start 360° auto-rotate'}
+          aria-label="Play or pause orbit"
         >
           {autoRotate ? (
             <Pause size={20} className="text-action" />
@@ -73,8 +73,8 @@ export const CanvasAutoRotateWidget: React.FC<CanvasAutoRotateWidgetProps> = ({
           type="button"
           onClick={toggleAutoRotateDirection}
           className={`${isVertical ? 'w-full' : 'w-11'} h-11 flex items-center justify-center border transition-colors cursor-pointer relative group bg-surface-container/30 border-hairline text-ink-secondary hover:text-action hover:bg-surface-high hover:border-hairline-strong active:bg-action/20`}
-          title={`Invertir sentido de rotación (${isClockwise ? 'Horario' : 'Antihorario'})`}
-          aria-label="Invertir sentido"
+          title={`Reverse rotation direction (${isClockwise ? 'Clockwise' : 'Counter-clockwise'})`}
+          aria-label="Reverse direction"
         >
           {isClockwise ? (
             <RotateCw size={20} className="text-ink-secondary group-hover:text-action" />
@@ -92,8 +92,8 @@ export const CanvasAutoRotateWidget: React.FC<CanvasAutoRotateWidgetProps> = ({
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title={`Alternar velocidad rápida / suave (Actual: ${speedMagnitude.toFixed(1)}x)`}
-          aria-label="Alternar velocidad"
+          title={`Toggle fast / slow speed (Current: ${speedMagnitude.toFixed(1)}x)`}
+          aria-label="Toggle speed"
         >
           <Zap size={20} className={speedMagnitude > 1.2 ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
         </button>
@@ -116,15 +116,15 @@ export const CanvasAutoRotateWidget: React.FC<CanvasAutoRotateWidgetProps> = ({
           }`}
         >
           {autoRotate ? <Pause size={15} /> : <Play size={15} className="ml-0.5" />}
-          <span>{autoRotate ? 'Pausar Rotación' : 'Iniciar Giro 360°'}</span>
+          <span>{autoRotate ? 'Pause Rotation' : 'Start 360° Orbit'}</span>
         </button>
 
         <button
           type="button"
           onClick={toggleAutoRotateDirection}
           className="p-2 rounded-xs border border-hairline bg-surface-container/50 text-ink-secondary hover:text-ink-primary hover:bg-surface-high transition-colors cursor-pointer"
-          title={`Invertir sentido (${isClockwise ? 'Horario' : 'Antihorario'})`}
-          aria-label="Invertir sentido"
+          title={`Reverse direction (${isClockwise ? 'Clockwise' : 'Counter-clockwise'})`}
+          aria-label="Reverse direction"
         >
           {isClockwise ? <RotateCw size={15} /> : <RotateCcw size={15} />}
         </button>
@@ -135,7 +135,7 @@ export const CanvasAutoRotateWidget: React.FC<CanvasAutoRotateWidgetProps> = ({
         <div className="flex items-center justify-between text-[11px]">
           <span className="text-ink-secondary font-medium flex items-center gap-1.5">
             <Gauge size={12} />
-            Velocidad de Giro
+            Orbit Speed
           </span>
           <span className="font-mono text-ink-primary font-semibold">{speedMagnitude.toFixed(2)}x</span>
         </div>

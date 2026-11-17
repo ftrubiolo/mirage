@@ -3,13 +3,13 @@ import { Focus, Box, Eye, Camera } from 'lucide-react';
 import { useViewportStore, CameraPreset, CAMERA_FOCAL_LENGTHS } from '../../../store/viewportStore';
 
 const CAMERA_PRESETS: { id: CameraPreset; label: string; short: string; shortcut?: string }[] = [
-  { id: 'iso', label: 'Isométrica (3/4)', short: 'ISO', shortcut: '0' },
-  { id: 'front', label: 'Frontal', short: 'Front', shortcut: '1' },
-  { id: 'right', label: 'Lateral Der.', short: 'Der', shortcut: '3' },
-  { id: 'left', label: 'Lateral Izq.', short: 'Izq', shortcut: 'Ctrl+3' },
-  { id: 'top', label: 'Superior (Planta)', short: 'Top', shortcut: '7' },
-  { id: 'bottom', label: 'Inferior (Base)', short: 'Base', shortcut: 'Ctrl+7' },
-  { id: 'back', label: 'Posterior', short: 'Back', shortcut: 'Ctrl+1' }
+  { id: 'iso', label: 'Isometric (3/4)', short: 'ISO', shortcut: '0' },
+  { id: 'front', label: 'Front', short: 'Front', shortcut: '1' },
+  { id: 'right', label: 'Right Side', short: 'Right', shortcut: '3' },
+  { id: 'left', label: 'Left Side', short: 'Left', shortcut: 'Ctrl+3' },
+  { id: 'top', label: 'Top (Plan)', short: 'Top', shortcut: '7' },
+  { id: 'bottom', label: 'Bottom (Base)', short: 'Bottom', shortcut: 'Ctrl+7' },
+  { id: 'back', label: 'Back', short: 'Back', shortcut: 'Ctrl+1' }
 ];
 
 export const CanvasCameraWidget: React.FC = () => {
@@ -34,28 +34,28 @@ export const CanvasCameraWidget: React.FC = () => {
               ? 'bg-action text-white border-action shadow-xs'
               : 'bg-surface-container/60 hover:bg-surface-high border-hairline text-ink-secondary'
           }`}
-          title="Alternar entre proyección perspectiva y ortográfica (5)"
+          title="Toggle between perspective and orthographic projection (5)"
         >
           <Box size={13} />
-          <span>{isOrthographic ? 'Ortográfica (CAD)' : 'Perspectiva'}</span>
+          <span>{isOrthographic ? 'Orthographic (CAD)' : 'Perspective'}</span>
         </button>
 
         <button
           type="button"
           onClick={triggerFitToModel}
           className="py-1.5 px-2 rounded-xs bg-surface-container/60 hover:bg-surface-high border border-hairline text-ink-secondary hover:text-ink-primary font-mono text-[11px] transition-colors flex items-center gap-1"
-          title="Centrar y encuadrar el modelo (F)"
+          title="Center and fit the model (F)"
         >
           <Focus size={13} className="text-action" />
-          <span>Encuadrar</span>
+          <span>Fit</span>
         </button>
       </div>
 
       {/* Camera Presets Grid */}
       <div className="flex flex-col gap-1 bg-surface-container/30 p-2 rounded-xs border border-hairline">
         <div className="flex items-center justify-between text-[10px] font-mono uppercase font-bold tracking-wider text-ink-tertiary">
-          <span>Orientaciones Estándar CAD</span>
-          <span className="text-[9px] font-normal text-ink-tertiary lowercase">doble clic centra punto</span>
+          <span>Standard CAD Views</span>
+          <span className="text-[9px] font-normal text-ink-tertiary lowercase">double click focuses point</span>
         </div>
         <div className="grid grid-cols-4 gap-1">
           {CAMERA_PRESETS.map((preset) => (
@@ -82,7 +82,7 @@ export const CanvasCameraWidget: React.FC = () => {
           <div className="flex items-center justify-between text-[11px] font-medium text-ink-primary">
             <div className="flex items-center gap-1.5">
               <Eye size={13} className="text-action shrink-0" />
-              <span>Lente & Campo de Visión</span>
+              <span>Lens & Field of View</span>
             </div>
             <span className="font-mono text-[10px] tabular-nums text-ink-tertiary">
               {Math.round(cameraFov)}°

@@ -15,10 +15,10 @@ export interface ChatMessageListProps {
 }
 
 const STARTER_PROMPT_CHIPS = [
-  'Auditar la geometría y el rendimiento del modelo',
-  'Ajustar el material a un cuero anilina cognac cálido',
-  'Cambiar el entorno a estudio fotográfico y encuadrar',
-  '¿El conteo poligonal es adecuado para comercio web?'
+  'Audit model geometry and performance',
+  'Adjust material to warm brushed bronze metal',
+  'Switch environment to photography studio and inspect',
+  'Is the polygon count suitable for web & AR delivery?'
 ];
 
 export const ChatMessageList: React.FC<ChatMessageListProps> = ({
@@ -33,12 +33,12 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
       <div className="my-auto py-12 max-w-md mx-auto w-full">
         <EmptyState
           icon={<Bot className="w-8 h-8 text-action" />}
-          title="Estudio de Inteligencia Artificial"
-          description="Para interactuar con el agente y controlar el taller mediante lenguaje natural, configura tu primer proveedor."
+          title="AI Studio"
+          description="To interact with the assistant and control the 3D workbench using natural language, configure your first AI provider."
           action={
             onOpenSettings && (
               <Button variant="primary" onClick={onOpenSettings}>
-                Abrir Configuración de Proveedores
+                Open Provider Settings
               </Button>
             )
           }
@@ -55,10 +55,10 @@ export const ChatMessageList: React.FC<ChatMessageListProps> = ({
         </div>
         <div className="space-y-1">
           <h3 className="font-primary font-bold text-sm uppercase tracking-wide text-ink-primary">
-            Asistente Técnico del Atelier
+            Mirage Technical Assistant
           </h3>
           <p className="text-xs text-ink-secondary leading-relaxed">
-            Pregúntame sobre la malla activa, solicítame ajustes de materiales PBR o auditorías de fabricación.
+            Ask about the active mesh, request PBR material adjustments, or run geometry &amp; web-readiness audits.
           </p>
         </div>
 

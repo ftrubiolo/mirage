@@ -29,18 +29,18 @@ export const ViewportSection: React.FC = () => {
     <div className="space-y-6 animate-in fade-in duration-100">
       <div>
         <h1 className="font-primary font-bold text-base tracking-tight uppercase text-ink-primary">
-          Parámetros por Defecto del Visor 3D
+          3D Viewport Defaults
         </h1>
         <p className="text-xs text-ink-secondary mt-0.5">
-          Define el comportamiento inicial y las ayudas visuales activadas al abrir nuevas piezas.
+          Configure default behavior and visual aids enabled when opening new 3D models.
         </p>
       </div>
 
       {/* Main Viewport Parameters */}
       <section className="space-y-3">
         <SectionHeader
-          title="Ayudas Visuales y Comportamiento Inicial"
-          subtitle="Configuración inicial del lienzo WebGL al importar geometría"
+          title="Visual Aids &amp; Initial Behavior"
+          subtitle="Default WebGL canvas settings when importing geometry"
           icon={<Compass className="w-4 h-4" />}
           bordered={false}
         />
@@ -49,9 +49,9 @@ export const ViewportSection: React.FC = () => {
             <div className="flex items-center justify-between pt-1">
               <div className="flex items-center gap-1.5">
                 <span className="font-primary font-bold text-xs uppercase text-ink-primary">
-                  Sombras de Contacto en el Suelo
+                  Ground Contact Shadows
                 </span>
-                <InfoTooltip content="Genera sombra volumétrica suave bajo la base del mobiliario." />
+                <InfoTooltip content="Generates soft volumetric contact shadows beneath the model base." />
               </div>
               <Switch
                 checked={settings.defaultContactShadows}
@@ -62,9 +62,9 @@ export const ViewportSection: React.FC = () => {
             <div className="flex items-center justify-between pt-3">
               <div className="flex items-center gap-1.5">
                 <span className="font-primary font-bold text-xs uppercase text-ink-primary">
-                  Grilla Milimétrica de Referencia
+                  Metric Reference Grid
                 </span>
-                <InfoTooltip content="Proyecta la cuadrícula métrica en el plano cero para verificar escala de fabricación." />
+                <InfoTooltip content="Projects a metric reference grid onto the Y=0 ground plane to verify real-world scale." />
               </div>
               <Switch
                 checked={settings.defaultGroundGrid}
@@ -75,9 +75,9 @@ export const ViewportSection: React.FC = () => {
             <div className="flex items-center justify-between pt-3">
               <div className="flex items-center gap-1.5">
                 <span className="font-primary font-bold text-xs uppercase text-ink-primary">
-                  Rotación Automática Suave
+                  Smooth Auto-Rotation
                 </span>
-                <InfoTooltip content="Inicia la cámara en giro continuo suave al cargar una pieza." />
+                <InfoTooltip content="Starts a gentle continuous turntable rotation when loading a model." />
               </div>
               <Switch
                 checked={settings.defaultAutoRotate}
@@ -88,9 +88,9 @@ export const ViewportSection: React.FC = () => {
             <div className="flex items-center justify-between pt-3">
               <div className="flex items-center gap-1.5">
                 <span className="font-primary font-bold text-xs uppercase text-ink-primary">
-                  Formato de Instantáneas por Defecto
+                  Default Snapshot Format
                 </span>
-                <InfoTooltip content="Formato predeterminado para pósters y capturas descargadas." />
+                <InfoTooltip content="Default image format for rendered posters and downloaded snapshots." />
               </div>
               <SegmentedControl
                 options={[
@@ -107,32 +107,32 @@ export const ViewportSection: React.FC = () => {
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <span className="font-primary font-bold text-xs uppercase text-ink-primary">
-                    Entorno HDRI por Defecto
+                    Default HDRI Environment
                   </span>
-                  <InfoTooltip content="Iluminación ambiental y mapa de reflejos cargado de forma predeterminada al abrir piezas." />
+                  <InfoTooltip content="Default ambient lighting and reflection map loaded when opening models." />
                 </div>
                 <p className="text-[11px] text-ink-secondary">
-                  Selecciona un preset de iluminación de taller o un HDRI local importado.
+                  Choose a built-in studio lighting preset or a locally imported HDRI.
                 </p>
               </div>
               <select
-                aria-label="Entorno HDRI por Defecto"
+                aria-label="Default HDRI Environment"
                 value={environmentPreset}
                 onChange={(e) => setEnvironmentPreset(e.target.value)}
                 className="h-7 text-xs bg-surface-lowest border border-hairline rounded-xs px-2 text-ink-primary hover:border-action/50 focus:border-action focus:outline-none transition-colors cursor-pointer max-w-[200px]"
               >
-                <optgroup label="Presets de Taller">
-                  <option value="city">Ciudad (Predeterminado)</option>
-                  <option value="studio">Estudio</option>
-                  <option value="warehouse">Almacén</option>
-                  <option value="apartment">Apartamento</option>
+                <optgroup label="Studio Presets">
+                  <option value="city">City (Default)</option>
+                  <option value="studio">Studio</option>
+                  <option value="warehouse">Warehouse</option>
+                  <option value="apartment">Apartment</option>
                   <option value="lobby">Lobby</option>
-                  <option value="sunset">Atardecer</option>
-                  <option value="night">Noche</option>
-                  <option value="park">Parque</option>
+                  <option value="sunset">Sunset</option>
+                  <option value="night">Night</option>
+                  <option value="park">Park</option>
                 </optgroup>
                 {customHdrs.length > 0 && (
-                  <optgroup label="Mis Entornos">
+                  <optgroup label="Custom Environments">
                     {customHdrs.map((hdr) => (
                       <option key={hdr.name} value={`custom:${hdr.name}`}>
                         {hdr.displayName || hdr.name}
@@ -146,11 +146,11 @@ export const ViewportSection: React.FC = () => {
         </Card>
       </section>
 
-      {/* Posición del Panel Lateral de Taller */}
+      {/* Workbench Sidebar Position */}
       <section className="space-y-3">
         <SectionHeader
-          title="Disposición del Taller"
-          subtitle="Orientación preferida de los paneles de inspección y herramientas"
+          title="Workbench Layout"
+          subtitle="Preferred placement of inspection and editing panels"
           icon={<Layout className="w-4 h-4" />}
           bordered={false}
         />
@@ -159,18 +159,18 @@ export const ViewportSection: React.FC = () => {
             <div className="space-y-0.5">
               <div className="flex items-center gap-1.5">
                 <span className="font-primary font-bold text-xs uppercase text-ink-primary">
-                  Posición del Panel Lateral de Taller
+                  Workbench Side Panel Position
                 </span>
-                <InfoTooltip content="Ubica el panel de mapas PBR, geometría y exportación a la izquierda o derecha del visor 3D." />
+                <InfoTooltip content="Places the PBR maps, geometry, and export panel on the left or right side of the 3D viewport." />
               </div>
               <p className="text-[11px] text-ink-secondary">
-                Selecciona la orientación de trabajo preferida para las herramientas del taller.
+                Select your preferred dock side for workbench tools.
               </p>
             </div>
             <SegmentedControl
               options={[
-                { value: 'left', label: 'Izquierda' },
-                { value: 'right', label: 'Derecha' }
+                { value: 'left', label: 'Left' },
+                { value: 'right', label: 'Right' }
               ]}
               value={workbenchSidebarPosition}
               onChange={(val) => setWorkbenchSidebarPosition(val as 'left' | 'right')}

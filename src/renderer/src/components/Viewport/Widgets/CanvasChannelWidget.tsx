@@ -3,14 +3,14 @@ import { Layers } from 'lucide-react';
 import { usePbrMaterialStore, DebugChannel } from '../../../store/pbrMaterialStore';
 
 const CHANNELS: { id: DebugChannel; label: string; desc: string }[] = [
-  { id: 'lit', label: 'PBR Completo', desc: 'Renderizado realista con iluminación' },
-  { id: 'albedo', label: 'Albedo (Color)', desc: 'Inspección de texturas BaseColor' },
-  { id: 'normal', label: 'Normales', desc: 'Relieve superficial y tangentes' },
-  { id: 'roughness', label: 'Rugosidad', desc: 'Canal de microfaceting y brillo' },
-  { id: 'metalness', label: 'Metálico', desc: 'Separación dieléctrico / conductor' },
-  { id: 'ao', label: 'Oclusión (AO)', desc: 'Sombreado ambiental de hendiduras' },
-  { id: 'emissive', label: 'Emisivo', desc: 'Mapas de auto-iluminación' },
-  { id: 'wireframe', label: 'Malla Alámbrica', desc: 'Topología y aristas de geometría' }
+  { id: 'lit', label: 'Full PBR', desc: 'Realistic lit rendering' },
+  { id: 'albedo', label: 'Albedo (Color)', desc: 'BaseColor texture inspection' },
+  { id: 'normal', label: 'Normals', desc: 'Surface relief & tangent normals' },
+  { id: 'roughness', label: 'Roughness', desc: 'Microfacet & gloss channel' },
+  { id: 'metalness', label: 'Metalness', desc: 'Dielectric / conductor mask' },
+  { id: 'ao', label: 'Occlusion (AO)', desc: 'Crevice ambient shadowing' },
+  { id: 'emissive', label: 'Emissive', desc: 'Self-illumination maps' },
+  { id: 'wireframe', label: 'Wireframe', desc: 'Mesh topology & edges' }
 ];
 
 export const CanvasChannelWidget: React.FC = () => {

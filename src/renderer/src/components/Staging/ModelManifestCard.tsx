@@ -64,14 +64,14 @@ export const ModelManifestCard: React.FC<ModelManifestCardProps> = ({
       const glbBuffer = await window.electronAPI.readBinaryFile(activeFilePath);
       const extracted = extractEmbeddedImageBytes(glbBuffer, imageIndex);
       if (!extracted) {
-        alert('No se pudo extraer la textura seleccionada.');
+        alert('Could not extract the selected texture.');
         return;
       }
 
       const savePath = await window.electronAPI.saveFileDialog({
-        title: `Guardar textura: ${extracted.name}`,
+        title: `Save texture: ${extracted.name}`,
         defaultPath: `${extracted.name}.${extracted.extension}`,
-        filters: [{ name: 'Imagen', extensions: [extracted.extension] }]
+        filters: [{ name: 'Image', extensions: [extracted.extension] }]
       });
 
       if (savePath) {
@@ -79,7 +79,7 @@ export const ModelManifestCard: React.FC<ModelManifestCardProps> = ({
       }
     } catch (err) {
       console.error('[ModelManifestCard] Error extracting texture:', err);
-      alert('Error al extraer la textura.');
+      alert('Error extracting texture.');
     }
   };
 
@@ -96,7 +96,7 @@ export const ModelManifestCard: React.FC<ModelManifestCardProps> = ({
       const glbBuffer = await window.electronAPI.readBinaryFile(activeFilePath);
       const allImages = extractAllEmbeddedImages(glbBuffer);
       if (allImages.length === 0) {
-        alert('No se encontraron texturas embebidas en el modelo.');
+        alert('No embedded textures found in the model.');
         setIsExtracting(false);
         return;
       }
@@ -107,10 +107,10 @@ export const ModelManifestCard: React.FC<ModelManifestCardProps> = ({
         await window.electronAPI.writeBinaryFile(finalFilePath, img.bytes);
       }
 
-      alert(`Se extrajeron ${allImages.length} texturas correctamente en:\n${targetDir}`);
+      alert(`Extracted ${allImages.length} textures successfully to:\n${targetDir}`);
     } catch (err) {
       console.error('[ModelManifestCard] Error extracting all textures:', err);
-      alert('Error al extraer las texturas.');
+      alert('Error extracting textures.');
     } finally {
       setIsExtracting(false);
     }
@@ -139,41 +139,41 @@ export const ModelManifestCard: React.FC<ModelManifestCardProps> = ({
       {/* Detailed Content Underneath */}
       {glbManifest ? (
         <div className="border-t border-hairline pt-3 space-y-3">
-          {/* Metadatos & Extensiones */}
+          {/* Metadata & Extensions */}
           <div className="space-y-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-wider font-primary text-ink-secondary block">
-              Metadatos & Extensiones glTF
+              glTF Metadata &amp; Extensions
             </span>
             <div className="p-2.5 rounded-xs bg-surface-low border border-hairline space-y-1 text-[11px] font-mono tabular-nums">
               <div className="flex justify-between text-ink-secondary">
-                <span>Generador</span>
-                <span className="text-ink-primary truncate max-w-[220px]" title={glbManifest.generator || 'Desconocido'}>
-                  {glbManifest.generator || 'Estándar glTF'}
+                <span>Generator</span>
+                <span className="text-ink-primary truncate max-w-[220px]" title={glbManifest.generator || 'Unknown'}>
+                  {glbManifest.generator || 'Standard glTF'}
                 </span>
               </div>
               <div className="flex justify-between text-ink-secondary">
-                <span>Versión glTF</span>
+                <span>glTF Version</span>
                 <span className="text-ink-primary">{glbManifest.version || '2.0'}</span>
               </div>
               <div className="flex justify-between text-ink-secondary">
-                <span>Extensiones</span>
-                <span className="text-ink-primary truncate max-w-[220px]" title={glbManifest.extensionsUsed.join(', ') || 'Ninguna'}>
+                <span>Extensions</span>
+                <span className="text-ink-primary truncate max-w-[220px]" title={glbManifest.extensionsUsed.join(', ') || 'None'}>
                   {glbManifest.extensionsUsed.length > 0
                     ? glbManifest.extensionsUsed.join(', ')
-                    : 'Ninguna'}
+                    : 'None'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Materiales */}
+          {/* Materials */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-wider font-primary text-ink-secondary block">
-                Materiales
+                Materials
               </span>
               <span className="text-[10px] font-mono tabular-nums text-ink-tertiary">
-                {glbManifest.materials.length} {glbManifest.materials.length === 1 ? 'material' : 'materiales'}
+                {glbManifest.materials.length} {glbManifest.materials.length === 1 ? 'material' : 'materials'}
               </span>
             </div>
             {glbManifest.materials.length > 0 ? (
@@ -190,10 +190,10 @@ export const ModelManifestCard: React.FC<ModelManifestCardProps> = ({
                       </span>
                     </div>
                     <div className="text-[10px] font-mono text-ink-tertiary space-y-0.5">
-                      {mat.doubleSided && <div>Doble cara: Sí</div>}
+                      {mat.doubleSided && <div>Double-sided: Yes</div>}
                       {mat.transmissionFactor !== undefined && (
                         <div className="text-action">
-                          Transmisión: {mat.transmissionFactor.toFixed(2)}x
+                          Transmission: {mat.transmissionFactor.toFixed(2)}x
                           {mat.ior !== undefined ? ` (IOR ${mat.ior})` : ''}
                         </div>
                       )}
@@ -209,16 +209,16 @@ export const ModelManifestCard: React.FC<ModelManifestCardProps> = ({
               </div>
             ) : (
               <div className="p-2.5 rounded-xs bg-surface-low border border-hairline text-[11px] font-mono text-ink-tertiary">
-                Sin materiales definidos
+                No materials defined
               </div>
             )}
           </div>
 
-          {/* Texturas Embebidas */}
+          {/* Embedded Textures */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-wider font-primary text-ink-secondary block">
-                Texturas Embebidas
+                Embedded Textures
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono tabular-nums text-ink-tertiary">
@@ -232,9 +232,9 @@ export const ModelManifestCard: React.FC<ModelManifestCardProps> = ({
                     onClick={handleExtractAll}
                     disabled={isExtracting}
                     className="text-[10px] font-mono text-action hover:underline cursor-pointer disabled:opacity-50"
-                    title="Extraer todas las texturas a una carpeta"
+                    title="Extract all textures to a folder"
                   >
-                    {isExtracting ? 'Extrayendo...' : 'Extraer todas'}
+                    {isExtracting ? 'Extracting...' : 'Extract all'}
                   </button>
                 )}
               </div>
@@ -257,16 +257,16 @@ export const ModelManifestCard: React.FC<ModelManifestCardProps> = ({
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-ink-tertiary tabular-nums text-[10px]">
-                        {tex.byteLength ? formatBytes(tex.byteLength) : 'Externo'}
+                        {tex.byteLength ? formatBytes(tex.byteLength) : 'External'}
                       </span>
                       {tex.byteLength !== undefined && (
                         <button
                           type="button"
                           onClick={() => handleExtractSingle(tex.index)}
                           className="text-[10px] px-1.5 py-0.5 rounded-xs bg-surface-lowest hover:bg-surface-container text-ink-primary border border-hairline transition-colors cursor-pointer"
-                          title={`Extraer ${tex.name} a un archivo`}
+                          title={`Extract ${tex.name} to a file`}
                         >
-                          Extraer
+                          Extract
                         </button>
                       )}
                     </div>
@@ -275,27 +275,27 @@ export const ModelManifestCard: React.FC<ModelManifestCardProps> = ({
               </div>
             ) : (
               <div className="p-2.5 rounded-xs bg-surface-low border border-hairline text-[11px] font-mono text-ink-tertiary">
-                Sin texturas embebidas (geometría limpia)
+                No embedded textures (clean geometry)
               </div>
             )}
           </div>
 
-          {/* Otros Elementos */}
+          {/* Other Elements */}
           <div className="space-y-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-wider font-primary text-ink-secondary block">
-              Otros Elementos
+              Other Elements
             </span>
             <div className="grid grid-cols-3 gap-1.5 text-center text-[11px] font-mono tabular-nums">
               <div className="p-2 rounded-xs bg-surface-low border border-hairline">
-                <span className="text-[10px] text-ink-tertiary block">Animaciones</span>
+                <span className="text-[10px] text-ink-tertiary block">Animations</span>
                 <span className="text-ink-primary font-medium">{glbManifest.animationsCount}</span>
               </div>
               <div className="p-2 rounded-xs bg-surface-low border border-hairline">
-                <span className="text-[10px] text-ink-tertiary block">Cámaras</span>
+                <span className="text-[10px] text-ink-tertiary block">Cameras</span>
                 <span className="text-ink-primary font-medium">{glbManifest.camerasCount}</span>
               </div>
               <div className="p-2 rounded-xs bg-surface-low border border-hairline">
-                <span className="text-[10px] text-ink-tertiary block">Luces</span>
+                <span className="text-[10px] text-ink-tertiary block">Lights</span>
                 <span className="text-ink-primary font-medium">{glbManifest.lightsCount}</span>
               </div>
             </div>
@@ -303,7 +303,7 @@ export const ModelManifestCard: React.FC<ModelManifestCardProps> = ({
         </div>
       ) : (
         <div className="border-t border-hairline pt-2 text-[11px] font-mono text-ink-tertiary">
-          Analizando estructura del archivo...
+          Analyzing file structure...
         </div>
       )}
     </div>

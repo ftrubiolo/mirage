@@ -12,7 +12,7 @@ export const ToolbarSpacerItem: React.FC<ToolbarSpacerItemProps> = ({ id }) => {
   return (
     <div
       className="flex-1 min-w-4 h-6 flex items-center justify-center relative group select-none transition-colors duration-150 rounded-xs hover:bg-surface-container/30 border border-transparent hover:border-hairline/40"
-      title="Espaciador flexible (Arrastrar para mover, clic en la cruz para eliminar)"
+      title="Flexible spacer (Drag to move, click the X to remove)"
     >
       <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-ink-tertiary transition-opacity duration-150 px-1">
         <GripVertical className="w-3 h-3 text-ink-tertiary cursor-grab" />
@@ -22,7 +22,7 @@ export const ToolbarSpacerItem: React.FC<ToolbarSpacerItemProps> = ({ id }) => {
             e.stopPropagation();
             removeToolbarSpacer(id);
           }}
-          title="Eliminar este espaciador"
+          title="Remove this spacer"
           className="p-0.5 rounded-xs hover:bg-surface-high hover:text-action text-ink-tertiary transition-colors cursor-pointer"
         >
           <X className="w-3 h-3" />

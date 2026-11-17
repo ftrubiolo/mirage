@@ -1,5 +1,5 @@
 /**
- * High-performance color conversion utilities for Atelier Color Picker
+ * High-performance color conversion utilities for Mirage Color Picker
  */
 
 export interface HSV {

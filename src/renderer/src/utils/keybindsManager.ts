@@ -33,34 +33,34 @@ export interface KeybindMeta {
 }
 
 export const KEYBIND_DEFINITIONS: KeybindMeta[] = [
-  // Camara
-  { id: 'camera.iso', label: 'Vista Isométrica (3/4)', category: 'camera', desc: 'Encuadre técnico en perspectiva 3/4' },
-  { id: 'camera.front', label: 'Vista Frontal', category: 'camera', desc: 'Elevación frontal directa a la pieza' },
-  { id: 'camera.right', label: 'Vista Lateral Derecha', category: 'camera', desc: 'Perfil lateral derecho' },
-  { id: 'camera.left', label: 'Vista Lateral Izquierda', category: 'camera', desc: 'Perfil lateral izquierdo' },
-  { id: 'camera.top', label: 'Vista Superior (Planta)', category: 'camera', desc: 'Vista cenital técnica' },
-  { id: 'camera.bottom', label: 'Vista Inferior', category: 'camera', desc: 'Vista de base y estructura inferior' },
-  { id: 'camera.back', label: 'Vista Posterior', category: 'camera', desc: 'Vista trasera de la pieza' },
-  { id: 'camera.reset', label: 'Reencuadrar Pieza (Focus)', category: 'camera', desc: 'Ajustar la cámara al tamaño de la pieza' },
-  { id: 'camera.toggleOrthographic', label: 'Proyección Ortográfica / Perspectiva', category: 'camera', desc: 'Alternar entre perspectiva y vista ortogonal' },
+  // Camera
+  { id: 'camera.iso', label: 'Isometric View (3/4)', category: 'camera', desc: '3/4 perspective technical framing' },
+  { id: 'camera.front', label: 'Front View', category: 'camera', desc: 'Direct front elevation of the model' },
+  { id: 'camera.right', label: 'Right Side View', category: 'camera', desc: 'Right lateral profile' },
+  { id: 'camera.left', label: 'Left Side View', category: 'camera', desc: 'Left lateral profile' },
+  { id: 'camera.top', label: 'Top View (Plan)', category: 'camera', desc: 'Top-down orthographic angle' },
+  { id: 'camera.bottom', label: 'Bottom View', category: 'camera', desc: 'Underside and base inspection' },
+  { id: 'camera.back', label: 'Back View', category: 'camera', desc: 'Rear view of the model' },
+  { id: 'camera.reset', label: 'Reframe Model (Focus)', category: 'camera', desc: 'Fit camera to the model bounds' },
+  { id: 'camera.toggleOrthographic', label: 'Orthographic / Perspective', category: 'camera', desc: 'Toggle between perspective and orthographic projection' },
 
-  // Visor y Taller
-  { id: 'gizmo.select', label: 'Modo Selección / Cursor', category: 'view', desc: 'Desactiva los controles de transformación 3D' },
-  { id: 'gizmo.translate', label: 'Desplazamiento 3D (Flechas)', category: 'view', desc: 'Activa las 3 flechas para mover la pieza en el visor' },
-  { id: 'gizmo.rotate', label: 'Rotación 3D (Aros)', category: 'view', desc: 'Activa los 3 aros para girar la orientación del modelo' },
-  { id: 'view.toggleGrid', label: 'Grilla Milimétrica', category: 'view', desc: 'Alternar la cuadrícula de piso de referencia' },
-  { id: 'view.toggleDimensions', label: 'Cotas y Dimensiones', category: 'view', desc: 'Mostrar cotas volumétricas en tiempo real' },
-  { id: 'view.toggleAutoRotate', label: 'Rotación Automática', category: 'view', desc: 'Giro continuo suave del modelo' },
-  { id: 'view.toggleWireframe', label: 'Modo Wireframe', category: 'view', desc: 'Inspeccionar topología y malla poligonal' },
-  { id: 'view.toggleContactShadows', label: 'Sombras de Contacto', category: 'view', desc: 'Sombras volumétricas de apoyo en el suelo' },
-  { id: 'view.toggleBackground', label: 'Fondo 360° HDR', category: 'view', desc: 'Mostrar u ocultar el entorno HDRI de fondo' },
-  { id: 'view.toggleSidebar', label: 'Alternar Panel de Taller', category: 'view', desc: 'Mostrar u ocultar el panel lateral de mapas y geometría' },
+  // Viewport & Workbench
+  { id: 'gizmo.select', label: 'Select / Cursor Mode', category: 'view', desc: 'Disable 3D transform gizmos' },
+  { id: 'gizmo.translate', label: '3D Translate (Arrows)', category: 'view', desc: 'Enable 3-axis arrows to move the model in the viewport' },
+  { id: 'gizmo.rotate', label: '3D Rotate (Rings)', category: 'view', desc: 'Enable 3-axis rings to rotate model orientation' },
+  { id: 'view.toggleGrid', label: 'Reference Grid', category: 'view', desc: 'Toggle the metric floor reference grid' },
+  { id: 'view.toggleDimensions', label: 'Bounds & Dimensions', category: 'view', desc: 'Show real-time bounding box dimensions' },
+  { id: 'view.toggleAutoRotate', label: 'Auto-Rotate', category: 'view', desc: 'Smooth continuous turntable rotation' },
+  { id: 'view.toggleWireframe', label: 'Wireframe Mode', category: 'view', desc: 'Inspect polygon topology and wireframe' },
+  { id: 'view.toggleContactShadows', label: 'Contact Shadows', category: 'view', desc: 'Soft volumetric ground contact shadows' },
+  { id: 'view.toggleBackground', label: '360° HDR Background', category: 'view', desc: 'Show or hide the HDRI environment backdrop' },
+  { id: 'view.toggleSidebar', label: 'Toggle Workbench Panel', category: 'view', desc: 'Show or hide the material and geometry side panel' },
 
-  // Iluminacion
-  { id: 'lighting.presetStudio', label: 'Preset Estudio Atelier', category: 'lighting', desc: 'Luz suave de 3 puntos para inspección PBR' },
-  { id: 'lighting.presetNatural', label: 'Preset Luz Natural', category: 'lighting', desc: 'Luz solar direccional cálida con cielo difuso' },
-  { id: 'lighting.presetDramatic', label: 'Preset Dramático / Showroom', category: 'lighting', desc: 'Alto contraste, luz rasante y siluetas' },
-  { id: 'lighting.presetTechnical', label: 'Preset Inspección Técnica', category: 'lighting', desc: 'Luz plana y uniforme para control de texturas' }
+  // Lighting
+  { id: 'lighting.presetStudio', label: 'Studio 3-Point Preset', category: 'lighting', desc: 'Soft 3-point studio lighting for PBR inspection' },
+  { id: 'lighting.presetNatural', label: 'Natural Daylight Preset', category: 'lighting', desc: 'Warm directional sunlight with diffuse sky' },
+  { id: 'lighting.presetDramatic', label: 'Dramatic / Showroom Preset', category: 'lighting', desc: 'High contrast, rim light, and sharp silhouettes' },
+  { id: 'lighting.presetTechnical', label: 'Technical Flat Preset', category: 'lighting', desc: 'Flat, even lighting for texture verification' }
 ];
 
 export const DEFAULT_KEYBINDS: Record<KeybindAction, string> = {

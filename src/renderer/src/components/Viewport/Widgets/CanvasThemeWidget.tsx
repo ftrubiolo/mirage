@@ -41,8 +41,8 @@ export const CanvasThemeWidget: React.FC<CanvasThemeWidgetProps> = ({
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title="Modo Oscuro de taller (#111110)"
-          aria-label="Modo Oscuro"
+          title="Studio Dark mode (#111110)"
+          aria-label="Dark Mode"
         >
           <Moon size={20} className={viewportTheme === 'dark' ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
         </button>
@@ -55,8 +55,8 @@ export const CanvasThemeWidget: React.FC<CanvasThemeWidgetProps> = ({
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title="Modo Claro de galería (#f7f5f2)"
-          aria-label="Modo Claro"
+          title="Gallery Light mode (#f7f5f2)"
+          aria-label="Light Mode"
         >
           <Sun size={20} className={viewportTheme === 'light' ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
         </button>
@@ -84,7 +84,7 @@ export const CanvasThemeWidget: React.FC<CanvasThemeWidgetProps> = ({
             </div>
             {viewportTheme === 'dark' && <Check size={13} className="text-action" />}
           </div>
-          <div className="font-medium text-[11px] leading-tight">Oscuro Taller</div>
+          <div className="font-medium text-[11px] leading-tight">Studio Dark</div>
           <div className="text-[9px] opacity-75 font-mono">#111110</div>
         </button>
 
@@ -103,7 +103,7 @@ export const CanvasThemeWidget: React.FC<CanvasThemeWidgetProps> = ({
             </div>
             {viewportTheme === 'light' && <Check size={13} className="text-action" />}
           </div>
-          <div className="font-medium text-[11px] leading-tight">Claro Suave</div>
+          <div className="font-medium text-[11px] leading-tight">Soft Light</div>
           <div className="text-[9px] opacity-75 font-mono">#f7f5f2</div>
         </button>
       </div>
@@ -112,7 +112,7 @@ export const CanvasThemeWidget: React.FC<CanvasThemeWidgetProps> = ({
       <div className="p-2 rounded-xs bg-surface-container/30 border border-hairline flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Image size={14} className="text-ink-secondary" />
-          <div className="text-[11px] text-ink-primary font-medium">Fondo Cielo HDRI</div>
+          <div className="text-[11px] text-ink-primary font-medium">HDRI Sky Background</div>
         </div>
         <button
           type="button"
@@ -123,7 +123,7 @@ export const CanvasThemeWidget: React.FC<CanvasThemeWidgetProps> = ({
               : 'bg-surface-container border-hairline text-ink-tertiary hover:text-ink-primary'
           }`}
         >
-          {showEnvironmentBackground ? 'ACTIVO' : 'SÓLIDO'}
+          {showEnvironmentBackground ? 'ACTIVE' : 'SOLID'}
         </button>
       </div>
     </div>

@@ -44,7 +44,7 @@ const CanvasEnvironmentWidgetWrapper: React.FC<{
   return (
     <CanvasWidgetContainer
       id={id}
-      title="Entornos HDRI"
+      title="HDRI Environments"
       x={x}
       y={y}
       containerBounds={containerBounds}
@@ -54,8 +54,8 @@ const CanvasEnvironmentWidgetWrapper: React.FC<{
           onClick={toggleCanvasEnvironmentMode}
           title={
             canvasEnvironmentMode === 'list'
-              ? 'Cambiar a modo comprimido (iconos grandes)'
-              : 'Cambiar a modo detallado (lista)'
+              ? 'Switch to compact mode (large icons)'
+              : 'Switch to detailed mode (list)'
           }
           className="flex items-center justify-center w-4 h-4 rounded-none text-ink-tertiary hover:text-action hover:bg-surface-high/80 transition-colors cursor-pointer"
         >
@@ -115,10 +115,10 @@ const StandardCanvasWidgetWrapper: React.FC<StandardCanvasWidgetWrapperProps> = 
               onClick={() => toggleCanvasWidgetOrientation(id)}
               title={
                 orientation === 'horizontal'
-                  ? 'Cambiar a orientación vertical'
-                  : 'Cambiar a orientación horizontal'
+                  ? 'Switch to vertical orientation'
+                  : 'Switch to horizontal orientation'
               }
-              aria-label="Cambiar orientación"
+              aria-label="Toggle orientation"
               className={`flex items-center justify-center ${btnSize} rounded-none text-ink-tertiary hover:text-action hover:bg-surface-high/80 transition-colors cursor-pointer`}
             >
               {orientation === 'horizontal' ? (
@@ -133,10 +133,10 @@ const StandardCanvasWidgetWrapper: React.FC<StandardCanvasWidgetWrapperProps> = 
             onClick={() => toggleCanvasWidgetMode(id)}
             title={
               isCompressed
-                ? (isTransform ? 'Cambiar a modo detallado (coordenadas)' : 'Cambiar a modo detallado')
-                : (isTransform ? 'Cambiar a modo comprimido (solo 3 botones)' : 'Cambiar a modo comprimido')
+                ? (isTransform ? 'Switch to detailed mode (coordinates)' : 'Switch to detailed mode')
+                : (isTransform ? 'Switch to compact mode (3 buttons only)' : 'Switch to compact mode')
             }
-            aria-label="Alternar modo de widget"
+            aria-label="Toggle widget mode"
             className={`flex items-center justify-center ${btnSize} rounded-none text-ink-tertiary hover:text-action hover:bg-surface-high/80 transition-colors cursor-pointer`}
           >
             {isCompressed ? <Maximize2 size={iconSize} /> : <Minimize2 size={iconSize} />}
@@ -162,7 +162,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <CanvasWidgetContainer
           id={id}
-          title="Estudio de Animación"
+          title="Animation Studio"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -175,7 +175,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <CanvasWidgetContainer
           id={id}
-          title="Metrología Geométrica"
+          title="Geometry Metrology"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -188,7 +188,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <CanvasWidgetContainer
           id={id}
-          title="Variantes de Modelo"
+          title="Model Variants"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -201,7 +201,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <CanvasWidgetContainer
           id={id}
-          title="Estudio de Iluminación"
+          title="Lighting Studio"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -214,7 +214,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <CanvasWidgetContainer
           id={id}
-          title="Cámara & Vistas CAD"
+          title="Camera & CAD Views"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -227,7 +227,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <CanvasWidgetContainer
           id={id}
-          title="Diagnóstico de Canales PBR"
+          title="PBR Channel Diagnostics"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -250,7 +250,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <StandardCanvasWidgetWrapper
           id={id}
-          title="Manipulador 3D"
+          title="3D Gizmo"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -263,7 +263,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <StandardCanvasWidgetWrapper
           id={id}
-          title="Guías y Sombras"
+          title="Guides & Shadows"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -278,7 +278,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <StandardCanvasWidgetWrapper
           id={id}
-          title="Modo Cámara (ORTO/PERSP)"
+          title="Camera Mode (ORTHO/PERSP)"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -293,7 +293,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <StandardCanvasWidgetWrapper
           id={id}
-          title="Reencuadrar Pieza (1:1)"
+          title="Reframe Model (1:1)"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -308,7 +308,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <StandardCanvasWidgetWrapper
           id={id}
-          title="Giro Automático 360°"
+          title="360° Auto Orbit"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -323,7 +323,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <StandardCanvasWidgetWrapper
           id={id}
-          title="Tema del Visor"
+          title="Viewport Theme"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -338,7 +338,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
       return (
         <StandardCanvasWidgetWrapper
           id={id}
-          title="Captura PNG"
+          title="PNG Snapshot"
           x={x}
           y={y}
           containerBounds={containerBounds}
@@ -359,7 +359,7 @@ export const CanvasWidgetRenderer: React.FC<CanvasWidgetRendererProps> = ({
           containerBounds={containerBounds}
         >
           <div className="text-xs text-ink-secondary py-1">
-            Widget {title} activo en visor.
+            Widget {title} active in viewport.
           </div>
         </CanvasWidgetContainer>
       );

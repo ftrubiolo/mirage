@@ -33,7 +33,7 @@ export const NewPieceModal: React.FC<NewPieceModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !slug.trim()) {
-      setErrorMsg('El nombre de la pieza y el slug son obligatorios.');
+      setErrorMsg('Model name and slug are required.');
       return;
     }
 
@@ -67,9 +67,9 @@ export const NewPieceModal: React.FC<NewPieceModalProps> = ({
         id: 'entry-' + Date.now(),
         title: title.trim(),
         slug: slug.trim(),
-        category: 'otro',
+        category: 'other',
         description: description.trim(),
-        status: 'workshop',
+        status: 'wip',
         createdAt: now,
         updatedAt: now,
         posterUrl: null,
@@ -92,7 +92,7 @@ export const NewPieceModal: React.FC<NewPieceModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error('Error creating entry:', err);
-      setErrorMsg(err?.message || 'No se pudo crear la entrada en la biblioteca.');
+      setErrorMsg(err?.message || 'Could not create library entry.');
       setIsProcessing(false);
     }
   };
@@ -101,13 +101,13 @@ export const NewPieceModal: React.FC<NewPieceModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Nueva Pieza en Biblioteca"
+      title="New Library Model"
       icon={<Plus className="w-4 h-4 text-action" />}
       size="md"
       footer={
         <div className="flex items-center justify-end gap-2 w-full">
           <Button variant="secondary" onClick={onClose} disabled={isProcessing}>
-            Cancelar
+            Cancel
           </Button>
           <Button
             variant="primary"
@@ -119,7 +119,7 @@ export const NewPieceModal: React.FC<NewPieceModalProps> = ({
             isLoading={isProcessing}
             icon={<Plus className="w-4 h-4" />}
           >
-            Crear Pieza
+            Create Model
           </Button>
         </div>
       }
@@ -133,17 +133,17 @@ export const NewPieceModal: React.FC<NewPieceModalProps> = ({
           />
         )}
 
-        <FormField label="Nombre de la Pieza" required>
+        <FormField label="Model Name" required>
           <TextInput
             required
             autoFocus
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="Ej: Mesa de Comedor Rodas"
+            placeholder="e.g., Vintage Camera Prop"
           />
         </FormField>
 
-        <FormField label="Slug de Almacenamiento" required>
+        <FormField label="Storage Slug" required>
           <TextInput
             required
             mono
@@ -152,16 +152,16 @@ export const NewPieceModal: React.FC<NewPieceModalProps> = ({
             onChange={(e) =>
               setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))
             }
-            placeholder="mesa-comedor-rodas"
+            placeholder="vintage-camera-prop"
           />
         </FormField>
 
-        <FormField label="Descripción o Especificación (Opcional)">
+        <FormField label="Description or Notes (Optional)">
           <TextArea
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Notas del atelier, madera, herrajes o acabados previstos..."
+            placeholder="Studio notes, target LODs, materials, or shader details..."
             className="resize-none"
           />
         </FormField>

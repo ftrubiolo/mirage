@@ -57,8 +57,8 @@ export const CanvasOverlaysWidget: React.FC<CanvasOverlaysWidgetProps> = ({
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title="Grilla de taller (G)"
-          aria-label="Grilla de taller"
+          title="Viewport grid (G)"
+          aria-label="Viewport grid"
         >
           <Grid size={20} className={showGrid ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
         </button>
@@ -71,8 +71,8 @@ export const CanvasOverlaysWidget: React.FC<CanvasOverlaysWidgetProps> = ({
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title="Cotas y dimensiones 3D"
-          aria-label="Cotas y dimensiones 3D"
+          title="3D dimensions & guides"
+          aria-label="3D dimensions & guides"
         >
           <Ruler size={20} className={showDimensions ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
         </button>
@@ -85,8 +85,8 @@ export const CanvasOverlaysWidget: React.FC<CanvasOverlaysWidgetProps> = ({
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title="Sombras de contacto"
-          aria-label="Sombras de contacto"
+          title="Contact shadows"
+          aria-label="Contact shadows"
         >
           <Box size={20} className={showContactShadows ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
         </button>
@@ -99,8 +99,8 @@ export const CanvasOverlaysWidget: React.FC<CanvasOverlaysWidgetProps> = ({
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title="Malla Wireframe"
-          aria-label="Malla Wireframe"
+          title="Wireframe mesh"
+          aria-label="Wireframe mesh"
         >
           <SquareDashedBottom size={20} className={showWireframe ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
         </button>
@@ -123,8 +123,8 @@ export const CanvasOverlaysWidget: React.FC<CanvasOverlaysWidgetProps> = ({
         >
           <Grid size={15} className="shrink-0" />
           <div className="min-w-0">
-            <div className="font-medium text-[11px] leading-tight">Grilla</div>
-            <div className="text-[9px] opacity-75 font-mono">Suelo métrico</div>
+            <div className="font-medium text-[11px] leading-tight">Grid</div>
+            <div className="text-[9px] opacity-75 font-mono">Metric floor</div>
           </div>
         </button>
 
@@ -139,8 +139,8 @@ export const CanvasOverlaysWidget: React.FC<CanvasOverlaysWidgetProps> = ({
         >
           <Ruler size={15} className="shrink-0" />
           <div className="min-w-0">
-            <div className="font-medium text-[11px] leading-tight">Cotas</div>
-            <div className="text-[9px] opacity-75 font-mono">Largo × Ancho</div>
+            <div className="font-medium text-[11px] leading-tight">Dimensions</div>
+            <div className="text-[9px] opacity-75 font-mono">Length × Width</div>
           </div>
         </button>
 
@@ -155,8 +155,8 @@ export const CanvasOverlaysWidget: React.FC<CanvasOverlaysWidgetProps> = ({
         >
           <Box size={15} className="shrink-0" />
           <div className="min-w-0">
-            <div className="font-medium text-[11px] leading-tight">Sombras</div>
-            <div className="text-[9px] opacity-75 font-mono">Contacto suelo</div>
+            <div className="font-medium text-[11px] leading-tight">Shadows</div>
+            <div className="text-[9px] opacity-75 font-mono">Ground contact</div>
           </div>
         </button>
 
@@ -172,7 +172,7 @@ export const CanvasOverlaysWidget: React.FC<CanvasOverlaysWidgetProps> = ({
           <SquareDashedBottom size={15} className="shrink-0" />
           <div className="min-w-0">
             <div className="font-medium text-[11px] leading-tight">Wireframe</div>
-            <div className="text-[9px] opacity-75 font-mono">Malla poligonal</div>
+            <div className="text-[9px] opacity-75 font-mono">Polygon mesh</div>
           </div>
         </button>
       </div>
@@ -180,7 +180,7 @@ export const CanvasOverlaysWidget: React.FC<CanvasOverlaysWidgetProps> = ({
       {/* Shadow Opacity Slider */}
       <div className="p-2 rounded-xs bg-surface-container/30 border border-hairline space-y-1.5">
         <div className="flex items-center justify-between text-[11px]">
-          <span className="text-ink-secondary font-medium">Opacidad de Sombras</span>
+          <span className="text-ink-secondary font-medium">Shadow Opacity</span>
           <span className="font-mono text-ink-primary font-semibold">{Math.round(contactShadowOpacity * 100)}%</span>
         </div>
         <input
@@ -201,10 +201,10 @@ export const CanvasOverlaysWidget: React.FC<CanvasOverlaysWidgetProps> = ({
           type="button"
           onClick={handleResetDefaults}
           className="flex items-center gap-1.5 px-2 py-1 text-[10px] text-ink-tertiary hover:text-ink-primary transition-colors cursor-pointer rounded-xs hover:bg-surface-high"
-          title="Restablecer guías y sombras a valores predeterminados"
+          title="Reset guides and shadows to defaults"
         >
           <RotateCcw size={11} />
-          <span>Restablecer guías</span>
+          <span>Reset guides</span>
         </button>
       </div>
     </div>

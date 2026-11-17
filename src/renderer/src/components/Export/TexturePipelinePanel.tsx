@@ -50,7 +50,7 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
   const handleFlipNormal = async () => {
     const file = normalInputPath;
     if (!file) {
-      setTextureMsg({ type: 'error', text: 'Selecciona una textura de mapa de normales.' });
+      setTextureMsg({ type: 'error', text: 'Select a normal map texture first.' });
       return;
     }
     setIsProcessingNormal(true);
@@ -72,7 +72,7 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
         });
       }
 
-      setTextureMsg({ type: 'success', text: `Normal Y invertida guardada en: ${outputPath}` });
+      setTextureMsg({ type: 'success', text: `Flipped Y normal map saved to: ${outputPath}` });
       const info = await window.electronAPI.getFileInfo(outputPath);
       setMapSlot('normal', {
         filePath: outputPath,
@@ -81,7 +81,7 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
         fileSize: info.size
       });
     } catch (err: any) {
-      setTextureMsg({ type: 'error', text: `Error al procesar normal: ${err.message || err}` });
+      setTextureMsg({ type: 'error', text: `Error processing normal map: ${err.message || err}` });
     } finally {
       setIsProcessingNormal(false);
     }
@@ -91,7 +91,7 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
   const handleInvertRoughness = async () => {
     const file = roughnessInputPath;
     if (!file) {
-      setTextureMsg({ type: 'error', text: 'Selecciona una textura de rugosidad / gloss.' });
+      setTextureMsg({ type: 'error', text: 'Select a roughness / glossiness texture first.' });
       return;
     }
     setIsProcessingRoughness(true);
@@ -113,7 +113,7 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
         });
       }
 
-      setTextureMsg({ type: 'success', text: `Rugosidad invertida guardada en: ${outputPath}` });
+      setTextureMsg({ type: 'success', text: `Inverted roughness map saved to: ${outputPath}` });
       const info = await window.electronAPI.getFileInfo(outputPath);
       setMapSlot('roughness', {
         filePath: outputPath,
@@ -122,7 +122,7 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
         fileSize: info.size
       });
     } catch (err: any) {
-      setTextureMsg({ type: 'error', text: `Error al invertir rugosidad: ${err.message || err}` });
+      setTextureMsg({ type: 'error', text: `Error inverting roughness: ${err.message || err}` });
     } finally {
       setIsProcessingRoughness(false);
     }
@@ -132,7 +132,7 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
   const handleResizeConvert = async () => {
     const file = resizerInputPath;
     if (!file) {
-      setTextureMsg({ type: 'error', text: 'Selecciona una textura para optimizar.' });
+      setTextureMsg({ type: 'error', text: 'Select a texture to optimize.' });
       return;
     }
     setIsProcessingResize(true);
@@ -154,9 +154,9 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
         });
       }
 
-      setTextureMsg({ type: 'success', text: `Textura optimizada a WebP guardada en: ${outputPath}` });
+      setTextureMsg({ type: 'success', text: `Optimized WebP texture saved to: ${outputPath}` });
     } catch (err: any) {
-      setTextureMsg({ type: 'error', text: `Error al optimizar textura: ${err.message || err}` });
+      setTextureMsg({ type: 'error', text: `Error optimizing texture: ${err.message || err}` });
     } finally {
       setIsProcessingResize(false);
     }
@@ -168,10 +168,10 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
       <div className="p-3 flex items-center justify-between bg-surface-low">
         <h4 className="text-xs font-semibold uppercase tracking-wider font-primary text-ink-primary flex items-center gap-1.5">
           <Wrench className="w-4 h-4 text-action" />
-          Pipeline de Texturas (Sharp)
+          Texture Pipeline (Sharp)
         </h4>
         <span className="text-[10px] font-mono tabular-nums text-ink-tertiary">
-          Procesamiento PBR
+          PBR Processing
         </span>
       </div>
 
@@ -180,22 +180,22 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
         <div className="p-3">
           <AlertBanner
             variant={textureMsg.type === 'success' ? 'success' : 'error'}
-            title={textureMsg.type === 'success' ? 'Operación exitosa' : 'Error en pipeline'}
+            title={textureMsg.type === 'success' ? 'Operation succeeded' : 'Pipeline error'}
             message={textureMsg.text}
             onClose={() => setTextureMsg(null)}
           />
         </div>
       )}
 
-      {/* Tool 1: Empaquetar ORM WebP */}
+      {/* Tool 1: Pack ORM WebP */}
       <div className="p-3.5 flex items-center justify-between gap-3">
         <div className="space-y-0.5">
           <span className="text-xs font-semibold text-ink-primary flex items-center gap-1.5 font-primary">
             <Package className="w-3.5 h-3.5 text-action" />
-            Empaquetar Textura ORM WebP
+            Pack ORM WebP Texture
           </span>
           <span className="text-[10px] text-ink-secondary block">
-            Combina AO (R) + Rugosidad (G) + Metálico (B) en un solo mapa WebP ultraligero.
+            Combines AO (R) + Roughness (G) + Metalness (B) into a single lightweight WebP map.
           </span>
         </div>
         <Button
@@ -204,7 +204,7 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
           onClick={openOrmPacker}
           icon={<Package className="w-3.5 h-3.5 text-action" />}
         >
-          Empaquetador ORM
+          ORM Packer
         </Button>
       </div>
 
@@ -213,19 +213,19 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-ink-primary flex items-center gap-1.5 font-primary">
             <ArrowRightLeft className="w-3.5 h-3.5 text-action" />
-            Invertir Normal Y (DirectX ↔ OpenGL)
+            Flip Normal Y (DirectX ↔ OpenGL)
           </span>
-          <span className="text-[10px] text-ink-tertiary font-mono">Canal Verde (Y)</span>
+          <span className="text-[10px] text-ink-tertiary font-mono">Green Channel (Y)</span>
         </div>
         <p className="text-[10px] text-ink-secondary">
-          Invierte el canal verde para corregir mapas de relieve invertidos.
+          Inverts the green channel to fix inverted bump/normal orientation.
         </p>
         <div className="flex items-center gap-2 pt-1">
           <div className="flex-1">
             <TextInput
               value={normalInputPath}
               onChange={(e) => setNormalInputPath(e.target.value)}
-              placeholder="Ruta del Normal Map..."
+              placeholder="Normal map path..."
               mono
             />
           </div>
@@ -234,13 +234,13 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
             size="sm"
             onClick={async () => {
               const path = await window.electronAPI.openFileDialog({
-                title: 'Seleccionar Mapa de Normales',
-                filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp', 'tga'] }]
+                title: 'Select Normal Map',
+                filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'tga'] }]
               });
               if (path) setNormalInputPath(path);
             }}
           >
-            Examinar
+            Browse
           </Button>
           <Button
             variant="primary"
@@ -248,7 +248,7 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
             onClick={handleFlipNormal}
             isLoading={isProcessingNormal}
           >
-            Invertir Y
+            Flip Y
           </Button>
         </div>
       </div>
@@ -258,19 +258,19 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-ink-primary flex items-center gap-1.5 font-primary">
             <Sliders className="w-3.5 h-3.5 text-action" />
-            Invertir Rugosidad (Roughness ↔ Glossiness)
+            Invert Roughness (Roughness ↔ Glossiness)
           </span>
-          <span className="text-[10px] text-ink-tertiary font-mono">1.0 - Valor</span>
+          <span className="text-[10px] text-ink-tertiary font-mono">1.0 - Value</span>
         </div>
         <p className="text-[10px] text-ink-secondary">
-          Invierte la escala de grises para convertir entre aspereza y brillo superficial.
+          Inverts grayscale values to convert between roughness and glossiness maps.
         </p>
         <div className="flex items-center gap-2 pt-1">
           <div className="flex-1">
             <TextInput
               value={roughnessInputPath}
               onChange={(e) => setRoughnessInputPath(e.target.value)}
-              placeholder="Ruta del mapa de rugosidad..."
+              placeholder="Roughness map path..."
               mono
             />
           </div>
@@ -279,13 +279,13 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
             size="sm"
             onClick={async () => {
               const path = await window.electronAPI.openFileDialog({
-                title: 'Seleccionar Textura de Rugosidad',
-                filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
+                title: 'Select Roughness Texture',
+                filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
               });
               if (path) setRoughnessInputPath(path);
             }}
           >
-            Examinar
+            Browse
           </Button>
           <Button
             variant="primary"
@@ -293,7 +293,7 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
             onClick={handleInvertRoughness}
             isLoading={isProcessingRoughness}
           >
-            Invertir
+            Invert
           </Button>
         </div>
       </div>
@@ -303,13 +303,13 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-ink-primary flex items-center gap-1.5 font-primary">
             <ImageIcon className="w-3.5 h-3.5 text-action" />
-            Redimensionar y Optimizar a WebP
+            Resize &amp; Optimize to WebP
           </span>
           <span className="text-[10px] font-mono tabular-nums text-ink-tertiary">Sharp WebP</span>
         </div>
         <div className="grid grid-cols-2 gap-3 pt-0.5">
           <div>
-            <span className="text-[10px] text-ink-secondary font-medium block mb-1">Resolución máxima:</span>
+            <span className="text-[10px] text-ink-secondary font-medium block mb-1">Max resolution:</span>
             <select
               value={targetRes}
               onChange={(e) => setTargetRes(Number(e.target.value))}
@@ -318,12 +318,12 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
               <option value={4096}>4096 × 4096 (4K)</option>
               <option value={2048}>2048 × 2048 (2K)</option>
               <option value={1024}>1024 × 1024 (1K Web)</option>
-              <option value={512}>512 × 512 (Ligero)</option>
+              <option value={512}>512 × 512 (Light)</option>
             </select>
           </div>
           <div>
             <span className="text-[10px] text-ink-secondary font-medium block mb-1">
-              Calidad WebP ({targetQuality}%):
+              WebP Quality ({targetQuality}%):
             </span>
             <input
               type="range"
@@ -340,7 +340,7 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
             <TextInput
               value={resizerInputPath}
               onChange={(e) => setResizerInputPath(e.target.value)}
-              placeholder="Ruta de la textura a optimizar..."
+              placeholder="Texture path to optimize..."
               mono
             />
           </div>
@@ -349,13 +349,13 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
             size="sm"
             onClick={async () => {
               const path = await window.electronAPI.openFileDialog({
-                title: 'Seleccionar Textura',
-                filters: [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
+                title: 'Select Texture',
+                filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
               });
               if (path) setResizerInputPath(path);
             }}
           >
-            Examinar
+            Browse
           </Button>
           <Button
             variant="primary"
@@ -363,7 +363,7 @@ export const TexturePipelinePanel: React.FC<TexturePipelinePanelProps> = ({
             onClick={handleResizeConvert}
             isLoading={isProcessingResize}
           >
-            Convertir
+            Convert
           </Button>
         </div>
       </div>

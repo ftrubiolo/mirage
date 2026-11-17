@@ -35,7 +35,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
   // Initialize new variant name and reset custom path when variant changes
   useEffect(() => {
     if (variant) {
-      const baseName = variant.name ? variant.name.replace(/\.[^/.]+$/, '') : 'Textura';
+      const baseName = variant.name ? variant.name.replace(/\.[^/.]+$/, '') : 'Texture';
       setNewName(`${baseName} WebP`.trim());
       setCustomOutputPath('');
       setResolution(2048);
@@ -47,7 +47,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
 
   const handleBrowseOutput = async () => {
     try {
-      const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
+      const activeSlug = useAppStore.getState().activeEntrySlug || 'model';
       const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
       const libDir = await window.electronAPI.getLibraryPath();
       const sep = libDir.includes('\\') ? '\\' : '/';
@@ -57,9 +57,9 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
       const defaultPath = `${entryDir}${sep}${defaultFileName}`;
 
       const selected = await window.electronAPI.saveFileDialog({
-        title: 'Guardar textura WebP optimizada',
+        title: 'Save Optimized WebP Texture',
         defaultPath: customOutputPath || defaultPath,
-        filters: [{ name: 'Imagen WebP', extensions: ['webp'] }]
+        filters: [{ name: 'WebP Image', extensions: ['webp'] }]
       });
 
       if (selected) {
@@ -75,7 +75,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
     setIsConverting(true);
 
     try {
-      const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
+      const activeSlug = useAppStore.getState().activeEntrySlug || 'model';
       const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
       const libDir = await window.electronAPI.getLibraryPath();
       const sep = libDir.includes('\\') ? '\\' : '/';
@@ -121,7 +121,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error(`[WebpConvertModal] Error converting ${slot} texture to WebP:`, err);
-      alert(`Error al convertir a WebP: ${err?.message || err}`);
+      alert(`Error converting to WebP: ${err?.message || err}`);
     } finally {
       setIsConverting(false);
     }
@@ -131,7 +131,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={() => !isConverting && onClose()}
-      title="Redimensionar y Optimizar a WebP"
+      title="Resize & Optimize to WebP"
       icon={<ImageIcon className="w-4 h-4" />}
       size="md"
       footer={
@@ -143,7 +143,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
             disabled={isConverting}
             icon={<FolderOpen className="w-3.5 h-3.5" />}
           >
-            Examinar Ruta
+            Browse Path
           </Button>
 
           <div className="flex items-center gap-2">
@@ -153,7 +153,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
               onClick={onClose}
               disabled={isConverting}
             >
-              Cancelar
+              Cancel
             </Button>
             <Button
               variant="primary"
@@ -162,7 +162,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
               isLoading={isConverting}
               disabled={!newName.trim()}
             >
-              Convertir
+              Convert
             </Button>
           </div>
         </div>
@@ -173,7 +173,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[11px] text-ink-secondary mb-1 font-primary">
-              Resolución máxima:
+              Max resolution:
             </label>
             <select
               value={resolution}
@@ -185,13 +185,13 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
               <option value={2048}>2048 × 2048 (2K)</option>
               <option value={1024}>1024 × 1024 (1K)</option>
               <option value={512}>512 × 512 (512px)</option>
-              <option value={0}>Mantener original</option>
+              <option value={0}>Keep original</option>
             </select>
           </div>
 
           <div>
             <label className="block text-[11px] text-ink-secondary mb-1 font-primary">
-              Calidad WebP ({quality}%):
+              WebP Quality ({quality}%):
             </label>
             <div className="flex items-center h-8">
               <input
@@ -210,7 +210,7 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
         {/* Row 2: Variant Name */}
         <div>
           <label className="block text-[11px] text-ink-secondary mb-1 font-primary">
-            Nombre de la variante WebP:
+            WebP variant name:
           </label>
           <TextInput
             value={newName}
@@ -221,14 +221,14 @@ export const WebpConvertModal: React.FC<WebpConvertModalProps> = ({
                 handleConvert();
               }
             }}
-            placeholder="Nombre de la nueva variante..."
+            placeholder="New variant name..."
             mono
           />
         </div>
 
         {customOutputPath && (
           <div className="p-2 bg-surface-low border border-hairline rounded-xs">
-            <span className="text-[10px] text-ink-tertiary font-mono block">Destino personalizado:</span>
+            <span className="text-[10px] text-ink-tertiary font-mono block">Custom output path:</span>
             <span className="text-xs font-mono text-ink-primary truncate block">{customOutputPath}</span>
           </div>
         )}

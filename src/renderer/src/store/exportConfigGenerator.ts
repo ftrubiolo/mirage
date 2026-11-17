@@ -33,7 +33,7 @@ export function buildExportConfig(inputs: ExportConfigInputs): Product3DConfig {
 
   const materialProfile: MaterialProfile = {
     id: 'default-profile',
-    name: `${inputs.productName} Acabado`,
+    name: `${inputs.productName} Finish`,
     normalMapUrl: isNormalEnabled ? inputs.normalMapUrl || '' : '',
     ormMapUrl: isOrmEnabled ? inputs.ormMapUrl || '' : '',
     normalScale: inputs.normalScale,
@@ -59,8 +59,8 @@ export function buildExportConfig(inputs: ExportConfigInputs): Product3DConfig {
 
   const options = baseVariants.map((c) => {
     const optId = c.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-    combinations[`variante:${optId}`] = {
-      combinationKey: `variante:${optId}`,
+    combinations[`variant:${optId}`] = {
+      combinationKey: `variant:${optId}`,
       baseColorMapUrl: c.url,
       materialProfileId: 'default-profile',
       name: c.name
@@ -73,8 +73,8 @@ export function buildExportConfig(inputs: ExportConfigInputs): Product3DConfig {
 
   const optionGroups: OptionGroup[] = [
     {
-      id: 'variante',
-      name: 'Variante de Color',
+      id: 'variant',
+      name: 'Color Variant',
       options
     }
   ];

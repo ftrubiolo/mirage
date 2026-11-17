@@ -9,10 +9,10 @@ interface CanvasProjectionWidgetProps {
 }
 
 const FOCAL_LENGTH_PRESETS = [
-  { mm: 24, fov: 74, label: '24mm', desc: 'Ultra-Gran Angular' },
-  { mm: 35, fov: 54, label: '35mm', desc: 'Gran Angular' },
-  { mm: 50, fov: 40, label: '50mm', desc: 'Estándar Ojo Humano' },
-  { mm: 85, fov: 24, label: '85mm', desc: 'Teleobjetivo Detalle' }
+  { mm: 24, fov: 74, label: '24mm', desc: 'Ultra-Wide Angle' },
+  { mm: 35, fov: 54, label: '35mm', desc: 'Wide Angle' },
+  { mm: 50, fov: 40, label: '50mm', desc: 'Standard Human Eye' },
+  { mm: 85, fov: 24, label: '85mm', desc: 'Detail Telephoto' }
 ];
 
 export const CanvasProjectionWidget: React.FC<CanvasProjectionWidgetProps> = ({
@@ -49,8 +49,8 @@ export const CanvasProjectionWidget: React.FC<CanvasProjectionWidgetProps> = ({
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title="Modo Perspectiva (Visión humana natural)"
-          aria-label="Perspectiva"
+          title="Perspective mode (Natural optical depth)"
+          aria-label="Perspective"
         >
           <Eye size={20} className={!isOrthographic ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
         </button>
@@ -63,8 +63,8 @@ export const CanvasProjectionWidget: React.FC<CanvasProjectionWidgetProps> = ({
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title="Modo Ortográfico (Proyección axonométrica paralela)"
-          aria-label="Ortográfica"
+          title="Orthographic mode (Parallel CAD projection)"
+          aria-label="Orthographic"
         >
           <Box size={20} className={isOrthographic ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
         </button>
@@ -88,8 +88,8 @@ export const CanvasProjectionWidget: React.FC<CanvasProjectionWidgetProps> = ({
         >
           <Eye size={16} className="shrink-0" />
           <div className="min-w-0">
-            <div className="font-medium text-[11px] leading-tight">Perspectiva</div>
-            <div className="text-[9px] opacity-75 font-mono">Profundidad óptica</div>
+            <div className="font-medium text-[11px] leading-tight">Perspective</div>
+            <div className="text-[9px] opacity-75 font-mono">Optical depth</div>
           </div>
         </button>
 
@@ -104,8 +104,8 @@ export const CanvasProjectionWidget: React.FC<CanvasProjectionWidgetProps> = ({
         >
           <Box size={16} className="shrink-0" />
           <div className="min-w-0">
-            <div className="font-medium text-[11px] leading-tight">Ortográfica</div>
-            <div className="text-[9px] opacity-75 font-mono">Escala CAD 1:1</div>
+            <div className="font-medium text-[11px] leading-tight">Orthographic</div>
+            <div className="text-[9px] opacity-75 font-mono">CAD 1:1 Scale</div>
           </div>
         </button>
       </div>
@@ -116,7 +116,7 @@ export const CanvasProjectionWidget: React.FC<CanvasProjectionWidgetProps> = ({
           <div className="flex items-center justify-between text-[11px]">
             <span className="text-ink-secondary font-medium flex items-center gap-1.5">
               <Sliders size={12} />
-              Campo de Visión (FOV)
+              Field of View (FOV)
             </span>
             <span className="font-mono text-ink-primary font-semibold">{Math.round(cameraFov)}°</span>
           </div>
@@ -133,7 +133,7 @@ export const CanvasProjectionWidget: React.FC<CanvasProjectionWidgetProps> = ({
 
           {/* Focal Length Chips */}
           <div>
-            <div className="text-[10px] text-ink-tertiary mb-1 font-mono uppercase tracking-wider">Focales Fotográficas</div>
+            <div className="text-[10px] text-ink-tertiary mb-1 font-mono uppercase tracking-wider">Camera Lenses</div>
             <div className="grid grid-cols-4 gap-1">
               {FOCAL_LENGTH_PRESETS.map((p) => {
                 const isSelected = Math.abs(cameraFov - p.fov) < 3;
@@ -158,9 +158,9 @@ export const CanvasProjectionWidget: React.FC<CanvasProjectionWidgetProps> = ({
         </div>
       ) : (
         <div className="p-2.5 rounded-xs bg-surface-container/30 border border-hairline space-y-1">
-          <div className="text-[11px] font-medium text-ink-primary">Proyección Axonométrica Paralela</div>
+          <div className="text-[11px] font-medium text-ink-primary">Parallel Axonometric Projection</div>
           <div className="text-[10px] text-ink-secondary leading-relaxed">
-            Elimina la distorsión de fuga visual para permitir mediciones técnicas exactas y alineación con estándares CAD.
+            Eliminates perspective distortion for exact technical measurements and CAD alignment.
           </div>
         </div>
       )}

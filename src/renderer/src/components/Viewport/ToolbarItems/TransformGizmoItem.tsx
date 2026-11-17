@@ -9,13 +9,13 @@ export const TransformGizmoItem: React.FC = () => {
   return (
     <div
       role="group"
-      aria-label="Herramientas de manipulación 3D"
+      aria-label="3D transform tools"
       className="flex items-center p-0.5 rounded-xs bg-surface-container/60 border border-hairline gap-0.5"
     >
       <button
         onClick={() => setTransformGizmoMode('none')}
-        title="Modo Selección / Cursor (Q) - Navegar sin flechas"
-        aria-label="Cursor de navegación (Q)"
+        title="Select / Cursor mode (Q) - Orbit without gizmos"
+        aria-label="Navigation cursor (Q)"
         className={`p-1 rounded-xs transition-colors flex items-center text-xs cursor-pointer ${
           transformGizmoMode === 'none'
             ? 'bg-surface-lowest text-action shadow-xs font-semibold'
@@ -26,8 +26,8 @@ export const TransformGizmoItem: React.FC = () => {
       </button>
       <button
         onClick={() => setTransformGizmoMode('translate')}
-        title="Desplazamiento 3D (W) - Flechas para mover la pieza"
-        aria-label="Mover con flechas 3D (W)"
+        title="3D Move (W) - Drag axis handles to translate model"
+        aria-label="Move with 3D gizmo (W)"
         className={`p-1 rounded-xs transition-colors flex items-center text-xs cursor-pointer ${
           transformGizmoMode === 'translate'
             ? 'bg-action text-white shadow-xs font-semibold'
@@ -38,8 +38,8 @@ export const TransformGizmoItem: React.FC = () => {
       </button>
       <button
         onClick={() => setTransformGizmoMode('rotate')}
-        title="Rotación 3D (E) - Aros para girar la orientación"
-        aria-label="Rotar con aros 3D (E)"
+        title="3D Rotate (E) - Drag rings to rotate orientation"
+        aria-label="Rotate with 3D gizmo (E)"
         className={`p-1 rounded-xs transition-colors flex items-center text-xs cursor-pointer ${
           transformGizmoMode === 'rotate'
             ? 'bg-action text-white shadow-xs font-semibold'

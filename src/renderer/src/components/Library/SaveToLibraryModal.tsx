@@ -60,7 +60,7 @@ export const SaveToLibraryModal: React.FC<SaveToLibraryModalProps> = ({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !slug.trim()) {
-      setErrorMsg('El título y el slug identificador son obligatorios.');
+      setErrorMsg('Model title and identifier slug are required.');
       return;
     }
 
@@ -70,8 +70,8 @@ export const SaveToLibraryModal: React.FC<SaveToLibraryModalProps> = ({
       const saved = await saveWorkbenchToLibrary({
         title: title.trim(),
         slug: slug.trim(),
-        category: 'otro',
-        status: 'workshop',
+        category: 'other',
+        status: 'wip',
         description: description.trim()
       });
 
@@ -83,7 +83,7 @@ export const SaveToLibraryModal: React.FC<SaveToLibraryModalProps> = ({
       }, 700);
     } catch (err: any) {
       console.error('Error saving to library:', err);
-      setErrorMsg(err?.message || 'Error al guardar la pieza en la biblioteca local.');
+      setErrorMsg(err?.message || 'Failed to save model to local library.');
       setIsSaving(false);
     }
   };
@@ -92,13 +92,13 @@ export const SaveToLibraryModal: React.FC<SaveToLibraryModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Guardar en Biblioteca Local"
+      title="Save to Local Library"
       icon={<BookmarkPlus className="w-4 h-4 text-action" />}
       size="lg"
       footer={
         <div className="flex items-center justify-end gap-2 w-full">
           <Button variant="secondary" onClick={onClose} disabled={isSaving}>
-            Cancelar
+            Cancel
           </Button>
           <Button
             variant="primary"
@@ -110,7 +110,7 @@ export const SaveToLibraryModal: React.FC<SaveToLibraryModalProps> = ({
             isLoading={isSaving}
             icon={isDone ? <CheckCircle2 className="w-4 h-4" /> : <BookmarkPlus className="w-4 h-4" />}
           >
-            {isDone ? 'Guardado' : 'Guardar en Biblioteca'}
+            {isDone ? 'Saved' : 'Save to Library'}
           </Button>
         </div>
       }
@@ -125,18 +125,18 @@ export const SaveToLibraryModal: React.FC<SaveToLibraryModalProps> = ({
         )}
 
         {/* Title */}
-        <FormField label="Nombre de la Pieza / Modelo" required>
+        <FormField label="Model Name" required>
           <TextInput
             required
             autoFocus
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="Ej: Sillón Curvo Basalto"
+            placeholder="e.g., Basalt Sculpted Vessel"
           />
         </FormField>
 
         {/* Slug */}
-        <FormField label="Identificador Técnico (Slug de Carpeta)" required>
+        <FormField label="Technical Identifier (Folder Slug)" required>
           <TextInput
             required
             mono
@@ -145,17 +145,17 @@ export const SaveToLibraryModal: React.FC<SaveToLibraryModalProps> = ({
             onChange={(e) =>
               setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))
             }
-            placeholder="sillon-curvo-basalto"
+            placeholder="basalt-sculpted-vessel"
           />
         </FormField>
 
         {/* Description */}
-        <FormField label="Notas Técnicas o Acabados (Opcional)">
+        <FormField label="Technical Notes or Finish Specs (Optional)">
           <TextArea
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Ej: Estructura en roble macizo con terminación mate. Tapizado en lino crudo..."
+            placeholder="e.g., Matte ceramic glaze with 2K ORM texture maps and baked normal detail..."
             className="resize-none"
           />
         </FormField>
@@ -165,23 +165,23 @@ export const SaveToLibraryModal: React.FC<SaveToLibraryModalProps> = ({
           <div className="flex items-center justify-between text-ink-secondary">
             <span className="flex items-center gap-1.5">
               <Box className="w-3.5 h-3.5 text-action" />
-              Modelo 3D:
+              3D Model:
             </span>
             <span className="font-mono tabular-nums text-ink-primary truncate max-w-[200px]">
-              {modelFilePath ? modelFilePath.split(/[\\/]/).pop() : 'Ninguno (sólo ajustes)'}
+              {modelFilePath ? modelFilePath.split(/[\\/]/).pop() : 'None (settings only)'}
             </span>
           </div>
           <div className="flex items-center justify-between text-ink-secondary">
             <span className="flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-action" />
-              Mapas PBR cargados:
+              Loaded PBR Maps:
             </span>
             <span className="font-mono tabular-nums text-ink-primary font-bold">
-              {activeMapsCount} activos
+              {activeMapsCount} active
             </span>
           </div>
           <div className="text-[11px] text-ink-tertiary pt-1 border-t border-hairline">
-            ✓ Se capturará automáticamente un póster renderizado en WebP del visor actual.
+            ✓ A rendered WebP poster snapshot will be captured automatically from the current viewport.
           </div>
         </div>
       </form>

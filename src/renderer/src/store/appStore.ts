@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { LibraryEntry } from '../types/library';
 import { useViewportStore } from './viewportStore';
+import { readMigratedStorage } from '../utils/storageMigration';
+
+const APP_SETTINGS_KEY = 'mirage-app-settings';
+const LEGACY_APP_SETTINGS_KEY = 'sera-app-settings';
 
 export type AppView = 'hub' | 'workbench' | 'library' | 'entryDetail' | 'settings' | 'agent';
 export type ThemeMode = 'dark' | 'light' | 'system';
@@ -34,7 +38,7 @@ interface AppState {
   setWorkbenchSidebarCollapsed: (collapsed: boolean) => void;
   toggleWorkbenchSidebar: () => void;
 
-  /** Whether the global save piece modal is open. */
+  /** Whether the global save model modal is open. */
   isSaveModalOpen: boolean;
   openSaveModal: () => void;
   closeSaveModal: () => void;
@@ -70,12 +74,12 @@ const getStoredSettings = (): AppSettings => {
   if (typeof window === 'undefined') return defaults;
 
   try {
-    const raw = localStorage.getItem('sera-app-settings');
+    const raw = readMigratedStorage(APP_SETTINGS_KEY, LEGACY_APP_SETTINGS_KEY);
     if (raw) {
       return { ...defaults, ...JSON.parse(raw) };
     }
   } catch (e) {
-    console.warn('Failed to parse sera-app-settings:', e);
+    console.warn('Failed to parse mirage-app-settings:', e);
   }
   return defaults;
 };
@@ -243,7 +247,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setThemeMode: (mode: ThemeMode) => {
     const newSettings = { ...get().settings, themeMode: mode };
-    localStorage.setItem('sera-app-settings', JSON.stringify(newSettings));
+    localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(newSettings));
     const resolved = resolveThemeClass(mode);
     set({ settings: newSettings, resolvedTheme: resolved });
     persistSettingsToFile();
@@ -251,7 +255,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setFontDensity: (density: FontDensity) => {
     const newSettings = { ...get().settings, fontDensity: density };
-    localStorage.setItem('sera-app-settings', JSON.stringify(newSettings));
+    localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(newSettings));
     applyDensityClass(density);
     set({ settings: newSettings });
     persistSettingsToFile();
@@ -259,7 +263,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateSettings: (partial: Partial<AppSettings>) => {
     const newSettings = { ...get().settings, ...partial };
-    localStorage.setItem('sera-app-settings', JSON.stringify(newSettings));
+    localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(newSettings));
     if (partial.themeMode) {
       resolveThemeClass(partial.themeMode);
     }

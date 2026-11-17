@@ -41,7 +41,7 @@ export async function packOrmWithCanvas(options: CanvasOrmPackOptions): Promise<
   // 1. Load source images
   let aoImg: HTMLImageElement | null = null;
   if (aoUrl) {
-    onProgress?.('Cargando mapa de Oclusión Ambiental (AO)...');
+    onProgress?.('Loading Ambient Occlusion (AO) map...');
     aoImg = await loadImage(aoUrl);
   }
 
@@ -50,15 +50,15 @@ export async function packOrmWithCanvas(options: CanvasOrmPackOptions): Promise<
   let metalImg: HTMLImageElement | null = null;
 
   if (metalRoughnessUrl) {
-    onProgress?.('Cargando mapa glTF Metal-Roughness...');
+    onProgress?.('Loading glTF Metal-Roughness map...');
     mrImg = await loadImage(metalRoughnessUrl);
   } else {
     if (roughnessUrl) {
-      onProgress?.('Cargando mapa de Rugosidad...');
+      onProgress?.('Loading Roughness map...');
       roughImg = await loadImage(roughnessUrl);
     }
     if (metalnessUrl) {
-      onProgress?.('Cargando mapa de Metalicidad...');
+      onProgress?.('Loading Metalness map...');
       metalImg = await loadImage(metalnessUrl);
     }
   }
@@ -70,13 +70,13 @@ export async function packOrmWithCanvas(options: CanvasOrmPackOptions): Promise<
   const helperCtx = helperCanvas.getContext('2d', { willReadFrequently: true });
 
   if (!helperCtx) {
-    throw new Error('No se pudo inicializar el contexto de dibujo Canvas 2D');
+    throw new Error('Could not initialize 2D Canvas drawing context');
   }
 
   // 3. Extract AO (Red channel)
   let aoData: Uint8ClampedArray | null = null;
   if (aoImg) {
-    onProgress?.('Extrayendo canal de Oclusión (R)...');
+    onProgress?.('Extracting Occlusion channel (R)...');
     helperCtx.clearRect(0, 0, resolution, resolution);
     helperCtx.drawImage(aoImg, 0, 0, resolution, resolution);
     aoData = helperCtx.getImageData(0, 0, resolution, resolution).data;
@@ -88,19 +88,19 @@ export async function packOrmWithCanvas(options: CanvasOrmPackOptions): Promise<
   let metalData: Uint8ClampedArray | null = null;
 
   if (mrImg) {
-    onProgress?.('Extrayendo Rugosidad (G) y Metalicidad (B) de glTF...');
+    onProgress?.('Extracting Roughness (G) and Metalness (B) from glTF...');
     helperCtx.clearRect(0, 0, resolution, resolution);
     helperCtx.drawImage(mrImg, 0, 0, resolution, resolution);
     mrData = helperCtx.getImageData(0, 0, resolution, resolution).data;
   } else {
     if (roughImg) {
-      onProgress?.('Extrayendo mapa de Rugosidad...');
+      onProgress?.('Extracting Roughness map...');
       helperCtx.clearRect(0, 0, resolution, resolution);
       helperCtx.drawImage(roughImg, 0, 0, resolution, resolution);
       roughData = helperCtx.getImageData(0, 0, resolution, resolution).data;
     }
     if (metalImg) {
-      onProgress?.('Extrayendo mapa de Metalicidad...');
+      onProgress?.('Extracting Metalness map...');
       helperCtx.clearRect(0, 0, resolution, resolution);
       helperCtx.drawImage(metalImg, 0, 0, resolution, resolution);
       metalData = helperCtx.getImageData(0, 0, resolution, resolution).data;
@@ -109,14 +109,14 @@ export async function packOrmWithCanvas(options: CanvasOrmPackOptions): Promise<
 
   // 5. Interleave channels into standard glTF ORM:
   // R = Occlusion, G = Roughness, B = Metalness, A = 255
-  onProgress?.('Combinando canales ORM (R: AO, G: Rugosidad, B: Metal)...');
+  onProgress?.('Packing ORM channels (R: AO, G: Roughness, B: Metal)...');
   const ormCanvas = document.createElement('canvas');
   ormCanvas.width = resolution;
   ormCanvas.height = resolution;
   const ormCtx = ormCanvas.getContext('2d', { willReadFrequently: true });
 
   if (!ormCtx) {
-    throw new Error('No se pudo inicializar el lienzo para componer ORM');
+    throw new Error('Could not initialize ORM compositing canvas');
   }
 
   const ormImageData = ormCtx.createImageData(resolution, resolution);
@@ -158,12 +158,12 @@ export async function packOrmWithCanvas(options: CanvasOrmPackOptions): Promise<
   const mimeType = isPng ? 'image/png' : 'image/webp';
   const encoderQuality = isPng ? undefined : Math.max(0.1, Math.min(1.0, quality / 100));
 
-  onProgress?.(`Codificando textura final a ${isPng ? 'PNG' : 'WebP'} (${resolution}x${resolution})...`);
+  onProgress?.(`Encoding final texture as ${isPng ? 'PNG' : 'WebP'} (${resolution}x${resolution})...`);
   const blob = await new Promise<Blob>((resolve, reject) => {
     ormCanvas.toBlob(
       (b) => {
         if (b) resolve(b);
-        else reject(new Error(`Fallo al codificar textura con formato ${mimeType}`));
+        else reject(new Error(`Failed to encode texture as ${mimeType}`));
       },
       mimeType,
       encoderQuality
@@ -171,7 +171,7 @@ export async function packOrmWithCanvas(options: CanvasOrmPackOptions): Promise<
   });
 
   // 7. Write binary to disk via Electron IPC
-  onProgress?.('Guardando archivo empaquetado en disco...');
+  onProgress?.('Saving packed file to disk...');
   const arrayBuffer = await blob.arrayBuffer();
   await window.electronAPI.writeBinaryFile(outputPath, new Uint8Array(arrayBuffer));
 

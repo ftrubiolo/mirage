@@ -120,15 +120,15 @@ export async function processTextureTask(options: TextureProcessOptions): Promis
               if (stat.size > 0) {
                 resolve(options.outputPath);
               } else {
-                reject(new Error(`El proceso no produjo salida: ${stderr || stdout}`));
+                reject(new Error(`Process produced no output: ${stderr || stdout}`));
               }
             })
             .catch(() =>
-              reject(new Error(`No se pudo verificar la salida del proceso: ${stderr || stdout}`))
+              reject(new Error(`Could not verify process output: ${stderr || stdout}`))
             );
         }
       } else {
-        reject(new Error(`Proceso falló con código ${code}: ${stderr || stdout}`));
+        reject(new Error(`Process failed with exit code ${code}: ${stderr || stdout}`));
       }
     });
   });

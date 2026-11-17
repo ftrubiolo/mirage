@@ -26,19 +26,19 @@ export const CanvasMetrologyWidget: React.FC = () => {
       {/* Geometry Counts Grid */}
       <div className="grid grid-cols-3 gap-1.5 pb-2 border-b border-hairline text-center">
         <div className="p-1.5 rounded-xs bg-surface-container/40 border border-hairline">
-          <span className="block text-[9px] uppercase font-mono text-ink-tertiary">Polígonos</span>
+          <span className="block text-[9px] uppercase font-mono text-ink-tertiary">Polygons</span>
           <span className="font-mono text-xs font-bold tabular-nums text-ink-primary">
             {triCount.toLocaleString()}
           </span>
         </div>
         <div className="p-1.5 rounded-xs bg-surface-container/40 border border-hairline">
-          <span className="block text-[9px] uppercase font-mono text-ink-tertiary">Vértices</span>
+          <span className="block text-[9px] uppercase font-mono text-ink-tertiary">Vertices</span>
           <span className="font-mono text-xs font-bold tabular-nums text-ink-primary">
             {vertCount.toLocaleString()}
           </span>
         </div>
         <div className="p-1.5 rounded-xs bg-surface-container/40 border border-hairline">
-          <span className="block text-[9px] uppercase font-mono text-ink-tertiary">Mallas</span>
+          <span className="block text-[9px] uppercase font-mono text-ink-tertiary">Meshes</span>
           <span className="font-mono text-xs font-bold tabular-nums text-ink-primary">
             {meshCount}
           </span>
@@ -48,7 +48,7 @@ export const CanvasMetrologyWidget: React.FC = () => {
       {/* Oriented Bounding Box Dimensions */}
       <div className="space-y-1 text-xs">
         <span className="block text-[10px] font-mono uppercase text-ink-tertiary font-medium">
-          Dimensiones Orientadas (m)
+          Oriented Dimensions (m)
         </span>
         <div className="grid grid-cols-3 gap-1 font-mono text-[11px] tabular-nums">
           <div className="flex items-center justify-between px-1.5 py-0.5 rounded-xs bg-surface-high/40 border border-hairline">
@@ -68,7 +68,7 @@ export const CanvasMetrologyWidget: React.FC = () => {
 
       {/* Volume */}
       <div className="flex items-center justify-between pt-1 border-t border-hairline font-mono text-[11px] text-ink-secondary">
-        <span>Volumen envolvente:</span>
+        <span>Bounding volume:</span>
         <span className="tabular-nums font-bold text-ink-primary">{volume} m³</span>
       </div>
     </div>

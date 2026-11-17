@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import JSZip from 'jszip';
 
 interface ViewportBridge {
   gl: THREE.WebGLRenderer | null;
@@ -275,7 +274,7 @@ export async function captureViewportSnapshot(
 ): Promise<{ blob: Blob; dataUrl: string; width: number; height: number }> {
   const { gl, scene, camera } = viewportBridge;
   if (!gl || !scene || !camera) {
-    throw new Error('El visor 3D no está inicializado.');
+    throw new Error('3D viewport is not initialized.');
   }
 
   const {
@@ -323,7 +322,7 @@ export async function captureViewportSnapshot(
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('No se pudo inicializar el contexto Canvas 2D');
+    if (!ctx) throw new Error('Failed to initialize 2D Canvas context');
 
     const imgData = ctx.createImageData(width, height);
     for (let y = 0; y < height; y++) {
@@ -346,7 +345,7 @@ export async function captureViewportSnapshot(
       canvas.toBlob(
         (b) => {
           if (b) resolve(b);
-          else reject(new Error('Error al generar imagen'));
+          else reject(new Error('Failed to generate image'));
         },
         mime,
         quality
@@ -404,7 +403,7 @@ export function bakeModelTransforms(targetObject: THREE.Object3D): THREE.Object3
 export async function exportModelToGLB(): Promise<ArrayBuffer> {
   const targetObject = viewportBridge.modelGroup || viewportBridge.scene;
   if (!targetObject) {
-    throw new Error('No hay ningún modelo 3D cargado para exportar.');
+    throw new Error('No 3D model loaded to export.');
   }
 
   const bakedObject = bakeModelTransforms(targetObject);
@@ -455,12 +454,12 @@ function stripMaterialTextures(mat: THREE.Material): THREE.Material {
 
 /**
  * Exports clean 3D geometry scaled 1:1 in meters without heavy embedded textures.
- * Conforms to the Sera Muebles geometry.glb template specification.
+ * Conforms to the standard Web & AR geometry.glb specification.
  */
 export async function exportCleanGeometryGLB(): Promise<ArrayBuffer> {
   const targetObject = viewportBridge.modelGroup || viewportBridge.scene;
   if (!targetObject) {
-    throw new Error('No hay ningún modelo 3D cargado para exportar.');
+    throw new Error('No 3D model loaded to export.');
   }
 
   const bakedObject = bakeModelTransforms(targetObject);
@@ -514,7 +513,7 @@ export interface UsdzExportOptions {
 export async function exportModelToUSDZ(options: UsdzExportOptions = {}): Promise<ArrayBuffer> {
   const targetObject = viewportBridge.modelGroup || viewportBridge.scene;
   if (!targetObject) {
-    throw new Error('No hay ningún modelo 3D cargado para exportar.');
+    throw new Error('No 3D model loaded to export.');
   }
 
   const bakedObject = bakeModelTransforms(targetObject);
@@ -532,21 +531,4 @@ export async function exportModelToUSDZ(options: UsdzExportOptions = {}): Promis
     uint8Result.byteOffset,
     uint8Result.byteOffset + uint8Result.byteLength
   );
-}
-
-export async function createWebPackageZip(params: {
-  glbBuffer: ArrayBuffer;
-  posterBlob: Blob;
-  metadata: Record<string, any>;
-}): Promise<Blob> {
-  const zip = new JSZip();
-  zip.file('model.glb', params.glbBuffer);
-  zip.file('poster.webp', params.posterBlob);
-  zip.file('metadata.json', JSON.stringify(params.metadata, null, 2));
-
-  return await zip.generateAsync({
-    type: 'blob',
-    compression: 'DEFLATE',
-    compressionOptions: { level: 6 }
-  });
 }

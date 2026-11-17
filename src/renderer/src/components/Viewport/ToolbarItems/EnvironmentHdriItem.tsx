@@ -12,14 +12,14 @@ interface EnvironmentHdriItemProps {
 const INITIAL_VISIBLE_COUNT = 3;
 
 const ENVIRONMENT_PRESETS: { id: EnvironmentPreset; label: string }[] = [
-  { id: 'studio', label: 'Estudio' },
-  { id: 'city', label: 'Ciudad' },
-  { id: 'warehouse', label: 'Almacén' },
-  { id: 'apartment', label: 'Apartamento' },
+  { id: 'studio', label: 'Studio' },
+  { id: 'city', label: 'City' },
+  { id: 'warehouse', label: 'Warehouse' },
+  { id: 'apartment', label: 'Apartment' },
   { id: 'lobby', label: 'Lobby' },
-  { id: 'sunset', label: 'Atardecer' },
-  { id: 'night', label: 'Noche' },
-  { id: 'park', label: 'Parque' }
+  { id: 'sunset', label: 'Sunset' },
+  { id: 'night', label: 'Night' },
+  { id: 'park', label: 'Park' }
 ];
 
 export const EnvironmentHdriItem: React.FC<EnvironmentHdriItemProps> = ({ compact, iconOnly }) => {
@@ -85,7 +85,7 @@ export const EnvironmentHdriItem: React.FC<EnvironmentHdriItemProps> = ({ compac
   const handlePickCustomHdr = async () => {
     if (window.electronAPI) {
       const file = await window.electronAPI.openFileDialog({
-        title: 'Seleccionar mapa de entorno HDRI (.hdr)',
+        title: 'Select HDRI Environment Map (.hdr)',
         filters: [{ name: 'HDRI Environment Map', extensions: ['hdr'] }]
       });
       if (file) {
@@ -104,13 +104,13 @@ export const EnvironmentHdriItem: React.FC<EnvironmentHdriItemProps> = ({ compac
 
   const currentEnvLabel = customHdrName
     ? customHdrName
-    : ENVIRONMENT_PRESETS.find((p) => p.id === environmentPreset)?.label || 'Entorno';
+    : ENVIRONMENT_PRESETS.find((p) => p.id === environmentPreset)?.label || 'Environment';
 
   return (
     <div className="relative inline-flex items-center" ref={containerRef}>
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        title={`Entorno de Iluminación y Reflejos: ${currentEnvLabel}`}
+        title={`Lighting & Reflection Environment: ${currentEnvLabel}`}
         className={`h-6 px-1.5 rounded-xs transition-colors flex items-center gap-1 text-xs font-medium border cursor-pointer select-none ${
           isOpen
             ? 'bg-action/15 text-action border-action/40'
@@ -133,21 +133,21 @@ export const EnvironmentHdriItem: React.FC<EnvironmentHdriItemProps> = ({ compac
       {isOpen && (
         <div className={`absolute ${getDropdownPlacementClass(placement)} w-52 rounded-xs bg-surface-lowest border border-hairline shadow-xl p-1 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100`}>
           <div className="px-2.5 py-1 text-[10px] font-primary font-bold text-ink-tertiary uppercase tracking-wider border-b border-hairline mb-1">
-            Entorno de Taller (HDRI)
+            Studio Environment (HDRI)
           </div>
 
           {/* Toggle 360 Scene Background */}
           <div className="px-2.5 py-1.5 border-b border-hairline mb-1 flex items-center justify-between">
-            <span className="text-xs text-ink-primary font-medium">Fondo 360°</span>
+            <span className="text-xs text-ink-primary font-medium">360° Backdrop</span>
             <Switch
               checked={showEnvironmentBackground}
               onChange={toggleEnvironmentBackground}
-              title={showEnvironmentBackground ? 'Ocultar fondo 360°' : 'Mostrar fondo 360°'}
+              title={showEnvironmentBackground ? 'Hide 360° backdrop' : 'Show 360° backdrop'}
             />
           </div>
 
           <div className="px-2.5 py-1 text-[10px] font-primary font-bold text-ink-tertiary uppercase tracking-wider">
-            Presets de Taller
+            Studio Presets
           </div>
 
           {visiblePresets.map((preset) => {
@@ -176,7 +176,7 @@ export const EnvironmentHdriItem: React.FC<EnvironmentHdriItemProps> = ({ compac
               type="button"
               onClick={() => setExpandedPresets((prev) => !prev)}
               className="w-full py-1 rounded-xs text-center text-xs text-ink-tertiary hover:text-ink-primary hover:bg-surface-container flex items-center justify-center gap-1 transition-colors cursor-pointer"
-              title={expandedPresets ? 'Mostrar menos presets' : 'Mostrar más presets'}
+              title={expandedPresets ? 'Show fewer presets' : 'Show more presets'}
             >
               <MoreHorizontal className="w-3.5 h-3.5" />
             </button>
@@ -185,7 +185,7 @@ export const EnvironmentHdriItem: React.FC<EnvironmentHdriItemProps> = ({ compac
           {customHdrs.length > 0 && (
             <>
               <div className="border-t border-hairline my-1 pt-1 px-2.5 py-1 text-[10px] font-primary font-bold text-ink-tertiary uppercase tracking-wider">
-                Mis Entornos
+                Custom Environments
               </div>
               <div className="max-h-36 overflow-y-auto flex flex-col gap-0.5">
                 {visibleCustomHdrs.map((hdr) => {
@@ -214,7 +214,7 @@ export const EnvironmentHdriItem: React.FC<EnvironmentHdriItemProps> = ({ compac
                         <button
                           type="button"
                           onClick={(e) => handleDeleteCustomHdr(e, hdr.name)}
-                          title={`Eliminar ${hdr.displayName || hdr.name}`}
+                          title={`Delete ${hdr.displayName || hdr.name}`}
                           className="opacity-0 group-hover:opacity-100 hover:text-red-500 text-ink-tertiary p-0.5 rounded transition-opacity"
                         >
                           <Trash2 className="w-3 h-3" />
@@ -229,7 +229,7 @@ export const EnvironmentHdriItem: React.FC<EnvironmentHdriItemProps> = ({ compac
                     type="button"
                     onClick={() => setExpandedCustom((prev) => !prev)}
                     className="w-full py-1 rounded-xs text-center text-xs text-ink-tertiary hover:text-ink-primary hover:bg-surface-container flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                    title={expandedCustom ? 'Mostrar menos entornos' : 'Mostrar más entornos'}
+                    title={expandedCustom ? 'Show fewer environments' : 'Show more environments'}
                   >
                     <MoreHorizontal className="w-3.5 h-3.5" />
                   </button>
@@ -243,10 +243,10 @@ export const EnvironmentHdriItem: React.FC<EnvironmentHdriItemProps> = ({ compac
               type="button"
               onClick={handlePickCustomHdr}
               className="w-full px-2 py-1.5 rounded-xs text-left text-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-container flex items-center gap-2 transition-colors cursor-pointer"
-              title="Cargar archivo .hdr personalizado a biblioteca local"
+              title="Load custom .hdr file into local library"
             >
               <FolderOpen className="w-3.5 h-3.5 text-action" />
-              <span className="truncate">Cargar HDR...</span>
+              <span className="truncate">Load HDR...</span>
             </button>
           </div>
         </div>

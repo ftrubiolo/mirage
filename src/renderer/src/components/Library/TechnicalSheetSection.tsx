@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box } from 'lucide-react';
-import { LibraryEntry } from '../../types/library';
+import { LibraryEntry, MODEL_CATEGORY_LABELS, ENTRY_STATUS_LABELS } from '../../types/library';
 import { ResizeHandle, StatusBadge, StatusVariant, Badge } from '../UI';
 
 export interface TechnicalSheetSectionProps {
@@ -28,19 +28,22 @@ export const TechnicalSheetSection: React.FC<TechnicalSheetSectionProps> = ({
     switch (currentEntry.status) {
       case 'active':
         return 'active';
-      case 'workshop':
-        return 'workshop';
+      case 'wip':
+        return 'wip';
       case 'pending':
         return 'pending';
-      case 'madeToOrder':
-        return 'madeToOrder';
-      case 'dispatched':
-        return 'dispatched';
+      case 'approved':
+        return 'approved';
+      case 'published':
+        return 'published';
       case 'neutral':
       default:
         return 'neutral';
     }
   })();
+
+  const statusLabel = ENTRY_STATUS_LABELS[currentEntry.status] || 'In Progress';
+  const categoryLabel = MODEL_CATEGORY_LABELS[currentEntry.category] || '3D Asset';
 
   return (
     <aside
@@ -54,9 +57,9 @@ export const TechnicalSheetSection: React.FC<TechnicalSheetSectionProps> = ({
         isDragging={isDragging}
         onMouseDown={handleMouseDown}
         onDoubleClick={handleReset}
-        title="Arrastra para redimensionar ficha técnica (Doble clic para restablecer)"
+        title="Drag to resize technical sheet (Double-click to reset)"
       />
-      {/* Main Piece Render Thumbnail */}
+      {/* Main Model Render Thumbnail */}
       <div className="aspect-4/3 bg-canvas-stone/40 border border-hairline rounded-xs flex items-center justify-center overflow-hidden relative group">
         {currentEntry.posterUrl ? (
           <img
@@ -67,32 +70,32 @@ export const TechnicalSheetSection: React.FC<TechnicalSheetSectionProps> = ({
         ) : (
           <div className="flex flex-col items-center justify-center text-ink-tertiary gap-1">
             <Box className="w-12 h-12 stroke-[1.25]" />
-            <span className="text-[10px] font-mono uppercase tracking-wider">Sin póster renderizado</span>
+            <span className="text-[10px] font-mono uppercase tracking-wider">No rendered poster</span>
           </div>
         )}
 
         {isPieceInWorkbench && (
           <Badge variant="action" className="absolute top-2.5 left-2.5 shadow-xs">
-            En Mesa 3D
+            In Workbench
           </Badge>
         )}
       </div>
 
-      {/* Piece Overview Details */}
+      {/* Model Overview Details */}
       <div className="space-y-4">
         <div>
           <span className="text-[10px] font-primary font-semibold uppercase tracking-wider text-ink-tertiary block">
-            Ficha Técnica
+            Technical Sheet
           </span>
           <h2 className="font-primary font-bold text-lg text-ink-primary">
             {currentEntry.title}
           </h2>
           <div className="flex items-center gap-2 mt-1">
             <StatusBadge variant={statusVariant}>
-              {currentEntry.status || 'Workshop'}
+              {statusLabel}
             </StatusBadge>
-            <span className="text-[11px] font-mono text-ink-secondary capitalize">
-              {currentEntry.category || 'Mobiliario'}
+            <span className="text-[11px] font-mono text-ink-secondary">
+              {categoryLabel}
             </span>
           </div>
         </div>
@@ -100,15 +103,15 @@ export const TechnicalSheetSection: React.FC<TechnicalSheetSectionProps> = ({
         {/* Metrology and 3D Model Specs */}
         <div className="p-3.5 bg-surface-low border border-hairline rounded-xs space-y-2.5 text-xs font-mono tabular-nums">
           <div className="flex items-center justify-between text-ink-secondary">
-            <span>Archivo 3D:</span>
+            <span>3D File:</span>
             <span className="text-ink-primary font-medium truncate max-w-[180px]">
-              {currentEntry.modelFileName || (currentEntry.modelFilePath ? currentEntry.modelFilePath.split(/[/\\]/).pop() : 'Ninguno')}
+              {currentEntry.modelFileName || (currentEntry.modelFilePath ? currentEntry.modelFilePath.split(/[/\\]/).pop() : 'None')}
             </span>
           </div>
 
           {currentEntry.modelFileSize ? (
             <div className="flex items-center justify-between text-ink-secondary">
-              <span>Peso Binario:</span>
+              <span>File Size:</span>
               <span className="text-ink-primary font-medium">
                 {(currentEntry.modelFileSize / (1024 * 1024)).toFixed(2)} MB
               </span>
@@ -117,7 +120,7 @@ export const TechnicalSheetSection: React.FC<TechnicalSheetSectionProps> = ({
 
           {currentEntry.dimensions ? (
             <div className="flex items-center justify-between text-ink-secondary">
-              <span>Dimensiones:</span>
+              <span>Dimensions:</span>
               <span className="text-ink-primary font-bold">
                 {currentEntry.dimensions.width} × {currentEntry.dimensions.height} × {currentEntry.dimensions.depth} m
               </span>
@@ -127,13 +130,13 @@ export const TechnicalSheetSection: React.FC<TechnicalSheetSectionProps> = ({
           {currentEntry.stats && (
             <>
               <div className="flex items-center justify-between text-ink-secondary">
-                <span>Polígonos (Triángulos):</span>
+                <span>Polygons (Triangles):</span>
                 <span className="text-ink-primary font-medium">
                   {currentEntry.stats.triangleCount.toLocaleString()} △
                 </span>
               </div>
               <div className="flex items-center justify-between text-ink-secondary">
-                <span>Vértices:</span>
+                <span>Vertices:</span>
                 <span className="text-ink-primary font-medium">
                   {currentEntry.stats.vertexCount.toLocaleString()} vtx
                 </span>
@@ -142,9 +145,9 @@ export const TechnicalSheetSection: React.FC<TechnicalSheetSectionProps> = ({
           )}
 
           <div className="flex items-center justify-between text-ink-secondary border-t border-hairline pt-2">
-            <span>Perfiles Registrados:</span>
+            <span>Registered Profiles:</span>
             <span className="text-action font-bold">
-              {rawVariantsCount} acabados
+              {rawVariantsCount} {rawVariantsCount === 1 ? 'variant' : 'variants'}
             </span>
           </div>
         </div>
@@ -153,7 +156,7 @@ export const TechnicalSheetSection: React.FC<TechnicalSheetSectionProps> = ({
         {currentEntry.description ? (
           <div className="space-y-1">
             <span className="text-[10px] font-primary font-semibold uppercase tracking-wider text-ink-tertiary block">
-              Notas de Acabado / Especificación
+              Specification &amp; Finish Notes
             </span>
             <p className="text-xs font-body text-ink-secondary leading-relaxed bg-surface-low p-3 rounded-xs border border-hairline">
               {currentEntry.description}

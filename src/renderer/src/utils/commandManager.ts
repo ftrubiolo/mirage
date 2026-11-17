@@ -63,7 +63,7 @@ export class SetPbrPropertyCommand implements Command {
       throw new Error(`Unknown material property: ${String(property)}`);
     }
     this.key = property;
-    this.name = `Ajustar ${property} a ${nextValue}`;
+    this.name = `Set ${property} to ${nextValue}`;
   }
 
   execute() {
@@ -82,7 +82,7 @@ export class SetEnvironmentPresetCommand implements Command {
   private previousPreset: EnvironmentPreset | undefined;
 
   constructor(private nextPreset: EnvironmentPreset) {
-    this.name = `Cambiar entorno a ${nextPreset}`;
+    this.name = `Switch environment to ${nextPreset}`;
   }
 
   execute() {
@@ -102,7 +102,7 @@ export class ToggleSlotEnabledCommand implements Command {
   private previousEnabled: boolean | undefined;
 
   constructor(private slot: SlotName, private nextEnabled: boolean) {
-    this.name = `Alternar ranura ${slot} a ${nextEnabled ? 'activa' : 'inactiva'}`;
+    this.name = `Toggle slot ${slot} ${nextEnabled ? 'on' : 'off'}`;
   }
 
   execute() {
@@ -122,7 +122,7 @@ export class SetModelRotationCommand implements Command {
   private previousRotation: ModelRotation | undefined;
 
   constructor(private nextRotation: ModelRotation, previousRotation?: ModelRotation) {
-    this.name = `Rotar modelo a [${nextRotation.x}°, ${nextRotation.y}°, ${nextRotation.z}°]`;
+    this.name = `Rotate model to [${nextRotation.x}°, ${nextRotation.y}°, ${nextRotation.z}°]`;
     this.previousRotation = previousRotation ? { ...previousRotation } : undefined;
   }
 
@@ -144,7 +144,7 @@ export class SetModelPositionCommand implements Command {
   private previousPosition: ModelPosition | undefined;
 
   constructor(private nextPosition: ModelPosition, previousPosition?: ModelPosition) {
-    this.name = `Mover modelo a [${nextPosition.x.toFixed(2)}, ${nextPosition.y.toFixed(2)}, ${nextPosition.z.toFixed(2)}]`;
+    this.name = `Move model to [${nextPosition.x.toFixed(2)}, ${nextPosition.y.toFixed(2)}, ${nextPosition.z.toFixed(2)}]`;
     this.previousPosition = previousPosition ? { ...previousPosition } : undefined;
   }
 
@@ -222,11 +222,11 @@ export class CommandManager {
     for (const l of this.changeListeners) l();
   }
 
-  public beginTransaction(name = 'Operación del Agente') {
+  public beginTransaction(name = 'Agent Operation') {
     this.activeTransaction = [];
   }
 
-  public async commitTransaction(name = 'Operación del Agente') {
+  public async commitTransaction(name = 'Agent Operation') {
     if (!this.activeTransaction || this.activeTransaction.length === 0) {
       this.activeTransaction = null;
       return;

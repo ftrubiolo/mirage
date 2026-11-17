@@ -13,8 +13,8 @@ interface CanvasSnapshotWidgetProps {
 const RESOLUTION_OPTIONS: Array<{ id: '1080p' | '4k' | 'square' | 'viewport'; label: string; desc: string }> = [
   { id: '1080p', label: '1080p', desc: '1920 × 1080 FHD' },
   { id: '4k', label: '4K UHD', desc: '3840 × 2160 UHD' },
-  { id: 'square', label: '1:1', desc: '1080 × 1080 Cuadrado' },
-  { id: 'viewport', label: 'Visor', desc: 'Resolución Actual' }
+  { id: 'square', label: '1:1', desc: '1080 × 1080 Square' },
+  { id: 'viewport', label: 'Viewport', desc: 'Current Size' }
 ];
 
 export const CanvasSnapshotWidget: React.FC<CanvasSnapshotWidgetProps> = ({
@@ -73,7 +73,7 @@ export const CanvasSnapshotWidget: React.FC<CanvasSnapshotWidgetProps> = ({
 
       const a = document.createElement('a');
       a.href = snap.dataUrl;
-      a.download = `mirage-atelier-${Date.now()}.${snapshotFormat}`;
+      a.download = `mirage-snapshot-${Date.now()}.${snapshotFormat}`;
       a.click();
     } catch (err) {
       console.warn('[CanvasSnapshotWidget] Snapshot capture error:', err);
@@ -94,8 +94,8 @@ export const CanvasSnapshotWidget: React.FC<CanvasSnapshotWidgetProps> = ({
           onClick={handleCapture}
           disabled={isCapturing}
           className={`${isVertical ? 'w-full' : 'w-11'} h-11 flex items-center justify-center border transition-colors cursor-pointer relative group bg-surface-container/30 border-hairline text-ink-secondary hover:text-action hover:bg-surface-high hover:border-hairline-strong active:bg-action/20 disabled:opacity-50`}
-          title={`Capturar imagen ${snapshotFormat.toUpperCase()} (${snapshotResolution})`}
-          aria-label="Capturar imagen"
+          title={`Capture ${snapshotFormat.toUpperCase()} image (${snapshotResolution})`}
+          aria-label="Capture image"
         >
           {isCapturing ? (
             <Loader2 size={20} className="animate-spin text-action" />
@@ -112,8 +112,8 @@ export const CanvasSnapshotWidget: React.FC<CanvasSnapshotWidgetProps> = ({
               ? 'bg-action/20 border-action text-action shadow-xs ring-1 ring-action/50'
               : 'bg-surface-container/30 border-hairline text-ink-secondary hover:text-ink-primary hover:bg-surface-high hover:border-hairline-strong'
           }`}
-          title={snapshotTransparent ? 'Fondo transparente activo' : 'Fondo opaco activo'}
-          aria-label="Alternar fondo transparente"
+          title={snapshotTransparent ? 'Transparent background enabled' : 'Opaque background enabled'}
+          aria-label="Toggle transparent background"
         >
           <Layers size={20} className={snapshotTransparent ? 'text-action' : 'text-ink-secondary group-hover:text-ink-primary'} />
         </button>
@@ -136,12 +136,12 @@ export const CanvasSnapshotWidget: React.FC<CanvasSnapshotWidgetProps> = ({
         ) : (
           <Download size={15} />
         )}
-        <span>{isCapturing ? 'Procesando captura...' : 'Exportar Imagen'}</span>
+        <span>{isCapturing ? 'Capturing...' : 'Export Image'}</span>
       </button>
 
       {/* Resolution Selector */}
       <div className="p-2 rounded-xs bg-surface-container/30 border border-hairline space-y-1.5">
-        <div className="text-[10px] text-ink-tertiary font-mono uppercase tracking-wider">Resolución de Salida</div>
+        <div className="text-[10px] text-ink-tertiary font-mono uppercase tracking-wider">Output Resolution</div>
         <div className="grid grid-cols-2 gap-1">
           {RESOLUTION_OPTIONS.map((opt) => (
             <button
@@ -165,7 +165,7 @@ export const CanvasSnapshotWidget: React.FC<CanvasSnapshotWidgetProps> = ({
       <div className="p-2 rounded-xs bg-surface-container/30 border border-hairline space-y-2">
         {/* Format Selector */}
         <div className="flex items-center justify-between text-[11px]">
-          <span className="text-ink-secondary font-medium">Formato</span>
+          <span className="text-ink-secondary font-medium">Format</span>
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -196,7 +196,7 @@ export const CanvasSnapshotWidget: React.FC<CanvasSnapshotWidgetProps> = ({
         <div className="flex items-center justify-between text-[11px] pt-1 border-t border-hairline/60">
           <div className="flex items-center gap-1.5 text-ink-secondary">
             <Layers size={13} />
-            <span>Fondo Transparente</span>
+            <span>Transparent Background</span>
           </div>
           <button
             type="button"
@@ -207,7 +207,7 @@ export const CanvasSnapshotWidget: React.FC<CanvasSnapshotWidgetProps> = ({
                 : 'bg-surface-container border-hairline text-ink-tertiary hover:text-ink-primary'
             }`}
           >
-            {snapshotTransparent ? 'ACTIVADO' : 'DESACTIVADO'}
+            {snapshotTransparent ? 'ON' : 'OFF'}
           </button>
         </div>
       </div>

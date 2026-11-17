@@ -40,10 +40,10 @@ export const PbrMapsStudio: React.FC = React.memo(() => {
           <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-ink-primary flex items-center gap-1.5">
               <Layers className="w-4 h-4 text-action" />
-              Material Activo
+              Active Material
             </span>
             <span className="text-[10px] text-ink-muted">
-              {modelStats.materials.length} materiales detectados
+              {modelStats.materials.length} materials detected
             </span>
           </div>
           <div className="flex flex-wrap gap-1.5 pt-0.5">
@@ -79,7 +79,7 @@ export const PbrMapsStudio: React.FC = React.memo(() => {
                       className={`px-1.5 py-0.2 text-[9px] rounded-full font-mono ${
                         isActive ? 'bg-white/25 text-white' : 'bg-surface-highest text-ink-primary'
                       }`}
-                      title={`${mapCount} mapa(s) asignado(s)`}
+                      title={`${mapCount} assigned map(s)`}
                     >
                       {mapCount}
                     </span>
@@ -92,7 +92,7 @@ export const PbrMapsStudio: React.FC = React.memo(() => {
           {/* Active Material Action Bar */}
           <div className="flex items-center justify-between pt-1.5 border-t border-hairline/60 text-[11px]">
             <span className="text-ink-muted truncate">
-              Editando: <strong className="text-ink-primary font-mono">{activeMaterialName || modelStats.materials[0]}</strong>
+              Editing: <strong className="text-ink-primary font-mono">{activeMaterialName || modelStats.materials[0]}</strong>
             </span>
             <button
               type="button"
@@ -103,34 +103,34 @@ export const PbrMapsStudio: React.FC = React.memo(() => {
                 restoreActiveMaterialOriginal(origDefaults);
               }}
               className="flex items-center gap-1 text-ink-secondary hover:text-action transition-colors px-1.5 py-0.5 rounded-xs hover:bg-surface-low cursor-pointer"
-              title="Restaurar color y configuración original del GLB para este material"
+              title="Restore original GLB color and parameters for this material"
             >
               <RotateCcw className="w-3 h-3" />
-              <span>Restaurar original del .glb</span>
+              <span>Restore .glb original</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Switch: Cargar desde Caché (.glb) */}
+      {/* Switch: Load from Cache (.glb) */}
       <div className="p-3 rounded-xs bg-surface-lowest border border-hairline flex items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-2.5 min-w-0">
           <Database className="w-4 h-4 text-action shrink-0" />
           <div className="min-w-0">
             <span className="text-xs font-semibold text-ink-primary block truncate">
-              Cargar desde Caché
+              Load from Cache
             </span>
             <span className="text-[10px] text-ink-secondary block truncate">
               {loadFromCache
-                ? 'Activo: Usa texturas nativas del binario en slots vacíos'
-                : 'Inactivo: Comportamiento estándar'}
+                ? 'Active: Uses embedded binary textures in empty slots'
+                : 'Inactive: Standard behavior'}
             </span>
           </div>
         </div>
         <Switch
           checked={loadFromCache}
           onChange={setLoadFromCache}
-          title={loadFromCache ? 'Desactivar carga desde caché' : 'Activar carga desde caché'}
+          title={loadFromCache ? 'Disable load from cache' : 'Enable load from cache'}
         />
       </div>
 

@@ -9,7 +9,7 @@ export const AutoRotateItem: React.FC = () => {
   return (
     <button
       onClick={toggleAutoRotate}
-      title={autoRotate ? 'Detener giro continuo de 360°' : 'Activar giro continuo de 360°'}
+      title={autoRotate ? 'Stop continuous 360° orbit' : 'Enable continuous 360° orbit'}
       className={`p-1.5 rounded-xs transition-colors flex items-center text-xs border cursor-pointer ${
         autoRotate
           ? 'bg-action/15 text-action border-action/40'

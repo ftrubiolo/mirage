@@ -204,7 +204,7 @@ describe('glTF Animation Playback & Controls System', () => {
       });
 
       // Play/Pause button
-      const playPauseBtn = container.querySelector('button[title*="Pausar"]');
+      const playPauseBtn = container.querySelector('button[title*="Pause"]');
       expect(playPauseBtn).toBeTruthy();
 
       // Scrubber slider
@@ -219,7 +219,7 @@ describe('glTF Animation Playback & Controls System', () => {
       expect(container.textContent).toContain('1x');
 
       // Loop button
-      const loopBtn = container.querySelector('button[title*="Repetir en bucle"]');
+      const loopBtn = container.querySelector('button[title*="Loop playback"]');
       expect(loopBtn).toBeTruthy();
     });
 
@@ -230,7 +230,7 @@ describe('glTF Animation Playback & Controls System', () => {
         root.render(<AnimationControlsItem />);
       });
 
-      const playPauseBtn = container.querySelector('button[title*="Pausar"]') as HTMLButtonElement;
+      const playPauseBtn = container.querySelector('button[title*="Pause"]') as HTMLButtonElement;
       expect(playPauseBtn).toBeTruthy();
 
       act(() => {
@@ -238,7 +238,7 @@ describe('glTF Animation Playback & Controls System', () => {
       });
 
       expect(useViewportStore.getState().isAnimationPlaying).toBe(false);
-      expect(container.querySelector('button[title*="Reproducir"]')).toBeTruthy();
+      expect(container.querySelector('button[title*="Play"]')).toBeTruthy();
     });
 
     it('renders multi-clip selector dropdown when more than 1 clip is present', () => {
@@ -252,7 +252,7 @@ describe('glTF Animation Playback & Controls System', () => {
       });
 
       // Dropdown trigger button
-      const dropdownBtn = container.querySelector('button[title="Seleccionar animación"]') as HTMLButtonElement;
+      const dropdownBtn = container.querySelector('button[title="Select animation"]') as HTMLButtonElement;
       expect(dropdownBtn).toBeTruthy();
       expect(dropdownBtn.textContent).toContain('Clip A');
 

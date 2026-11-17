@@ -562,10 +562,10 @@ export const Canvas3D: React.FC = React.memo(() => {
               </div>
               <div className="space-y-1">
                 <span className="text-xs font-primary font-bold uppercase tracking-wider text-ink-primary block">
-                  Soltar en Visor 3D
+                  Drop into 3D Viewport
                 </span>
                 <span className="text-[11px] text-ink-secondary block">
-                  Auto-asignación de mapas PBR (_baseColor, _normal, _orm...) o modelo .glb
+                  Auto-assign PBR maps (_baseColor, _normal, _orm...) or .glb model
                 </span>
               </div>
             </div>
@@ -673,18 +673,18 @@ export const Canvas3D: React.FC = React.memo(() => {
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-canvas/90 select-none">
           <div className="p-6 rounded-xs bg-surface-lowest border border-rose-500/40 shadow-lg flex flex-col items-center gap-3 max-w-sm text-center">
             <span className="text-xs font-primary font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-              Contexto WebGL perdido
+              WebGL Context Lost
             </span>
             <p className="text-xs text-ink-secondary font-body">
-              El controlador gráfico ha reiniciado el contexto de render. Se restaurará
-              automáticamente; si no ocurre, reinicia la aplicación.
+              The graphics driver reset the rendering context. It will restore automatically;
+              if not, reload the application.
             </p>
             <Button
               variant="primary"
               size="sm"
               onClick={() => window.location.reload()}
             >
-              Reiniciar aplicación
+              Reload App
             </Button>
           </div>
         </div>
@@ -699,10 +699,10 @@ export const Canvas3D: React.FC = React.memo(() => {
 
             <div className="space-y-1">
               <span className="text-xs font-primary font-bold uppercase tracking-wider text-ink-primary block">
-                Cargando Pieza 3D
+                Loading 3D Model
               </span>
               <span className="text-[11px] font-mono text-ink-secondary block truncate max-w-[220px]">
-                {productName || 'Inicializando geometría y texturas...'}
+                {productName || 'Initializing geometry & textures...'}
               </span>
             </div>
 
@@ -710,7 +710,7 @@ export const Canvas3D: React.FC = React.memo(() => {
               onClick={() => useModelStore.getState().setIsModelLoading(false)}
               className="mt-1 text-[10px] font-mono text-ink-tertiary hover:text-ink-primary underline underline-offset-2 transition-colors cursor-pointer"
             >
-              Omitir espera
+              Dismiss overlay
             </button>
           </div>
         </div>
@@ -724,8 +724,8 @@ export const Canvas3D: React.FC = React.memo(() => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
             </div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-ink-primary">Atelier 3D Sera</p>
-            <p className="text-xs text-ink-secondary mt-1">Arrastra un archivo .glb o mapas de textura (_baseColor, _normal, _orm...)</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-primary">Mirage 3D Viewport</p>
+            <p className="text-xs text-ink-secondary mt-1">Drop a .glb model or PBR texture maps (_baseColor, _normal, _orm...)</p>
           </div>
         )}
       </div>

@@ -8,7 +8,7 @@ export const FitModelItem: React.FC = () => {
   return (
     <button
       onClick={triggerFitToModel}
-      title="Reencuadrar cámara a escala 1:1 (Ctrl+0)"
+      title="Reframe camera 1:1 (Ctrl+0)"
       className="p-1.5 rounded-xs transition-colors text-ink-secondary hover:text-ink-primary hover:bg-surface-container border border-transparent cursor-pointer"
     >
       <Maximize2 className="w-3.5 h-3.5" />

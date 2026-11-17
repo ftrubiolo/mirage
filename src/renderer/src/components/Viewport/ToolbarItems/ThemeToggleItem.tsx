@@ -11,8 +11,8 @@ export const ThemeToggleItem: React.FC = () => {
       onClick={toggleViewportTheme}
       title={
         viewportTheme === 'dark'
-          ? 'Cambiar fondo del visor a Modo Claro'
-          : 'Cambiar fondo del visor a Modo Oscuro'
+          ? 'Switch viewport background to Light mode'
+          : 'Switch viewport background to Dark mode'
       }
       className="p-1.5 rounded-xs transition-colors flex items-center text-xs text-ink-secondary hover:text-ink-primary hover:bg-surface-container border border-transparent cursor-pointer"
     >

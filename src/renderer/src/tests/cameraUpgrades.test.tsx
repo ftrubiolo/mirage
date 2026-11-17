@@ -86,9 +86,9 @@ describe('Camera Controls & Positioning System Upgrades', () => {
         root.render(<CanvasCameraWidget />);
       });
 
-      const baseBtn = container.querySelector('button[title*="Inferior (Base)"]') as HTMLButtonElement;
+      const baseBtn = container.querySelector('button[title*="Bottom (Base)"]') as HTMLButtonElement;
       expect(baseBtn).toBeTruthy();
-      expect(baseBtn.textContent).toBe('Base');
+      expect(baseBtn.textContent).toBe('Bottom');
 
       act(() => {
         baseBtn.click();
@@ -102,14 +102,14 @@ describe('Camera Controls & Positioning System Upgrades', () => {
         root.render(<CameraOrientationItem />);
       });
 
-      const triggerBtn = container.querySelector('button[title*="Orientación de cámara"]') as HTMLButtonElement;
+      const triggerBtn = container.querySelector('button[title*="CAD camera orientation"]') as HTMLButtonElement;
       expect(triggerBtn).toBeTruthy();
 
       act(() => {
         triggerBtn.click();
       });
 
-      expect(container.textContent).toContain('Inferior (Base)');
+      expect(container.textContent).toContain('Bottom (Base)');
       expect(container.textContent).toContain('Ctrl+7');
     });
   });

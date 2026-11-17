@@ -9,7 +9,7 @@ export const LightingIntensityItem: React.FC = () => {
   return (
     <div
       className="flex items-center gap-1.5 px-1.5 text-xs text-ink-secondary"
-      title={`Intensidad de iluminación: ${environmentIntensity.toFixed(1)}x`}
+      title={`Lighting intensity: ${environmentIntensity.toFixed(1)}x`}
     >
       <Sun className="w-3.5 h-3.5 text-action shrink-0" />
       <input

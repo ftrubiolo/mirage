@@ -9,7 +9,15 @@ import {
 import { serializeSceneForPrompt } from '../agent/sceneSerializer';
 import { MIRAGE_INTERNAL_TOOLS, getOpenAIToolsDeclarations } from '../agent/toolRegistry';
 import { commandManager } from '../utils/commandManager';
+import { readMigratedStorage } from '../utils/storageMigration';
 import { usePbrMaterialStore } from './pbrMaterialStore';
+
+const AI_PROVIDERS_KEY = 'mirage-ai-providers';
+const LEGACY_AI_PROVIDERS_KEY = 'sera-ai-providers';
+const AI_SESSIONS_KEY = 'mirage-ai-sessions';
+const LEGACY_AI_SESSIONS_KEY = 'sera-ai-sessions';
+const AI_ACTIVE_SESSION_KEY = 'mirage-ai-active-session-id';
+const LEGACY_AI_ACTIVE_SESSION_KEY = 'sera-ai-active-session-id';
 
 interface AgentState {
   providers: AIProviderConfig[];
@@ -43,20 +51,20 @@ interface AgentState {
 const getStoredProviders = (): AIProviderConfig[] => {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem('sera-ai-providers');
+    const raw = readMigratedStorage(AI_PROVIDERS_KEY, LEGACY_AI_PROVIDERS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {
-    console.warn('Failed to parse sera-ai-providers:', e);
+    console.warn('Failed to parse mirage-ai-providers:', e);
   }
   return [];
 };
 
 const createInitialSession = (): SessionItem => ({
   id: 'session-default',
-  title: 'Sesión Principal',
+  title: 'Main Session',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   messages: []
@@ -65,13 +73,13 @@ const createInitialSession = (): SessionItem => ({
 const getStoredSessions = (): SessionItem[] => {
   if (typeof window === 'undefined') return [createInitialSession()];
   try {
-    const raw = localStorage.getItem('sera-ai-sessions');
+    const raw = readMigratedStorage(AI_SESSIONS_KEY, LEGACY_AI_SESSIONS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
   } catch (e) {
-    console.warn('Failed to parse sera-ai-sessions:', e);
+    console.warn('Failed to parse mirage-ai-sessions:', e);
   }
   return [createInitialSession()];
 };
@@ -79,10 +87,10 @@ const getStoredSessions = (): SessionItem[] => {
 const getStoredActiveSessionId = (sessions: SessionItem[]): string => {
   if (typeof window === 'undefined') return sessions[0]?.id || 'session-default';
   try {
-    const stored = localStorage.getItem('sera-ai-active-session-id');
+    const stored = readMigratedStorage(AI_ACTIVE_SESSION_KEY, LEGACY_AI_ACTIVE_SESSION_KEY);
     if (stored && sessions.some((s) => s.id === stored)) return stored;
   } catch (e) {
-    console.warn('Failed to parse sera-ai-active-session-id:', e);
+    console.warn('Failed to parse mirage-ai-active-session-id:', e);
   }
   return sessions[0]?.id || 'session-default';
 };
@@ -90,12 +98,12 @@ const getStoredActiveSessionId = (sessions: SessionItem[]): string => {
 const saveSessionsToStorage = (sessions: SessionItem[], activeId?: string) => {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem('sera-ai-sessions', JSON.stringify(sessions));
+    localStorage.setItem(AI_SESSIONS_KEY, JSON.stringify(sessions));
     if (activeId) {
-      localStorage.setItem('sera-ai-active-session-id', activeId);
+      localStorage.setItem(AI_ACTIVE_SESSION_KEY, activeId);
     }
   } catch (e) {
-    console.warn('Failed to save sera-ai-sessions:', e);
+    console.warn('Failed to save mirage-ai-sessions:', e);
   }
 };
 
@@ -211,7 +219,7 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       updated.push(updatedProvider);
     }
 
-    localStorage.setItem('sera-ai-providers', JSON.stringify(updated));
+    localStorage.setItem(AI_PROVIDERS_KEY, JSON.stringify(updated));
 
     // If no active provider, select this one
     const activeId = get().activeProviderId || updatedProvider.id;
@@ -231,7 +239,7 @@ export const useAgentStore = create<AgentState>((set, get) => ({
     }
 
     const updated = get().providers.filter((p) => p.id !== providerId);
-    localStorage.setItem('sera-ai-providers', JSON.stringify(updated));
+    localStorage.setItem(AI_PROVIDERS_KEY, JSON.stringify(updated));
 
     const nextActive = updated.find((p) => p.hasKey);
     set({
@@ -275,7 +283,7 @@ export const useAgentStore = create<AgentState>((set, get) => ({
     const { activeProviderId, activeModel, sessions } = get();
     const newSession: SessionItem = {
       id: `session-${Date.now()}`,
-      title: title || `Sesión ${sessions.length + 1}`,
+      title: title || `Session ${sessions.length + 1}`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       providerId: activeProviderId || undefined,
@@ -407,7 +415,7 @@ export const useAgentStore = create<AgentState>((set, get) => ({
       const errorMsg: ChatMessage = {
         id: `err-${Date.now()}`,
         role: 'assistant',
-        content: 'No hay un proveedor de IA configurado o activo con clave válida. Por favor ve a Configuración > Modelos & Proveedores IA para conectar uno.',
+        content: 'No active AI provider configured with a valid API key. Please go to Settings > AI Models & Providers to connect one.',
         timestamp: new Date().toLocaleTimeString()
       };
       set((state) => ({
@@ -443,9 +451,14 @@ export const useAgentStore = create<AgentState>((set, get) => ({
     const curSession = sessions.find((s) => s.id === activeSessionId);
     const isFirstPrompt = !curSession || curSession.messages.filter((m) => m.role === 'user').length === 0;
     const autoTitle =
-      isFirstPrompt && curSession && (curSession.title.startsWith('Sesión') || curSession.title === 'Sesión Principal')
+      isFirstPrompt &&
+      curSession &&
+      (curSession.title.startsWith('Session') ||
+        curSession.title === 'Main Session' ||
+        curSession.title.startsWith('Sesión') ||
+        curSession.title === 'Sesión Principal')
         ? text.slice(0, 36).trim()
-        : curSession?.title || 'Sesión';
+        : curSession?.title || 'Session';
 
     const updatedSessions = sessions.map((s) =>
       s.id === activeSessionId
@@ -480,15 +493,15 @@ export const useAgentStore = create<AgentState>((set, get) => ({
         content: m.content
       }));
 
-      const systemPrompt = `Eres el Agente Asistente Técnico y Artístico de Mirage 3D Workbench (Sera Atelier).
-Tu misión es ayudar a diseñadores, artistas técnicos y fabricantes a inspeccionar mallas 3D, configurar materiales PBR hiperrealistas (MeshPhysicalMaterial), auditar geometría para web y automatizar flujos de trabajo.
+      const systemPrompt = `You are the Technical & Artistic Assistant Agent for Mirage 3D Workbench.
+Your mission is to help designers, technical artists, and creators inspect 3D meshes, configure photorealistic PBR materials (MeshPhysicalMaterial), audit geometry for web delivery, and automate studio workflows.
 
 ${scenePrompt}
 
-Instrucciones Críticas:
-1. Responde de forma técnica, precisa y concisa en Markdown.
-2. Si el usuario solicita un ajuste de material, iluminación o pase de render, utiliza las herramientas disponibles (function calling).
-3. Si recomiendas cambios en valores PBR (rugosidad, metalicidad, normal, etc.), explica brevemente la justificación física (ej: dieléctrico vs conductor, reflexión especular, microtextura).`;
+Critical Instructions:
+1. Respond concisely and technically in Markdown.
+2. When the user requests a material, lighting, or render-pass adjustment, use the available tools (function calling).
+3. When recommending changes to PBR values (roughness, metalness, normal scale, etc.), briefly explain the physical rationale (e.g. dielectric vs. conductor, specular reflection, micro-surface detail).`;
 
       const tools = getOpenAIToolsDeclarations(mcpTools);
 
@@ -664,7 +677,7 @@ Instrucciones Críticas:
                                         type: 'think' as const,
                                         title:
                                           streamedThought.split('\n')[0].slice(0, 80) ||
-                                          'Razonamiento técnico',
+                                          'Technical reasoning',
                                         detail: streamedThought,
                                         status: 'done' as const
                                       }
@@ -673,7 +686,7 @@ Instrucciones Críticas:
                                 {
                                   id: `step-live-tool-${assistantMsgId}`,
                                   type: 'tool' as const,
-                                  title: `${currentTool.replace(/_/g, ' ')} (ejecutando...)`,
+                                  title: `${currentTool.replace(/_/g, ' ')} (running...)`,
                                   status: 'running' as const
                                 }
                               ]
@@ -708,9 +721,9 @@ Instrucciones Críticas:
         const internalTool = MIRAGE_INTERNAL_TOOLS.find((t) => t.name === tc.name);
         if (internalTool) {
           if (permissionMode === 'auto-apply') {
-            commandManager.beginTransaction(`IA: ${tc.name}`);
+            commandManager.beginTransaction(`AI: ${tc.name}`);
             const res = await internalTool.execute(args);
-            await commandManager.commitTransaction(`IA: ${tc.name}`);
+            await commandManager.commitTransaction(`AI: ${tc.name}`);
             proposedActions.push({
               id: tc.id,
               toolName: tc.name,
@@ -730,7 +743,7 @@ Instrucciones Críticas:
             const action: ProposedAction = {
               id: tc.id,
               toolName: tc.name,
-              summary: `Ajuste propuesto: ${tc.name}`,
+              summary: `Proposed change: ${tc.name}`,
               diff,
               status: 'pending',
               rawArgs: args
@@ -750,7 +763,7 @@ Instrucciones Críticas:
             const action: ProposedAction = {
               id: tc.id,
               toolName: tc.name,
-              summary: `Herramienta MCP propuesta: ${tc.name}`,
+              summary: `Proposed MCP tool: ${tc.name}`,
               diff: [],
               status: 'pending',
               rawArgs: args
@@ -763,16 +776,16 @@ Instrucciones Críticas:
               proposedActions.push({
                 id: tc.id,
                 toolName: tc.name,
-                summary: `Herramienta MCP ${tc.name} ejecutada`,
+                summary: `Executed MCP tool ${tc.name}`,
                 diff: [],
                 status: 'applied',
                 appliedAt: new Date().toLocaleTimeString(),
                 // Retained so the audit trail records what was actually sent.
                 rawArgs: args
               });
-              streamedContent += `\n\n*Resultado MCP:* \`\`\`json\n${JSON.stringify(mcpRes, null, 2)}\n\`\`\``;
+              streamedContent += `\n\n*MCP Result:* \`\`\`json\n${JSON.stringify(mcpRes, null, 2)}\n\`\`\``;
             } catch (mcpErr: any) {
-              streamedContent += `\n\n[Error] Error ejecutando herramienta MCP ${tc.name}: ${mcpErr.message}`;
+              streamedContent += `\n\n[Error] Failed executing MCP tool ${tc.name}: ${mcpErr.message}`;
             }
           }
         }
@@ -804,7 +817,7 @@ Instrucciones Críticas:
                   content:
                     streamedContent ||
                     (proposedActions.length > 0
-                      ? 'He ejecutado las acciones solicitadas en el taller.'
+                      ? 'Requested workbench actions have been executed.'
                       : ''),
                   thought: streamedThought || m.thought,
                   toolCalls: proposedActions.length > 0 ? proposedActions : undefined,
@@ -833,14 +846,14 @@ Instrucciones Críticas:
         err?.name === 'AbortError' || /abort/i.test(String(err?.message || ''));
 
       const notice = wasCancelled
-        ? '\n\n---\n*Generación detenida por el usuario.*'
-        : `\n\n---\n**Error de comunicación con el modelo:** ${err?.message || err}`;
+        ? '\n\n---\n*Generation stopped by user.*'
+        : `\n\n---\n**Model communication error:** ${err?.message || err}`;
 
       const preserved = streamedContent
         ? `${streamedContent}${notice}`
         : wasCancelled
-        ? '*Generación detenida antes de recibir contenido.*'
-        : `Error de comunicación con el modelo: ${err?.message || err}`;
+        ? '*Generation stopped before receiving content.*'
+        : `Model communication error: ${err?.message || err}`;
 
       const errSessions = get().sessions.map((s) => {
         if (s.id !== activeSessionId) return s;

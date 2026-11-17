@@ -14,14 +14,14 @@ export const NavSidebar: React.FC = React.memo(() => {
   const setView = useAppStore((s) => s.setView);
 
   const mainViews: NavButtonConfig[] = [
-    { id: 'workbench', label: 'Mesa de Trabajo 3D', icon: Box },
-    { id: 'library', label: 'Biblioteca Técnica', icon: Library },
-    { id: 'agent', label: 'Estudio IA', icon: Sparkles }
+    { id: 'workbench', label: '3D Workbench', icon: Box },
+    { id: 'library', label: 'Model Library', icon: Library },
+    { id: 'agent', label: 'AI Studio', icon: Sparkles }
   ];
 
   return (
     <aside
-      aria-label="Navegación principal"
+      aria-label="Primary navigation"
       className="w-12 border-r border-hairline bg-surface-low flex flex-col items-center justify-between py-2 shrink-0 select-none z-20"
     >
       {/* Top 3 Main Views */}
@@ -51,7 +51,7 @@ export const NavSidebar: React.FC = React.memo(() => {
           size="md"
           onClick={() => setView('settings')}
           icon={<Settings className={`w-4 h-4 ${currentView === 'settings' ? 'text-action font-bold' : ''}`} />}
-          title="Configuración del Atelier"
+          title="Settings"
           className={`w-9 h-9 ${currentView === 'settings' ? '!bg-surface-lowest !border-hairline shadow-xs' : ''}`}
         />
       </div>

@@ -40,21 +40,21 @@ export const ActionCard: React.FC<ActionCardProps> = ({ action }) => {
         {action.status === 'applied' && (
           <StatusBadge variant="active" size="sm">
             <CheckCircle2 className="w-3 h-3 mr-1 inline" />
-            Aplicado
+            Applied
           </StatusBadge>
         )}
 
         {action.status === 'pending' && (
           <StatusBadge variant="pending" size="sm">
             <Clock className="w-3 h-3 mr-1 inline" />
-            Pendiente
+            Pending
           </StatusBadge>
         )}
 
         {action.status === 'rejected' && (
           <StatusBadge variant="critical" size="sm">
             <XCircle className="w-3 h-3 mr-1 inline" />
-            Descartado
+            Rejected
           </StatusBadge>
         )}
       </div>
@@ -86,7 +86,7 @@ export const ActionCard: React.FC<ActionCardProps> = ({ action }) => {
             onClick={() => rejectProposedAction(action.id)}
             icon={<X className="w-3 h-3" />}
           >
-            Descartar
+            Dismiss
           </Button>
           <Button
             variant="primary"
@@ -94,22 +94,22 @@ export const ActionCard: React.FC<ActionCardProps> = ({ action }) => {
             onClick={() => applyProposedAction(action.id)}
             icon={<Check className="w-3 h-3" />}
           >
-            Aplicar
+            Apply
           </Button>
         </div>
       )}
 
       {action.status === 'applied' && (
         <div className="flex items-center justify-between pt-1 text-[11px] text-ink-tertiary">
-          <span>{action.appliedAt ? `Ejecutado a las ${action.appliedAt}` : 'Ejecutado'}</span>
+          <span>{action.appliedAt ? `Executed at ${action.appliedAt}` : 'Executed'}</span>
           <Button
             variant="ghost"
             size="xs"
             onClick={handleUndo}
             icon={<Undo2 className="w-3 h-3" />}
-            title="Deshacer cambio en el taller"
+            title="Undo workbench change"
           >
-            Deshacer (Ctrl+Z)
+            Undo (Ctrl+Z)
           </Button>
         </div>
       )}

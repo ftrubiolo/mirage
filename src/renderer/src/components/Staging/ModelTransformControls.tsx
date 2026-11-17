@@ -61,15 +61,15 @@ export const ModelTransformControls: React.FC = () => {
   }[] = [
     {
       axis: 'x',
-      label: 'Eje X'
+      label: 'X Axis'
     },
     {
       axis: 'y',
-      label: 'Eje Y'
+      label: 'Y Axis'
     },
     {
       axis: 'z',
-      label: 'Eje Z'
+      label: 'Z Axis'
     }
   ];
 
@@ -79,31 +79,31 @@ export const ModelTransformControls: React.FC = () => {
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-semibold uppercase tracking-wider font-primary text-ink-primary flex items-center gap-1.5">
           <Compass className="w-4 h-4 text-action" />
-          Orientación & Transformación 3D
+          3D Orientation &amp; Transform
         </h4>
       </div>
 
       <p className="text-[11px] text-ink-secondary leading-relaxed">
-        Ajusta la posición en el taller o corrige la orientación CAD. Solo la rotación se hornea en los modelos exportados.
+        Adjust viewport position or fix CAD orientation. Only rotation is baked into exported models.
       </p>
 
-      {/* Posición en Escenario (Desplazamiento 3D) */}
+      {/* Scene Position (3D Offset) */}
       <div className="space-y-2 pt-2 border-t border-hairline">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Move className="w-3.5 h-3.5 text-action" />
             <span className="text-[11px] font-semibold text-ink-primary">
-              Posición en Escenario
+              Scene Position
             </span>
           </div>
           {isMoved && (
             <button
               onClick={handleResetPosition}
               className="text-[10px] text-ink-tertiary hover:text-action flex items-center gap-1 transition-colors cursor-pointer"
-              title="Restablecer posición al origen (0, 0, 0)"
+              title="Reset position to origin (0, 0, 0)"
             >
               <RefreshCw className="w-3 h-3" />
-              Restablecer
+              Reset
             </button>
           )}
         </div>
@@ -135,23 +135,23 @@ export const ModelTransformControls: React.FC = () => {
         </div>
       </div>
 
-      {/* Rotación & Orientación */}
+      {/* Rotation & Orientation */}
       <div className="space-y-2 pt-2 border-t border-hairline">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Rotate3d className="w-3.5 h-3.5 text-action" />
             <span className="text-[11px] font-semibold text-ink-primary">
-              Rotación & Orientación
+              Rotation &amp; Orientation
             </span>
           </div>
         {isRotated && (
           <button
             onClick={handleResetRotation}
             className="text-[10px] text-ink-tertiary hover:text-action flex items-center gap-1 transition-colors cursor-pointer"
-            title="Restablecer a orientación original del archivo (0°, 0°, 0°)"
+            title="Reset to original file orientation (0°, 0°, 0°)"
           >
             <RefreshCw className="w-3 h-3" />
-            Restablecer
+            Reset
           </button>
         )}
         </div>
@@ -176,7 +176,7 @@ export const ModelTransformControls: React.FC = () => {
                     size="xs"
                     onClick={() => handleRotate(axis, -90)}
                     className="px-2 py-0.5 text-[10px] font-mono h-8"
-                    title={`Girar ${label} -90°`}
+                    title={`Rotate ${label} -90°`}
                   >
                     -90°
                   </Button>
@@ -185,7 +185,7 @@ export const ModelTransformControls: React.FC = () => {
                     size="xs"
                     onClick={() => handleRotate(axis, 90)}
                     className="px-2 py-0.5 text-[10px] font-mono h-8"
-                    title={`Girar ${label} +90°`}
+                    title={`Rotate ${label} +90°`}
                   >
                     +90°
                   </Button>

@@ -1,7 +1,7 @@
 export interface GlobalMaterialPreset {
   id: string;
   name: string;
-  category: 'textil' | 'cuero' | 'madera' | 'metal' | 'piedra' | 'otro';
+  category: 'fabric' | 'leather' | 'wood' | 'metal' | 'plastic' | 'glass' | 'ceramic' | 'other';
   swatches: {
     id: string;
     name: string;
@@ -9,14 +9,41 @@ export interface GlobalMaterialPreset {
   }[];
 }
 
-export type FurnitureCategory =
-  | 'asientos'
-  | 'mesas'
-  | 'almacenamiento'
-  | 'camas'
-  | 'iluminacion'
-  | 'accesorios'
-  | 'otro';
+export type ModelCategory =
+  | 'props'
+  | 'architecture'
+  | 'characters'
+  | 'vehicles'
+  | 'environments'
+  | 'products'
+  | 'other';
+
+export const MODEL_CATEGORY_LABELS: Record<ModelCategory, string> = {
+  props: 'Props',
+  architecture: 'Architecture',
+  characters: 'Characters',
+  vehicles: 'Vehicles',
+  environments: 'Environments',
+  products: 'Products',
+  other: 'Other'
+};
+
+export type EntryStatus =
+  | 'active'
+  | 'wip'
+  | 'pending'
+  | 'approved'
+  | 'published'
+  | 'neutral';
+
+export const ENTRY_STATUS_LABELS: Record<EntryStatus, string> = {
+  active: 'Active',
+  wip: 'In Progress',
+  pending: 'In Review',
+  approved: 'Approved',
+  published: 'Published',
+  neutral: 'Archived'
+};
 
 export interface LibraryEntrySettings {
   baseColor?: string;
@@ -93,9 +120,9 @@ export interface LibraryEntry {
   id: string;
   title: string;
   slug: string;
-  category: FurnitureCategory;
+  category: ModelCategory;
   description?: string;
-  status: 'active' | 'workshop' | 'pending' | 'madeToOrder' | 'dispatched' | 'neutral';
+  status: EntryStatus;
   createdAt: string;
   updatedAt: string;
   posterUrl?: string | null;
@@ -129,46 +156,74 @@ export interface LibraryEntry {
 
 export const GLOBAL_MATERIAL_PRESETS: GlobalMaterialPreset[] = [
   {
-    id: 'lino',
-    name: 'Lino Natural',
-    category: 'textil',
+    id: 'fabric',
+    name: 'Woven Fabric',
+    category: 'fabric',
     swatches: [
-      { id: 'lino-crudo', name: 'Lino Crudo', hexColor: '#ded8c7' },
-      { id: 'lino-arena', name: 'Lino Arena', hexColor: '#bfae95' },
-      { id: 'lino-terracota', name: 'Lino Terracota', hexColor: '#aa533e' },
-      { id: 'lino-verde-oliva', name: 'Lino Verde Oliva', hexColor: '#5c634c' },
-      { id: 'lino-grafito', name: 'Lino Grafito', hexColor: '#36383b' }
+      { id: 'fabric-ecru', name: 'Raw Ecru', hexColor: '#ded8c7' },
+      { id: 'fabric-sand', name: 'Warm Sand', hexColor: '#bfae95' },
+      { id: 'fabric-terracotta', name: 'Terracotta', hexColor: '#aa533e' },
+      { id: 'fabric-olive', name: 'Olive', hexColor: '#5c634c' },
+      { id: 'fabric-graphite', name: 'Graphite', hexColor: '#36383b' }
     ]
   },
   {
-    id: 'cuero',
-    name: 'Cuero Anilina',
-    category: 'cuero',
+    id: 'leather',
+    name: 'Aniline Leather',
+    category: 'leather',
     swatches: [
-      { id: 'cuero-cognac', name: 'Cuero Cognac', hexColor: '#8a4b27' },
-      { id: 'cuero-caramelo', name: 'Cuero Caramelo', hexColor: '#b56d3b' },
-      { id: 'cuero-chocolate', name: 'Cuero Chocolate', hexColor: '#3d2518' },
-      { id: 'cuero-negro', name: 'Cuero Negro', hexColor: '#1a1918' }
+      { id: 'leather-cognac', name: 'Cognac', hexColor: '#8a4b27' },
+      { id: 'leather-caramel', name: 'Caramel', hexColor: '#b56d3b' },
+      { id: 'leather-espresso', name: 'Espresso', hexColor: '#3d2518' },
+      { id: 'leather-black', name: 'Obsidian Black', hexColor: '#1a1918' }
     ]
   },
   {
-    id: 'madera',
-    name: 'Maderas Nativas',
-    category: 'madera',
+    id: 'wood',
+    name: 'Natural Wood',
+    category: 'wood',
     swatches: [
-      { id: 'madera-petiribi', name: 'Petiribí Natural', hexColor: '#a17a4e' },
-      { id: 'madera-paraiso', name: 'Paraíso Macizo', hexColor: '#c7a97b' },
-      { id: 'madera-roble-oscuro', name: 'Roble Oscuro', hexColor: '#4f3521' }
+      { id: 'wood-walnut', name: 'Natural Walnut', hexColor: '#a17a4e' },
+      { id: 'wood-oak', name: 'White Oak', hexColor: '#c7a97b' },
+      { id: 'wood-ebony', name: 'Dark Oak', hexColor: '#4f3521' }
     ]
   },
   {
     id: 'metal',
-    name: 'Hierro / Metal Estructural',
+    name: 'Brushed Metal',
     category: 'metal',
     swatches: [
-      { id: 'metal-negro-mate', name: 'Negro Microtexturado', hexColor: '#1f1f1f' },
-      { id: 'metal-blanco-mate', name: 'Blanco Cálido', hexColor: '#e8e7e4' },
-      { id: 'metal-bronce', name: 'Bronce Envejecido', hexColor: '#6a5639' }
+      { id: 'metal-matte-black', name: 'Matte Black', hexColor: '#1f1f1f' },
+      { id: 'metal-warm-white', name: 'Warm Aluminum', hexColor: '#e8e7e4' },
+      { id: 'metal-bronze', name: 'Aged Bronze', hexColor: '#6a5639' }
+    ]
+  },
+  {
+    id: 'plastic',
+    name: 'Matte Polymer',
+    category: 'plastic',
+    swatches: [
+      { id: 'plastic-slate', name: 'Slate Grey', hexColor: '#4a4e54' },
+      { id: 'plastic-ivory', name: 'Ivory ABS', hexColor: '#eae6df' },
+      { id: 'plastic-signal', name: 'Signal Red', hexColor: '#b83c32' }
+    ]
+  },
+  {
+    id: 'glass',
+    name: 'Clear Glass',
+    category: 'glass',
+    swatches: [
+      { id: 'glass-clear', name: 'Optical Clear', hexColor: '#eef4f5' },
+      { id: 'glass-smoke', name: 'Smoked Tint', hexColor: '#5c6368' }
+    ]
+  },
+  {
+    id: 'ceramic',
+    name: 'Glazed Ceramic',
+    category: 'ceramic',
+    swatches: [
+      { id: 'ceramic-porcelain', name: 'Porcelain White', hexColor: '#f3f1ec' },
+      { id: 'ceramic-stoneware', name: 'Stoneware Clay', hexColor: '#8d7b6b' }
     ]
   }
 ];

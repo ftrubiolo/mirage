@@ -15,7 +15,7 @@ export const OverlaysItemGroup: React.FC = () => {
       {/* Grid Toggle */}
       <button
         onClick={toggleGrid}
-        title="Alternar grilla de taller (G)"
+        title="Toggle viewport grid (G)"
         className={`p-1.5 rounded-xs transition-colors flex items-center text-xs border cursor-pointer ${
           showGrid
             ? 'bg-surface-container text-ink-primary border-hairline'
@@ -28,7 +28,7 @@ export const OverlaysItemGroup: React.FC = () => {
       {/* Dimensions Toggle */}
       <button
         onClick={toggleDimensions}
-        title="Mostrar cotas y dimensiones arquitectónicas"
+        title="Show dimensions and scale guides"
         className={`p-1.5 rounded-xs transition-colors flex items-center text-xs border cursor-pointer ${
           showDimensions
             ? 'bg-action/15 text-action border-action/40'
@@ -41,7 +41,7 @@ export const OverlaysItemGroup: React.FC = () => {
       {/* Contact Shadows Toggle */}
       <button
         onClick={toggleContactShadows}
-        title="Alternar sombras de contacto bajo el modelo"
+        title="Toggle contact shadows beneath model"
         className={`p-1.5 rounded-xs transition-colors flex items-center text-xs border cursor-pointer ${
           showContactShadows
             ? 'bg-surface-container text-ink-primary border-hairline'

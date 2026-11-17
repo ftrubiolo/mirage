@@ -204,7 +204,7 @@ export class MCPClientManager {
           });
         }
       } else {
-        throw new Error('Configuración inválida: se requiere comando (stdio) o URL (sse).');
+        throw new Error('Invalid configuration: command (stdio) or URL (sse) is required.');
       }
 
       await active.client.connect(active.transport);
@@ -271,7 +271,7 @@ export class MCPClientManager {
 
     const active = this.servers.get(serverId);
     if (!active || active.status !== 'connected') {
-      throw new Error(`El servidor MCP "${serverId}" no está conectado.`);
+      throw new Error(`MCP server "${serverId}" is not connected.`);
     }
 
     const abortController = new AbortController();

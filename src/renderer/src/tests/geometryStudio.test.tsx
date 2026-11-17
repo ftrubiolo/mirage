@@ -38,10 +38,10 @@ describe('GeometryStudio Component', () => {
     });
 
     // Model drop zone should be rendered
-    expect(container.textContent).toContain('Arrastra un modelo .glb aquí');
+    expect(container.textContent).toContain('Drop a .glb model here');
 
     // ScaleChecker empty state should be rendered
-    expect(container.textContent).toContain('Carga un modelo .glb para auditar su escala real y cotas físicas');
+    expect(container.textContent).toContain('Load a .glb model to inspect its real-world scale and physical dimensions.');
   });
 
   it('renders drop zone with replacement message, controls and checker when model is loaded', () => {
@@ -61,18 +61,18 @@ describe('GeometryStudio Component', () => {
     });
 
     // Dropzone indicates replacement
-    expect(container.textContent).toContain('Reemplazar archivo .glb');
+    expect(container.textContent).toContain('Replace .glb file');
 
     // ModelManifestCard shows filename
     expect(container.textContent).toContain('sample.glb');
     expect(container.textContent).toContain('3.00 MB');
 
     // ModelTransformControls shows orientation header
-    expect(container.textContent).toContain('Orientación & Transformación 3D');
+    expect(container.textContent).toContain('3D Orientation & Transform');
 
     // ScaleChecker shows dimensions
-    expect(container.textContent).toContain('Ancho (X)');
-    expect(container.textContent).toContain('Alto (Y)');
-    expect(container.textContent).toContain('Fondo (Z)');
+    expect(container.textContent).toContain('Width (X)');
+    expect(container.textContent).toContain('Height (Y)');
+    expect(container.textContent).toContain('Depth (Z)');
   });
 });

@@ -5,94 +5,99 @@ import {
   slugifyCode,
   formatMapFileName,
   buildModel3dJson,
-  createSeraPackageZip,
+  createWebPackageZip,
   getRawBinaryBytes
-} from '../utils/seraPackageExporter';
+} from '../utils/webPackageExporter';
 import { viewportBridge, exportCleanGeometryGLB, exportModelToUSDZ } from '../utils/viewportBridge';
 import { useVariantStore } from '../store/variantStore';
 
-describe('seraPackageExporter', () => {
+describe('webPackageExporter', () => {
   describe('slugifyCode', () => {
     it('normalizes accents, symbols and whitespace into clean kebab-case', () => {
-      expect(slugifyCode('Lino Arena')).toBe('lino-arena');
-      expect(slugifyCode('Silla Nórdica Escandinava')).toBe('silla-nordica-escandinava');
-      expect(slugifyCode('Cuero Vintage #3!')).toBe('cuero-vintage-3');
-      expect(slugifyCode('  TAPIZADO_GRIS--OSCURO  ')).toBe('tapizado-gris-oscuro');
+      expect(slugifyCode('Sand Linen')).toBe('sand-linen');
+      expect(slugifyCode('Cámara Clásica #1')).toBe('camara-clasica-1');
+      expect(slugifyCode('Brushed Steel #3!')).toBe('brushed-steel-3');
+      expect(slugifyCode('  MATTE_CARBON--FIBER  ')).toBe('matte-carbon-fiber');
     });
 
     it('falls back to default if empty or pure punctuation', () => {
-      expect(slugifyCode('')).toBe('variante');
-      expect(slugifyCode('---')).toBe('variante');
-      expect(slugifyCode('???')).toBe('variante');
+      expect(slugifyCode('')).toBe('variant');
+      expect(slugifyCode('---')).toBe('variant');
+      expect(slugifyCode('???')).toBe('variant');
     });
   });
 
   describe('formatMapFileName', () => {
     it('formats baseColor map with variant code and preserves extension', () => {
-      expect(formatMapFileName('base', 'lino-arena', 'lino-arena_base.webp')).toBe('lino-arena_base.webp');
-      expect(formatMapFileName('base', 'cuero-vintage', 'cuero_texture.png')).toBe('cuero-vintage_base.png');
+      expect(formatMapFileName('base', 'sand-fabric', 'sand-fabric_base.webp')).toBe('sand-fabric_base.webp');
+      expect(formatMapFileName('base', 'brushed-metal', 'metal_texture.png')).toBe('brushed-metal_base.png');
     });
 
     it('derives clean shared normal and ORM map names preserving original extension', () => {
-      expect(formatMapFileName('norm', 'lino-arena', 'lino_norm.webp')).toBe('lino_norm.webp');
-      expect(formatMapFileName('norm', 'lino-terracota', 'lino_normal.png')).toBe('lino_norm.png');
-      expect(formatMapFileName('orm', 'lino-arena', 'lino_orm.webp')).toBe('lino_orm.webp');
-      expect(formatMapFileName('orm', 'cuero-vintage', 'cuero_mro.png')).toBe('cuero_orm.png');
+      expect(formatMapFileName('norm', 'sand-fabric', 'fabric_norm.webp')).toBe('fabric_norm.webp');
+      expect(formatMapFileName('norm', 'slate-fabric', 'fabric_normal.png')).toBe('fabric_norm.png');
+      expect(formatMapFileName('orm', 'sand-fabric', 'fabric_orm.webp')).toBe('fabric_orm.webp');
+      expect(formatMapFileName('orm', 'brushed-metal', 'metal_mro.png')).toBe('metal_orm.png');
     });
 
     it('falls back to variant code if original file name is generic', () => {
-      expect(formatMapFileName('norm', 'lino-arena', 'normal.webp')).toBe('lino-arena_norm.webp');
-      expect(formatMapFileName('orm', 'lino-arena', 'orm.webp')).toBe('lino-arena_orm.webp');
+      expect(formatMapFileName('norm', 'sand-fabric', 'normal.webp')).toBe('sand-fabric_norm.webp');
+      expect(formatMapFileName('orm', 'sand-fabric', 'orm.webp')).toBe('sand-fabric_orm.webp');
     });
   });
 
   describe('buildModel3dJson', () => {
-    it('generates the exact schema matching plantilla-modelo-3d-seramuebles', () => {
+    it('generates the expected model-3d.json schema', () => {
       const variants = [
         {
-          code: 'lino-arena',
-          label: 'Lino Arena',
-          baseColor: 'maps/lino-arena_base.webp',
-          normalMap: 'maps/lino_norm.webp',
-          ormMap: 'maps/lino_orm.webp'
+          code: 'sand-fabric',
+          label: 'Sand Fabric',
+          baseColor: 'maps/sand-fabric_base.webp',
+          normalMap: 'maps/fabric_norm.webp',
+          ormMap: 'maps/fabric_orm.webp'
         },
         {
-          code: 'cuero-vintage',
-          label: 'Cuero Vintage',
-          baseColor: 'maps/cuero-vintage_base.webp',
-          normalMap: 'maps/cuero_norm.webp',
-          ormMap: 'maps/cuero_orm.webp',
+          code: 'brushed-metal',
+          label: 'Brushed Metal',
+          baseColor: 'maps/brushed-metal_base.webp',
+          normalMap: 'maps/metal_norm.webp',
+          ormMap: 'maps/metal_orm.webp',
           roughnessFactor: 0.6
         }
       ];
 
-      const json = buildModel3dJson('Silla Nórdica Escandinava', variants, true);
+      const json = buildModel3dJson('Studio Camera Rig', variants, true);
 
-      expect(json.name).toBe('Silla Nórdica Escandinava');
+      expect(json.name).toBe('Studio Camera Rig');
       expect(json.files.glb).toBe('geometry.glb');
       expect(json.files.usdz).toBe('model.usdz');
       expect(json.variants).toHaveLength(2);
       expect(json.variants[0]).toEqual({
-        code: 'lino-arena',
-        label: 'Lino Arena',
-        baseColor: 'maps/lino-arena_base.webp',
-        normalMap: 'maps/lino_norm.webp',
-        ormMap: 'maps/lino_orm.webp'
+        code: 'sand-fabric',
+        label: 'Sand Fabric',
+        baseColor: 'maps/sand-fabric_base.webp',
+        normalMap: 'maps/fabric_norm.webp',
+        ormMap: 'maps/fabric_orm.webp'
       });
       expect(json.variants[1]).toEqual({
-        code: 'cuero-vintage',
-        label: 'Cuero Vintage',
-        baseColor: 'maps/cuero-vintage_base.webp',
-        normalMap: 'maps/cuero_norm.webp',
-        ormMap: 'maps/cuero_orm.webp',
+        code: 'brushed-metal',
+        label: 'Brushed Metal',
+        baseColor: 'maps/brushed-metal_base.webp',
+        normalMap: 'maps/metal_norm.webp',
+        ormMap: 'maps/metal_orm.webp',
         roughnessFactor: 0.6
       });
     });
 
     it('omits usdz from files when hasUsdz is false', () => {
-      const json = buildModel3dJson('Mesa Rustica', [], false);
+      const json = buildModel3dJson('Display Stand', [], false);
       expect(json.files.glb).toBe('geometry.glb');
       expect(json.files.usdz).toBeUndefined();
+    });
+
+    it('falls back to "3D Model" when productName is empty', () => {
+      const json = buildModel3dJson('', [], false);
+      expect(json.name).toBe('3D Model');
     });
   });
 
@@ -131,7 +136,6 @@ describe('seraPackageExporter', () => {
     });
 
     it('exportCleanGeometryGLB strips heavy textures from cloned materials', async () => {
-      // Attach mock textures to verify stripping
       const dummyTex = new THREE.Texture();
       testMat.map = dummyTex;
       testMat.normalMap = dummyTex;
@@ -153,7 +157,7 @@ describe('seraPackageExporter', () => {
     });
   });
 
-  describe('createSeraPackageZip integration', () => {
+  describe('createWebPackageZip integration', () => {
     beforeEach(() => {
       const testMat = new THREE.MeshStandardMaterial({ color: 0xdddddd });
       const testMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.85, 0.8), testMat);
@@ -178,7 +182,6 @@ describe('seraPackageExporter', () => {
       viewportBridge.register(gl, scene, camera);
       viewportBridge.registerModel(testGroup);
 
-      // Mock electronAPI
       (window as any).electronAPI = {
         readBinaryFile: vi.fn(async (filePath: string) => {
           return new TextEncoder().encode(`RAW_BYTES_FOR_${filePath}`);
@@ -187,94 +190,87 @@ describe('seraPackageExporter', () => {
       };
     });
 
-    it('assembles a ZIP package strictly following plantilla-modelo-3d-seramuebles', async () => {
+    it('assembles a Web & AR ZIP package with geometry.glb, deduplicated maps/, and model-3d.json', async () => {
       const mockVariants = [
         {
-          id: 'v-lino-arena',
-          name: 'Lino Arena',
+          id: 'v-sand-fabric',
+          name: 'Sand Fabric',
           isDefault: true,
           maps: {
-            baseColor: { fileName: 'lino-arena_base.webp', filePath: '/fake/path/lino-arena_base.webp', fileSize: 100 },
-            normal: { fileName: 'lino_norm.webp', filePath: '/fake/path/lino_norm.webp', fileSize: 100 },
-            orm: { fileName: 'lino_orm.webp', filePath: '/fake/path/lino_orm.webp', fileSize: 100 }
+            baseColor: { fileName: 'sand-fabric_base.webp', filePath: '/fake/path/sand-fabric_base.webp', fileSize: 100 },
+            normal: { fileName: 'fabric_norm.webp', filePath: '/fake/path/fabric_norm.webp', fileSize: 100 },
+            orm: { fileName: 'fabric_orm.webp', filePath: '/fake/path/fabric_orm.webp', fileSize: 100 }
           },
           settings: { roughnessFactor: 0.85 }
         },
         {
-          id: 'v-lino-terracota',
-          name: 'Lino Terracota',
+          id: 'v-slate-fabric',
+          name: 'Slate Fabric',
           maps: {
-            baseColor: { fileName: 'lino-terracota_base.webp', filePath: '/fake/path/lino-terracota_base.webp', fileSize: 100 },
-            // Reusing same normal and orm to test deduplication
-            normal: { fileName: 'lino_norm.webp', filePath: '/fake/path/lino_norm.webp', fileSize: 100 },
-            orm: { fileName: 'lino_orm.webp', filePath: '/fake/path/lino_orm.webp', fileSize: 100 }
+            baseColor: { fileName: 'slate-fabric_base.webp', filePath: '/fake/path/slate-fabric_base.webp', fileSize: 100 },
+            normal: { fileName: 'fabric_norm.webp', filePath: '/fake/path/fabric_norm.webp', fileSize: 100 },
+            orm: { fileName: 'fabric_orm.webp', filePath: '/fake/path/fabric_orm.webp', fileSize: 100 }
           },
           settings: {}
         }
       ];
 
-      const zipBlob = await createSeraPackageZip({
-        productName: 'Silla Nórdica Escandinava',
+      const zipBlob = await createWebPackageZip({
+        productName: 'Studio Camera Rig',
         variants: mockVariants as any
       });
 
       expect(zipBlob).toBeDefined();
 
-      // Inspect unzipped contents using JSZip
       const zip = await JSZip.loadAsync(zipBlob);
       const fileNames = Object.keys(zip.files);
 
-      // Check root files
       expect(fileNames).toContain('geometry.glb');
       expect(fileNames).not.toContain('model.usdz');
       expect(fileNames).toContain('model-3d.json');
 
-      // Check maps/ directory
-      expect(fileNames).toContain('maps/lino-arena_base.webp');
-      expect(fileNames).toContain('maps/lino-terracota_base.webp');
-      expect(fileNames).toContain('maps/lino_norm.webp');
-      expect(fileNames).toContain('maps/lino_orm.webp');
+      expect(fileNames).toContain('maps/sand-fabric_base.webp');
+      expect(fileNames).toContain('maps/slate-fabric_base.webp');
+      expect(fileNames).toContain('maps/fabric_norm.webp');
+      expect(fileNames).toContain('maps/fabric_orm.webp');
 
-      // Ensure exact deduplication: shared maps appear only once in maps/
       const normMaps = fileNames.filter((f) => f.includes('_norm'));
       expect(normMaps).toHaveLength(1);
 
-      // Check raw binary preservation
-      const baseColorData = await zip.file('maps/lino-arena_base.webp')!.async('text');
-      expect(baseColorData).toBe('RAW_BYTES_FOR_/fake/path/lino-arena_base.webp');
+      const baseColorData = await zip.file('maps/sand-fabric_base.webp')!.async('text');
+      expect(baseColorData).toBe('RAW_BYTES_FOR_/fake/path/sand-fabric_base.webp');
 
-      // Check model-3d.json content and schema
       const jsonContent = JSON.parse(await zip.file('model-3d.json')!.async('text'));
-      expect(jsonContent.name).toBe('Silla Nórdica Escandinava');
+      expect(jsonContent.name).toBe('Studio Camera Rig');
       expect(jsonContent.files).toEqual({
         glb: 'geometry.glb'
       });
       expect(jsonContent.variants).toHaveLength(2);
-      expect(jsonContent.variants[0].code).toBe('lino-arena');
-      expect(jsonContent.variants[0].label).toBe('Lino Arena');
-      expect(jsonContent.variants[0].baseColor).toBe('maps/lino-arena_base.webp');
-      expect(jsonContent.variants[0].normalMap).toBe('maps/lino_norm.webp');
-      expect(jsonContent.variants[0].ormMap).toBe('maps/lino_orm.webp');
+      expect(jsonContent.variants[0].code).toBe('sand-fabric');
+      expect(jsonContent.variants[0].label).toBe('Sand Fabric');
+      expect(jsonContent.variants[0].baseColor).toBe('maps/sand-fabric_base.webp');
+      expect(jsonContent.variants[0].normalMap).toBe('maps/fabric_norm.webp');
+      expect(jsonContent.variants[0].ormMap).toBe('maps/fabric_orm.webp');
       expect(jsonContent.variants[0].roughnessFactor).toBe(0.85);
 
-      expect(jsonContent.variants[1].code).toBe('lino-terracota');
-      expect(jsonContent.variants[1].baseColor).toBe('maps/lino-terracota_base.webp');
-      expect(jsonContent.variants[1].normalMap).toBe('maps/lino_norm.webp');
-      expect(jsonContent.variants[1].ormMap).toBe('maps/lino_orm.webp');
+      expect(jsonContent.variants[1].code).toBe('slate-fabric');
+      expect(jsonContent.variants[1].baseColor).toBe('maps/slate-fabric_base.webp');
+      expect(jsonContent.variants[1].normalMap).toBe('maps/fabric_norm.webp');
+      expect(jsonContent.variants[1].ormMap).toBe('maps/fabric_orm.webp');
     });
 
     it('packages baked AR variant models into ar/ folder and updates model-3d.json when includeArVariants is true', async () => {
       const mockVariants = [
         {
-          id: 'v-cuero-negro',
-          name: 'Cuero Negro',
+          id: 'v-matte-carbon',
+          name: 'Matte Carbon',
           maps: {},
           settings: { roughnessFactor: 0.4 }
         }
       ];
 
-      const zipBlob = await createSeraPackageZip({
-        productName: 'Butaca Moderna',
+      const zipBlob = await createWebPackageZip({
+        productName: 'Modular Asset',
         variants: mockVariants as any,
         includeArVariants: true,
         arTextureSize: 1024
@@ -286,8 +282,8 @@ describe('seraPackageExporter', () => {
       expect(fileNames).toContain('geometry.glb');
       expect(fileNames).not.toContain('model.usdz');
       expect(fileNames).toContain('model-3d.json');
-      expect(fileNames).toContain('ar/glb/cuero-negro.glb');
-      expect(fileNames).toContain('ar/usdz/cuero-negro.usdz');
+      expect(fileNames).toContain('ar/glb/matte-carbon.glb');
+      expect(fileNames).toContain('ar/usdz/matte-carbon.usdz');
 
       const json = JSON.parse(await zip.file('model-3d.json')!.async('text'));
       expect(json.files.ar).toEqual({
@@ -295,13 +291,12 @@ describe('seraPackageExporter', () => {
         usdzDir: 'ar/usdz'
       });
       expect(json.variants[0].ar).toEqual({
-        glb: 'ar/glb/cuero-negro.glb',
-        usdz: 'ar/usdz/cuero-negro.usdz'
+        glb: 'ar/glb/matte-carbon.glb',
+        usdz: 'ar/usdz/matte-carbon.usdz'
       });
     });
 
     it('falls back to candidate pool if a variant primary normal map file is missing on disk', async () => {
-      // Mock readBinaryFile to fail on missing/corrupt path
       (window as any).electronAPI.readBinaryFile = vi.fn(async (filePath: string) => {
         if (filePath.includes('corrupt')) {
           throw new Error('ENOENT: no such file or directory');
@@ -309,16 +304,15 @@ describe('seraPackageExporter', () => {
         return new TextEncoder().encode(`RAW_BYTES_FOR_${filePath}`);
       });
 
-      // Simulate missing primary file but working candidate in mapVariants.normal
       useVariantStore.setState({
         mapVariants: {
           baseColor: [],
           normal: [
             {
               id: 'n-fallback',
-              name: 'lino_norm',
-              fileName: 'lino_norm.webp',
-              filePath: '/fake/path/lino_norm.webp',
+              name: 'fabric_norm',
+              fileName: 'fabric_norm.webp',
+              filePath: '/fake/path/fabric_norm.webp',
               url: ''
             }
           ],
@@ -339,7 +333,7 @@ describe('seraPackageExporter', () => {
       const mockVariants = [
         {
           id: 'v-corrupt-norm',
-          name: 'Lino Arena',
+          name: 'Sand Fabric',
           maps: {
             normal: {
               fileName: 'corrupt_norm.webp',
@@ -350,18 +344,23 @@ describe('seraPackageExporter', () => {
         }
       ];
 
-      const zipBlob = await createSeraPackageZip({
-        productName: 'Silla Fallback',
+      const zipBlob = await createWebPackageZip({
+        productName: 'Fallback Asset',
         variants: mockVariants as any
       });
 
       const zip = await JSZip.loadAsync(zipBlob);
       const fileNames = Object.keys(zip.files);
 
-      // Verify that normal map was NOT lost, it was recovered from candidate pool
-      expect(fileNames).toContain('maps/lino_norm.webp');
+      expect(fileNames).toContain('maps/fabric_norm.webp');
       const json = JSON.parse(await zip.file('model-3d.json')!.async('text'));
-      expect(json.variants[0].normalMap).toBe('maps/lino_norm.webp');
+      expect(json.variants[0].normalMap).toBe('maps/fabric_norm.webp');
+    });
+
+    it('getRawBinaryBytes reads file via electronAPI', async () => {
+      const bytes = await getRawBinaryBytes('/fake/path/test.webp', undefined);
+      expect(bytes).toBeInstanceOf(Uint8Array);
+      expect(new TextDecoder().decode(bytes!)).toBe('RAW_BYTES_FOR_/fake/path/test.webp');
     });
   });
 });

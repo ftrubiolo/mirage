@@ -63,7 +63,7 @@ export const WorkbenchView: React.FC = () => {
           isDragging={isDragging}
           onMouseDown={handleResizeMouseDown}
           onDoubleClick={handleResetWidth}
-          title="Arrastra para redimensionar (Doble clic para restablecer 460px)"
+          title="Drag to resize (Double-click to reset to 460px)"
         />
       )}
 
@@ -73,9 +73,9 @@ export const WorkbenchView: React.FC = () => {
           value={workbenchTab}
           onChange={(val) => setWorkbenchTab(val as 'maps' | 'model' | 'export')}
           options={[
-            { value: 'maps', label: 'Mapas PBR', icon: <Palette className="w-3.5 h-3.5" /> },
-            { value: 'model', label: 'Geometría', icon: <Box className="w-3.5 h-3.5" /> },
-            { value: 'export', label: 'Exportación', icon: <PackageCheck className="w-3.5 h-3.5" /> }
+            { value: 'maps', label: 'PBR Maps', icon: <Palette className="w-3.5 h-3.5" /> },
+            { value: 'model', label: 'Geometry', icon: <Box className="w-3.5 h-3.5" /> },
+            { value: 'export', label: 'Export', icon: <PackageCheck className="w-3.5 h-3.5" /> }
           ]}
           variant="surface"
           size="sm"
@@ -107,7 +107,7 @@ export const WorkbenchView: React.FC = () => {
 
       {/* 3D Viewport Area */}
       <main className="flex-1 relative bg-canvas min-w-0 min-h-0">
-        <ErrorBoundary fallbackTitle="Visor 3D Atelier">
+        <ErrorBoundary fallbackTitle="3D Viewport">
           <Canvas3D />
         </ErrorBoundary>
       </main>

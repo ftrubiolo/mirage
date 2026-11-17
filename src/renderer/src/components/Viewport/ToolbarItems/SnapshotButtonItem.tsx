@@ -16,7 +16,7 @@ export const SnapshotButtonItem: React.FC = () => {
       });
       const a = document.createElement('a');
       a.href = snap.dataUrl;
-      a.download = `mirage-atelier-${Date.now()}.png`;
+      a.download = `mirage-snapshot-${Date.now()}.png`;
       a.click();
     } catch (err) {
       console.warn('[ViewportToolbar] Snapshot capture error:', err);
@@ -29,7 +29,7 @@ export const SnapshotButtonItem: React.FC = () => {
     <button
       onClick={handleTakeSnapshot}
       disabled={isCapturing}
-      title="Capturar imagen PNG de alta resolución (1920×1080)"
+      title="Capture high-resolution PNG image (1920×1080)"
       className="p-1.5 rounded-xs transition-colors text-ink-secondary hover:text-ink-primary hover:bg-surface-container border border-transparent cursor-pointer disabled:opacity-50"
     >
       <Camera className="w-3.5 h-3.5" />

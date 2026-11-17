@@ -9,7 +9,7 @@ export const CanvasVariantWidget: React.FC = () => {
   const createVariant = useVariantStore((s) => s.createVariant);
 
   const handleAddVariant = () => {
-    const name = `Variante ${variants.length + 1}`;
+    const name = `Variant ${variants.length + 1}`;
     createVariant(name, true);
   };
 
@@ -17,7 +17,7 @@ export const CanvasVariantWidget: React.FC = () => {
     <div className="w-64 flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-mono uppercase text-ink-tertiary font-bold tracking-wider">
-          Variantes ({variants.length})
+          Variants ({variants.length})
         </span>
         <button
           type="button"
@@ -25,7 +25,7 @@ export const CanvasVariantWidget: React.FC = () => {
           className="flex items-center gap-1 px-1.5 py-0.5 rounded-xs text-[10px] font-mono text-action hover:bg-action/10 border border-action/20 transition-colors"
         >
           <Plus size={10} />
-          <span>Nueva</span>
+          <span>New</span>
         </button>
       </div>
 

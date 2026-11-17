@@ -103,7 +103,7 @@ export const ViewportStatusBar: React.FC = () => {
   return (
     <footer
       ref={containerRef}
-      aria-label="Barra de estado e información del modelo"
+      aria-label="Status bar and model info"
       data-no-canvas-menu="true"
       onContextMenu={(e) => handleContextMenu(e)}
       className="w-full h-9 border-t border-hairline bg-surface-low/95 backdrop-blur-xs px-2 flex items-center justify-between shrink-0 select-none z-20 relative text-xs gap-1"
@@ -148,12 +148,12 @@ export const ViewportStatusBar: React.FC = () => {
         position={contextMenu.position}
         onClose={() => setContextMenu({ isOpen: false, position: null })}
       >
-        <ContextMenuHeader>Personalizar Barra de Estado</ContextMenuHeader>
+        <ContextMenuHeader>Customize Status Bar</ContextMenuHeader>
 
         {/* Quick icon-only toggle when right-clicking directly on an item that has text */}
         {isTargetWithText && (
           <ContextMenuCheckbox
-            label="Solo icono"
+            label="Icon only"
             icon={<Type className="w-3.5 h-3.5 text-action" />}
             checked={iconOnlyToolbarItems.includes(contextMenu.targetItemId!)}
             onChange={() => toggleToolbarItemIconOnly(contextMenu.targetItemId!)}
@@ -166,7 +166,7 @@ export const ViewportStatusBar: React.FC = () => {
             icon={<EyeOff className="w-3.5 h-3.5 text-ink-secondary" />}
             onClick={() => toggleStatusBarItemVisibility(contextMenu.targetItemId!)}
           >
-            Ocultar este elemento
+            Hide this item
           </ContextMenuItem>
         )}
 
@@ -176,7 +176,7 @@ export const ViewportStatusBar: React.FC = () => {
             icon={<ArrowUpCircle className="w-3.5 h-3.5 text-action" />}
             onClick={() => moveItemToOtherBar(contextMenu.targetItemId!, 'statusbar')}
           >
-            Mover a la barra de herramientas
+            Move to toolbar
           </ContextMenuItem>
         )}
 
@@ -184,7 +184,7 @@ export const ViewportStatusBar: React.FC = () => {
           icon={<Plus className="w-3.5 h-3.5 text-action" />}
           onClick={() => addStatusBarSpacer(contextMenu.targetItemId)}
         >
-          Añadir espaciador flexible
+          Add flexible spacer
         </ContextMenuItem>
 
         {contextMenu.targetItemId && isToolbarSpacer(contextMenu.targetItemId) && (
@@ -193,7 +193,7 @@ export const ViewportStatusBar: React.FC = () => {
             danger
             onClick={() => removeStatusBarSpacer(contextMenu.targetItemId!)}
           >
-            Eliminar este espaciador
+            Remove this spacer
           </ContextMenuItem>
         )}
 
@@ -201,12 +201,12 @@ export const ViewportStatusBar: React.FC = () => {
 
         {/* Submenu to toggle individual items into Icon-Only mode */}
         <ContextMenuSub
-          label="Modo Solo Icono"
+          label="Icon-Only Mode"
           icon={<Type className="w-3.5 h-3.5 text-action" />}
         >
-          <ContextMenuHeader>Elementos con Texto</ContextMenuHeader>
+          <ContextMenuHeader>Items with Text</ContextMenuHeader>
           <ContextMenuCheckbox
-            label="Todos en solo icono"
+            label="All icon-only"
             checked={areAllIconOnly}
             onChange={(checked) => setAllToolbarItemsIconOnly(checked)}
           />
@@ -226,10 +226,10 @@ export const ViewportStatusBar: React.FC = () => {
 
         {/* Submenu with checkboxes to toggle any tool on/off */}
         <ContextMenuSub
-          label="Elementos Visibles"
+          label="Visible Items"
           icon={<SlidersHorizontal className="w-3.5 h-3.5 text-action" />}
         >
-          <ContextMenuHeader>Mostrar / Ocultar</ContextMenuHeader>
+          <ContextMenuHeader>Show / Hide</ContextMenuHeader>
           {TOGGLEABLE_TOOLBAR_ITEMS.map((item) => {
             const isVisible = !hiddenStatusBarItems.includes(item.id);
             return (
@@ -249,14 +249,14 @@ export const ViewportStatusBar: React.FC = () => {
           icon={<RotateCcw className="w-3.5 h-3.5 text-ink-secondary" />}
           onClick={resetStatusBarItems}
         >
-          Restablecer barra de estado
+          Reset status bar
         </ContextMenuItem>
 
         <ContextMenuItem
           icon={<RotateCcw className="w-3.5 h-3.5 text-ink-secondary" />}
           onClick={resetAllBars}
         >
-          Restablecer ambas barras
+          Reset both bars
         </ContextMenuItem>
       </ContextMenu>
     </footer>

@@ -24,7 +24,7 @@ export const PbrMicroGeometrySection: React.FC = React.memo(() => {
         <div className="flex items-center gap-2 min-w-0">
           <Package className="w-4 h-4 text-action shrink-0" />
           <h3 className="text-xs font-semibold text-ink-primary uppercase tracking-wider font-primary truncate">
-            Material PBR
+            PBR Material
           </h3>
         </div>
         {/* Mode Switcher */}
@@ -36,9 +36,9 @@ export const PbrMicroGeometrySection: React.FC = React.memo(() => {
             setMaterialProperty('materialPackingMode' as any, mode);
           }}
           options={[
-            { value: 'orm', label: 'ORM Único' },
+            { value: 'orm', label: 'Packed ORM' },
             { value: 'metalRoughness', label: 'glTF Metal-Rough' },
-            { value: 'separate', label: '3 Mapas Separados' }
+            { value: 'separate', label: '3 Separate Maps' }
           ]}
           size="xs"
         />
@@ -50,12 +50,12 @@ export const PbrMicroGeometrySection: React.FC = React.memo(() => {
           <MapSlotPicker
             slot="orm"
             embeddedInSection={false}
-            title="Mapa ORM"
+            title="ORM Map"
             icon={<Package className="w-5 h-5 text-action shrink-0" />}
-            placeholderText="Sin mapa ORM (Arrastra imagen aquí)"
-            subText="Empaquetado PBR (R=AO, G=Rough, B=Metal) • WebP / PNG / JPG"
-            addVariantLabel="Añadir Variante ORM (Arrastra imagen aquí)"
-            pickTitle="Seleccionar Mapa ORM"
+            placeholderText="No ORM map (Drop image here)"
+            subText="Packed PBR (R=AO, G=Rough, B=Metal) • WebP / PNG / JPG"
+            addVariantLabel="Add ORM Variant (Drop image here)"
+            pickTitle="Select ORM Map"
           />
           <Button
             variant="secondary"
@@ -63,7 +63,7 @@ export const PbrMicroGeometrySection: React.FC = React.memo(() => {
             className="w-full"
             onClick={openOrmPacker}
           >
-            Abrir Empaquetador ORM con Sharp
+            Open Sharp ORM Packer
           </Button>
         </div>
       )}
@@ -74,23 +74,23 @@ export const PbrMicroGeometrySection: React.FC = React.memo(() => {
           <MapSlotPicker
             slot="metalRoughness"
             embeddedInSection={false}
-            title="Mapa Metal-Rugosidad"
+            title="Metal-Roughness Map"
             icon={<Package className="w-5 h-5 text-action shrink-0" />}
-            placeholderText="Sin mapa glTF Metal-Roughness (Arrastra imagen aquí)"
-            subText="Estándar glTF (G=Rugosidad, B=Metalicidad) • WebP / PNG / JPG"
-            addVariantLabel="Añadir Variante Metal-Roughness (Arrastra imagen aquí)"
-            pickTitle="Seleccionar Mapa Metal-Roughness"
+            placeholderText="No glTF Metal-Roughness map (Drop image here)"
+            subText="glTF Standard (G=Roughness, B=Metalness) • WebP / PNG / JPG"
+            addVariantLabel="Add Metal-Roughness Variant (Drop image here)"
+            pickTitle="Select Metal-Roughness Map"
           />
 
           <MapSlotPicker
             slot="ao"
             embeddedInSection={false}
-            title="Mapa de Oclusión (Opcional)"
+            title="Occlusion Map (Optional)"
             icon={<Mountain className="w-5 h-5 text-action shrink-0" />}
-            placeholderText="Sin mapa de oclusión (Opcional)"
-            subText="Oclusión Ambiental (AO) • WebP / PNG / JPG"
-            addVariantLabel="Añadir Variante AO (Arrastra imagen aquí)"
-            pickTitle="Seleccionar Mapa AO"
+            placeholderText="No occlusion map (Optional)"
+            subText="Ambient Occlusion (AO) • WebP / PNG / JPG"
+            addVariantLabel="Add AO Variant (Drop image here)"
+            pickTitle="Select AO Map"
           />
 
           <Button
@@ -99,7 +99,7 @@ export const PbrMicroGeometrySection: React.FC = React.memo(() => {
             className="w-full"
             onClick={openOrmPacker}
           >
-            Empaquetar Metal-Roughness + AO en ORM.webp con Sharp
+            Pack Metal-Roughness + AO into ORM.webp via Sharp
           </Button>
         </div>
       )}
@@ -111,36 +111,36 @@ export const PbrMicroGeometrySection: React.FC = React.memo(() => {
           <MapSlotPicker
             slot="ao"
             embeddedInSection={false}
-            title="Mapa de Oclusión"
+            title="Occlusion Map"
             icon={<Mountain className="w-5 h-5 text-action shrink-0" />}
-            placeholderText="Sin mapa de oclusión (Arrastra imagen aquí)"
-            subText="Oclusión Ambiental (AO) • WebP / PNG / JPG"
-            addVariantLabel="Añadir Variante AO (Arrastra imagen aquí)"
-            pickTitle="Seleccionar Mapa AO"
+            placeholderText="No occlusion map (Drop image here)"
+            subText="Ambient Occlusion (AO) • WebP / PNG / JPG"
+            addVariantLabel="Add AO Variant (Drop image here)"
+            pickTitle="Select AO Map"
           />
 
           {/* Roughness Slot */}
           <MapSlotPicker
             slot="roughness"
             embeddedInSection={false}
-            title="Mapa de Rugosidad"
+            title="Roughness Map"
             icon={<Droplets className="w-5 h-5 text-action shrink-0" />}
-            placeholderText="Sin mapa de rugosidad (Arrastra imagen aquí)"
-            subText="Rugosidad / Micro-superficie • WebP / PNG / JPG"
-            addVariantLabel="Añadir Variante Rugosidad (Arrastra imagen aquí)"
-            pickTitle="Seleccionar Mapa de Rugosidad"
+            placeholderText="No roughness map (Drop image here)"
+            subText="Roughness / Micro-surface • WebP / PNG / JPG"
+            addVariantLabel="Add Roughness Variant (Drop image here)"
+            pickTitle="Select Roughness Map"
           />
 
           {/* Metalness Slot */}
           <MapSlotPicker
             slot="metalness"
             embeddedInSection={false}
-            title="Mapa Metálico"
+            title="Metalness Map"
             icon={<Shield className="w-5 h-5 text-action shrink-0" />}
-            placeholderText="Sin mapa metálico (Arrastra imagen aquí)"
-            subText="Metálico / Conductividad • WebP / PNG / JPG"
-            addVariantLabel="Añadir Variante Metálica (Arrastra imagen aquí)"
-            pickTitle="Seleccionar Mapa Metálico"
+            placeholderText="No metalness map (Drop image here)"
+            subText="Metalness / Conductivity • WebP / PNG / JPG"
+            addVariantLabel="Add Metalness Variant (Drop image here)"
+            pickTitle="Select Metalness Map"
           />
 
           {/* Action to pack these 3 */}
@@ -150,7 +150,7 @@ export const PbrMicroGeometrySection: React.FC = React.memo(() => {
             className="w-full"
             onClick={openOrmPacker}
           >
-            Empaquetar estos canales en ORM.webp con Sharp
+            Pack channels into ORM.webp via Sharp
           </Button>
         </div>
       )}
@@ -158,7 +158,7 @@ export const PbrMicroGeometrySection: React.FC = React.memo(() => {
       {/* Live Material Multipliers */}
       <div className="grid grid-cols-3 gap-2 pt-2 border-t border-hairline">
         <SliderControl
-          label="Rugosidad:"
+          label="Roughness:"
           value={roughnessFactor}
           onChange={setRoughnessFactor}
           min={0.0}
@@ -168,7 +168,7 @@ export const PbrMicroGeometrySection: React.FC = React.memo(() => {
           compact
         />
         <SliderControl
-          label="Metalicidad:"
+          label="Metalness:"
           value={metalnessFactor}
           onChange={setMetalnessFactor}
           min={0.0}
@@ -178,7 +178,7 @@ export const PbrMicroGeometrySection: React.FC = React.memo(() => {
           compact
         />
         <SliderControl
-          label="Oclusión:"
+          label="Occlusion:"
           value={aoIntensity}
           onChange={setAoIntensity}
           min={0.0}

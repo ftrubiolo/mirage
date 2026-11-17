@@ -43,7 +43,7 @@ export const OrmPackerModal: React.FC = () => {
         setMode('separate');
       }
 
-      const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
+      const activeSlug = useAppStore.getState().activeEntrySlug || 'model';
       const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
       const existingVariants = curMat
         ? useVariantStore.getState().materialMapVariants[curMat]?.['orm'] || []
@@ -63,7 +63,7 @@ export const OrmPackerModal: React.FC = () => {
   const pickFile = async (setter: (val: string) => void, title: string) => {
     const file = await window.electronAPI.openFileDialog({
       title,
-      filters: [{ name: 'Imágenes', extensions: ['jpg', 'jpeg', 'png', 'webp', 'tga'] }]
+      filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'tga'] }]
     });
     if (file) {
       setter(file);
@@ -72,7 +72,7 @@ export const OrmPackerModal: React.FC = () => {
 
   const handleBrowseOutput = async () => {
     try {
-      const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
+      const activeSlug = useAppStore.getState().activeEntrySlug || 'model';
       const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
       const libDir = await window.electronAPI.getLibraryPath();
       const sep = libDir.includes('\\') ? '\\' : '/';
@@ -85,7 +85,7 @@ export const OrmPackerModal: React.FC = () => {
       const defaultPath = `${entryDir}${sep}${defaultFileName}`;
 
       const selected = await window.electronAPI.saveFileDialog({
-        title: 'Guardar mapa ORM WebP',
+        title: 'Save ORM WebP Map',
         defaultPath: customOutputPath || defaultPath,
         filters: [{ name: 'WebP Texture', extensions: ['webp'] }]
       });
@@ -100,16 +100,16 @@ export const OrmPackerModal: React.FC = () => {
 
   const handlePack = async () => {
     if (mode === 'gltf' && !metalRoughnessPath) {
-      alert('Debes seleccionar el mapa metalRoughness de glTF');
+      alert('Please select the glTF metalRoughness map');
       return;
     }
 
     if (mode === 'separate' && !aoPath && !roughnessPath && !metalnessPath) {
-      alert('Debes seleccionar al menos un mapa de rugosidad, metalicidad u oclusión');
+      alert('Please select at least one roughness, metalness, or occlusion map');
       return;
     }
 
-    const activeSlug = useAppStore.getState().activeEntrySlug || 'producto';
+    const activeSlug = useAppStore.getState().activeEntrySlug || 'model';
     const curMat = useVariantStore.getState().activeMaterialName || usePbrMaterialStore.getState().activeMaterialName;
     let finalOutput = customOutputPath;
 
@@ -186,7 +186,7 @@ export const OrmPackerModal: React.FC = () => {
       closeOrmPacker();
     } catch (err: any) {
       console.error('[OrmPackerModal] Error packing ORM texture:', err);
-      alert(`Error al empaquetar ORM: ${err?.message || err}`);
+      alert(`Error packing ORM: ${err?.message || err}`);
     } finally {
       setIsProcessing(false);
     }
@@ -196,7 +196,7 @@ export const OrmPackerModal: React.FC = () => {
     <Modal
       isOpen={isOrmPackerOpen}
       onClose={() => !isProcessing && closeOrmPacker()}
-      title="Empaquetador de Textura ORM"
+      title="ORM Texture Packer"
       icon={<Package className="w-4 h-4" />}
       size="md"
       footer={
@@ -208,7 +208,7 @@ export const OrmPackerModal: React.FC = () => {
             disabled={isProcessing}
             icon={<FolderOpen className="w-3.5 h-3.5" />}
           >
-            Examinar Ruta
+            Browse Path
           </Button>
 
           <div className="flex items-center gap-2">
@@ -218,7 +218,7 @@ export const OrmPackerModal: React.FC = () => {
               onClick={closeOrmPacker}
               disabled={isProcessing}
             >
-              Cancelar
+              Cancel
             </Button>
             <Button
               variant="primary"
@@ -227,7 +227,7 @@ export const OrmPackerModal: React.FC = () => {
               isLoading={isProcessing}
               disabled={!newName.trim()}
             >
-              Empaquetar ORM
+              Pack ORM
             </Button>
           </div>
         </div>
@@ -237,14 +237,14 @@ export const OrmPackerModal: React.FC = () => {
         {/* Mode Switcher */}
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-ink-primary font-primary">
-            Modo de Entrada
+            Input Mode
           </span>
           <SegmentedControl
             value={mode}
             onChange={(val) => setMode(val as 'gltf' | 'separate')}
             options={[
-              { value: 'gltf', label: 'glTF (MR + AO opcional)' },
-              { value: 'separate', label: '3 Mapas (R, G, B)' }
+              { value: 'gltf', label: 'glTF (MR + optional AO)' },
+              { value: 'separate', label: '3 Maps (R, G, B)' }
             ]}
             size="sm"
           />
@@ -252,24 +252,24 @@ export const OrmPackerModal: React.FC = () => {
 
         {/* Inputs */}
         <div className="space-y-2.5 pt-1">
-          {/* AO Map Input (Canal R) */}
+          {/* AO Map Input (Channel R) */}
           <div className="space-y-1">
             <label className="text-[10px] font-mono tabular-nums text-ink-secondary flex items-center justify-between">
-              <span>Canal R — Oclusión Ambiental (AO){mode === 'gltf' ? ' (Opcional)' : ''}</span>
+              <span>Channel R — Ambient Occlusion (AO){mode === 'gltf' ? ' (Optional)' : ''}</span>
             </label>
             <div className="flex gap-1.5">
               <div className="flex-1">
                 <TextInput
                   readOnly
                   value={aoPath}
-                  placeholder={mode === 'gltf' ? 'Opcional (Sin AO = luz ambiente 100%)...' : 'Selecciona el mapa AO...'}
+                  placeholder={mode === 'gltf' ? 'Optional (No AO = 100% ambient)...' : 'Select AO map...'}
                   mono
                 />
               </div>
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => pickFile(setAoPath, 'Seleccionar mapa de AO')}
+                onClick={() => pickFile(setAoPath, 'Select AO Map')}
                 disabled={isProcessing}
                 icon={<FolderOpen className="w-3.5 h-3.5" />}
               />
@@ -280,21 +280,21 @@ export const OrmPackerModal: React.FC = () => {
           {mode === 'gltf' ? (
             <div className="space-y-1">
               <label className="text-[10px] font-mono tabular-nums text-ink-secondary flex items-center justify-between">
-                <span>Canales G+B — glTF metalRoughness (G: Rough, B: Metal)</span>
+                <span>Channels G+B — glTF metalRoughness (G: Rough, B: Metal)</span>
               </label>
               <div className="flex gap-1.5">
                 <div className="flex-1">
                   <TextInput
                     readOnly
                     value={metalRoughnessPath}
-                    placeholder="Selecciona el mapa metalRoughness..."
+                    placeholder="Select metalRoughness map..."
                     mono
                   />
                 </div>
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => pickFile(setMetalRoughnessPath, 'Seleccionar mapa metalRoughness')}
+                  onClick={() => pickFile(setMetalRoughnessPath, 'Select metalRoughness Map')}
                   disabled={isProcessing}
                   icon={<FolderOpen className="w-3.5 h-3.5" />}
                 />
@@ -302,48 +302,48 @@ export const OrmPackerModal: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2">
-              {/* Roughness (Canal G) */}
+              {/* Roughness (Channel G) */}
               <div className="space-y-1">
                 <label className="text-[10px] font-mono tabular-nums text-ink-secondary block truncate">
-                  Canal G — Rugosidad
+                  Channel G — Roughness
                 </label>
                 <div className="flex gap-1.5">
                   <div className="flex-1">
                     <TextInput
                       readOnly
                       value={roughnessPath}
-                      placeholder="Rugosidad..."
+                      placeholder="Roughness..."
                       mono
                     />
                   </div>
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => pickFile(setRoughnessPath, 'Seleccionar mapa Roughness')}
+                    onClick={() => pickFile(setRoughnessPath, 'Select Roughness Map')}
                     disabled={isProcessing}
                     icon={<FolderOpen className="w-3.5 h-3.5" />}
                   />
                 </div>
               </div>
 
-              {/* Metallic (Canal B) */}
+              {/* Metallic (Channel B) */}
               <div className="space-y-1">
                 <label className="text-[10px] font-mono tabular-nums text-ink-secondary block truncate">
-                  Canal B — Metalicidad
+                  Channel B — Metalness
                 </label>
                 <div className="flex gap-1.5">
                   <div className="flex-1">
                     <TextInput
                       readOnly
                       value={metalnessPath}
-                      placeholder="Metálico..."
+                      placeholder="Metalness..."
                       mono
                     />
                   </div>
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => pickFile(setMetalnessPath, 'Seleccionar mapa Metallic')}
+                    onClick={() => pickFile(setMetalnessPath, 'Select Metalness Map')}
                     disabled={isProcessing}
                     icon={<FolderOpen className="w-3.5 h-3.5" />}
                   />
@@ -357,7 +357,7 @@ export const OrmPackerModal: React.FC = () => {
         <div className="grid grid-cols-2 gap-3 pt-1">
           <div>
             <label className="block text-[11px] text-ink-secondary mb-1 font-primary">
-              Resolución:
+              Resolution:
             </label>
             <select
               value={resolution}
@@ -374,7 +374,7 @@ export const OrmPackerModal: React.FC = () => {
 
           <div>
             <label className="block text-[11px] text-ink-secondary mb-1 font-primary">
-              Calidad WebP ({quality}%):
+              WebP Quality ({quality}%):
             </label>
             <div className="flex items-center h-8">
               <input
@@ -393,7 +393,7 @@ export const OrmPackerModal: React.FC = () => {
         {/* Variant Name Input */}
         <div>
           <label className="block text-[11px] text-ink-secondary mb-1 font-primary">
-            Nombre de la variante ORM:
+            ORM Variant Name:
           </label>
           <TextInput
             value={newName}
@@ -404,14 +404,14 @@ export const OrmPackerModal: React.FC = () => {
                 handlePack();
               }
             }}
-            placeholder="Nombre de la nueva variante ORM..."
+            placeholder="Name for the new ORM variant..."
             mono
           />
         </div>
 
         {customOutputPath && (
           <div className="p-2 bg-surface-low border border-hairline rounded-xs">
-            <span className="text-[10px] text-ink-tertiary font-mono block">Destino personalizado:</span>
+            <span className="text-[10px] text-ink-tertiary font-mono block">Custom output path:</span>
             <span className="text-xs font-mono text-ink-primary truncate block">{customOutputPath}</span>
           </div>
         )}

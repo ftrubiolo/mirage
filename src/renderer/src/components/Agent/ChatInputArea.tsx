@@ -20,7 +20,7 @@ export const ChatInputArea: React.FC<ChatInputAreaProps> = ({
   onStop,
   disabled = false,
   isStreaming = false,
-  placeholder = 'Escribe una instrucción para el modelo o consulta técnica... (Enter para enviar)'
+  placeholder = 'Type an instruction for the model or a technical question... (Enter to send)'
 }) => {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -63,7 +63,7 @@ export const ChatInputArea: React.FC<ChatInputAreaProps> = ({
           variant="secondary"
           onClick={onStop}
           icon={<Square className="w-4 h-4" />}
-          title="Detener la generación (Esc)"
+          title="Stop generation (Esc)"
         />
       ) : (
         <IconButton
@@ -72,7 +72,7 @@ export const ChatInputArea: React.FC<ChatInputAreaProps> = ({
           onClick={onSend}
           disabled={!inputText.trim() || disabled}
           icon={<Send className="w-4 h-4" />}
-          title="Enviar instrucción (Enter)"
+          title="Send instruction (Enter)"
         />
       )}
     </div>

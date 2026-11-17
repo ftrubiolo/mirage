@@ -28,20 +28,20 @@ export const isToolbarSpacer = (id: string): boolean => {
 };
 
 export const TOOLBAR_ITEM_NAMES: Record<StandardToolbarItemId, string> = {
-  'channel-dropdown': 'Canales PBR',
-  'overlays': 'Guías y Sombras',
-  'transform-gizmo': 'Manipulador 3D',
-  'theme-toggle': 'Tema del Visor',
-  'camera-orientation': 'Ángulos CAD',
-  'projection-toggle': 'Modo Cámara (ORTO/PERSP)',
-  'fit-model': 'Reencuadrar Pieza (1:1)',
-  'auto-rotate': 'Giro Automático 360°',
-  'environment-hdri': 'Entorno HDRI',
-  'lighting-intensity': 'Intensidad de Luz',
-  'snapshot-button': 'Captura PNG',
-  'variant-picker': 'Selector de Variantes',
-  'model-stats': 'Estadísticas del Modelo',
-  'animation-controls': 'Control de Animación'
+  'channel-dropdown': 'PBR Channels',
+  'overlays': 'Guides & Shadows',
+  'transform-gizmo': '3D Gizmo',
+  'theme-toggle': 'Viewport Theme',
+  'camera-orientation': 'CAD Camera Views',
+  'projection-toggle': 'Camera Mode (ORTHO/PERSP)',
+  'fit-model': 'Reframe Model (1:1)',
+  'auto-rotate': '360° Auto Orbit',
+  'environment-hdri': 'HDRI Environment',
+  'lighting-intensity': 'Light Intensity',
+  'snapshot-button': 'PNG Snapshot',
+  'variant-picker': 'Variant Picker',
+  'model-stats': 'Model Statistics',
+  'animation-controls': 'Animation Controls'
 };
 
 export interface ToggleableToolbarItem {
@@ -50,30 +50,30 @@ export interface ToggleableToolbarItem {
 }
 
 export const TOGGLEABLE_TOOLBAR_ITEMS: ToggleableToolbarItem[] = [
-  { id: 'channel-dropdown', label: 'Canales PBR' },
-  { id: 'overlays', label: 'Guías y Sombras' },
-  { id: 'transform-gizmo', label: 'Manipulador 3D' },
-  { id: 'theme-toggle', label: 'Tema del Visor' },
-  { id: 'camera-orientation', label: 'Ángulos CAD' },
-  { id: 'projection-toggle', label: 'Modo Cámara (ORTO/PERSP)' },
-  { id: 'fit-model', label: 'Reencuadrar Pieza (1:1)' },
-  { id: 'auto-rotate', label: 'Giro Automático 360°' },
-  { id: 'environment-hdri', label: 'Entorno HDRI' },
-  { id: 'lighting-intensity', label: 'Intensidad de Luz' },
-  { id: 'snapshot-button', label: 'Captura PNG' },
-  { id: 'variant-picker', label: 'Selector de Variantes' },
-  { id: 'model-stats', label: 'Estadísticas del Modelo' },
-  { id: 'animation-controls', label: 'Control de Animación' }
+  { id: 'channel-dropdown', label: 'PBR Channels' },
+  { id: 'overlays', label: 'Guides & Shadows' },
+  { id: 'transform-gizmo', label: '3D Gizmo' },
+  { id: 'theme-toggle', label: 'Viewport Theme' },
+  { id: 'camera-orientation', label: 'CAD Camera Views' },
+  { id: 'projection-toggle', label: 'Camera Mode (ORTHO/PERSP)' },
+  { id: 'fit-model', label: 'Reframe Model (1:1)' },
+  { id: 'auto-rotate', label: '360° Auto Orbit' },
+  { id: 'environment-hdri', label: 'HDRI Environment' },
+  { id: 'lighting-intensity', label: 'Light Intensity' },
+  { id: 'snapshot-button', label: 'PNG Snapshot' },
+  { id: 'variant-picker', label: 'Variant Picker' },
+  { id: 'model-stats', label: 'Model Statistics' },
+  { id: 'animation-controls', label: 'Animation Controls' }
 ];
 
 export const ITEMS_WITH_TEXT: ToggleableToolbarItem[] = [
-  { id: 'channel-dropdown', label: 'Canales PBR' },
-  { id: 'camera-orientation', label: 'Ángulos CAD' },
-  { id: 'environment-hdri', label: 'Entorno HDRI' },
-  { id: 'projection-toggle', label: 'Modo Cámara (ORTO/PERSP)' },
-  { id: 'variant-picker', label: 'Selector de Variantes' },
-  { id: 'model-stats', label: 'Estadísticas del Modelo' },
-  { id: 'animation-controls', label: 'Control de Animación' }
+  { id: 'channel-dropdown', label: 'PBR Channels' },
+  { id: 'camera-orientation', label: 'CAD Camera Views' },
+  { id: 'environment-hdri', label: 'HDRI Environment' },
+  { id: 'projection-toggle', label: 'Camera Mode (ORTHO/PERSP)' },
+  { id: 'variant-picker', label: 'Variant Picker' },
+  { id: 'model-stats', label: 'Model Statistics' },
+  { id: 'animation-controls', label: 'Animation Controls' }
 ];
 
 export const isItemWithText = (id: string): boolean => {

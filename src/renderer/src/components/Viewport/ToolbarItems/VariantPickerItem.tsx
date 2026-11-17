@@ -82,7 +82,7 @@ export const VariantPickerItem: React.FC<VariantPickerItemProps> = ({ compact, i
   }, [menuAnchor]);
 
   const handleOpenCreateModal = () => {
-    setNewVariantName(`Variante ${variants.length + 1}`);
+    setNewVariantName(`Variant ${variants.length + 1}`);
     setCloneCurrent(true);
     setIsCreateModalOpen(true);
     setIsDropdownOpen(false);
@@ -140,7 +140,7 @@ export const VariantPickerItem: React.FC<VariantPickerItemProps> = ({ compact, i
           setMenuAnchor(null);
         }}
         className="px-2 py-1 rounded-xs hover:bg-surface-container flex items-center gap-1.5 transition-colors cursor-pointer group min-w-0 border border-transparent hover:border-hairline"
-        title={`Seleccionar perfil de acabado: ${activeVariant?.name || 'Default'}`}
+        title={`Select finish profile: ${activeVariant?.name || 'Default'}`}
       >
         <Layers className="w-3.5 h-3.5 text-action shrink-0" />
         {!compact && !iconOnly && (
@@ -161,7 +161,7 @@ export const VariantPickerItem: React.FC<VariantPickerItemProps> = ({ compact, i
         size="xs"
         onClick={handleOpenCreateModal}
         icon={<Plus className="w-3.5 h-3.5 stroke-[2.5]" />}
-        title="Crear nuevo perfil de acabado"
+        title="Create new finish profile"
         className="text-action hover:bg-action/10"
       />
 
@@ -169,7 +169,7 @@ export const VariantPickerItem: React.FC<VariantPickerItemProps> = ({ compact, i
       {isDropdownOpen && (
         <div className={`absolute ${getDropdownPlacementClass(placement)} w-60 rounded-xs bg-surface-lowest border border-hairline shadow-xl p-1 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100`}>
           <div className="px-2.5 py-1.5 text-[10px] font-primary font-bold text-ink-tertiary uppercase tracking-wider border-b border-hairline flex items-center justify-between">
-            <span>Perfiles ({variants.length})</span>
+            <span>Profiles ({variants.length})</span>
           </div>
 
           <div
@@ -256,7 +256,7 @@ export const VariantPickerItem: React.FC<VariantPickerItemProps> = ({ compact, i
                         className={`p-1 rounded-xs hover:bg-surface-high transition-colors cursor-pointer ${
                           isMenuOpen ? 'bg-surface-high text-ink-primary' : 'text-ink-tertiary hover:text-ink-primary'
                         }`}
-                        title="Opciones de variante"
+                        title="Variant options"
                       >
                         <MoreVertical className="w-3.5 h-3.5" />
                       </button>
@@ -290,19 +290,19 @@ export const VariantPickerItem: React.FC<VariantPickerItemProps> = ({ compact, i
             className="w-full px-2 py-1.5 rounded-xs hover:bg-surface-container flex items-center gap-2 text-left cursor-pointer"
           >
             <Edit2 className="w-3.5 h-3.5 text-ink-secondary" />
-            <span>Renombrar</span>
+            <span>Rename</span>
           </button>
 
           <button
             onClick={() => {
-              createVariant(`${menuAnchor.variant.name} (Copia)`, true);
+              createVariant(`${menuAnchor.variant.name} (Copy)`, true);
               setMenuAnchor(null);
               setIsDropdownOpen(false);
             }}
             className="w-full px-2 py-1.5 rounded-xs hover:bg-surface-container flex items-center gap-2 text-left cursor-pointer"
           >
             <Copy className="w-3.5 h-3.5 text-ink-secondary" />
-            <span>Duplicar perfil</span>
+            <span>Duplicate profile</span>
           </button>
 
           {!menuAnchor.variant.isDefault && (
@@ -314,7 +314,7 @@ export const VariantPickerItem: React.FC<VariantPickerItemProps> = ({ compact, i
               className="w-full px-2 py-1.5 rounded-xs hover:bg-surface-container flex items-center gap-2 text-left cursor-pointer"
             >
               <Star className="w-3.5 h-3.5 text-amber-500" />
-              <span>Hacer por defecto</span>
+              <span>Set as default</span>
             </button>
           )}
 
@@ -322,10 +322,10 @@ export const VariantPickerItem: React.FC<VariantPickerItemProps> = ({ compact, i
             onClick={() => handleCapturePoster(menuAnchor.id)}
             disabled={isCapturingPoster}
             className="w-full px-2 py-1.5 rounded-xs hover:bg-surface-container flex items-center gap-2 text-left cursor-pointer disabled:opacity-50"
-            title="Capturar miniatura WebP del visor actual para esta variante"
+            title="Capture WebP thumbnail from current viewport for this variant"
           >
             <Camera className="w-3.5 h-3.5 text-action" />
-            <span>{isCapturingPoster ? 'Capturando...' : 'Capturar Póster'}</span>
+            <span>{isCapturingPoster ? 'Capturing...' : 'Capture Poster'}</span>
           </button>
 
           {variants.length > 1 && (
@@ -338,24 +338,24 @@ export const VariantPickerItem: React.FC<VariantPickerItemProps> = ({ compact, i
                 className="w-full px-2 py-1.5 rounded-xs hover:bg-rose-600 hover:text-white text-rose-600 flex items-center gap-2 text-left transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Eliminar perfil</span>
+                <span>Delete profile</span>
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* Modal: Crear Nueva Variante (Using existing Modal UI) */}
+      {/* Modal: Create New Variant */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Nuevo Perfil / Variante"
+        title="New Profile / Variant"
         icon={<Layers className="w-4 h-4 text-action" />}
         size="sm"
         footer={
           <div className="flex items-center justify-end gap-2 w-full">
             <Button variant="secondary" onClick={() => setIsCreateModalOpen(false)}>
-              Cancelar
+              Cancel
             </Button>
             <Button
               variant="primary"
@@ -365,29 +365,29 @@ export const VariantPickerItem: React.FC<VariantPickerItemProps> = ({ compact, i
               }}
               disabled={!newVariantName.trim()}
             >
-              Crear Perfil
+              Create Profile
             </Button>
           </div>
         }
       >
         <form onSubmit={handleConfirmCreate} className="space-y-3.5">
-          <FormField label="Nombre de la Variante" required>
+          <FormField label="Variant Name" required>
             <TextInput
               required
               autoFocus
               value={newVariantName}
               onChange={(e) => setNewVariantName(e.target.value)}
-              placeholder="Ej: Roble Claro & Lino Crudo"
+              placeholder="e.g. Brushed Steel & Matte Black"
             />
           </FormField>
 
           <div className="p-3 bg-surface-low rounded-xs border border-hairline flex items-center justify-between gap-3">
             <div>
               <span className="text-xs font-medium text-ink-primary block">
-                Duplicar mapas actuales
+                Duplicate current maps
               </span>
               <span className="text-[10px] text-ink-secondary block">
-                Copia texturas y parámetros de la variante activa
+                Copies textures and parameters from active variant
               </span>
             </div>
             <Switch checked={cloneCurrent} onChange={setCloneCurrent} />

@@ -107,7 +107,7 @@ export const LibraryView: React.FC = () => {
       <div className="border-b border-hairline bg-surface-low px-6 py-3 shrink-0 flex flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="font-primary font-bold text-base tracking-tight uppercase text-ink-primary">
-            Biblioteca de Piezas
+            Model Library
           </h1>
         </div>
 
@@ -119,7 +119,7 @@ export const LibraryView: React.FC = () => {
             isLoading={isLoading}
             variant="outline"
             size="sm"
-            title="Recargar biblioteca del disco"
+            title="Reload library from disk"
             onClick={fetchLibrary}
           />
 
@@ -129,9 +129,9 @@ export const LibraryView: React.FC = () => {
             size="sm"
             icon={<FolderOpen className="w-3.5 h-3.5 text-action" />}
             onClick={handleOpenFolder}
-            title="Abrir carpeta física en el explorador de archivos"
+            title="Open library folder in system file explorer"
           >
-            <span className="hidden sm:inline">Abrir en Explorador</span>
+            <span className="hidden sm:inline">Open Folder</span>
           </Button>
 
           {/* View Mode Toggle */}
@@ -141,19 +141,19 @@ export const LibraryView: React.FC = () => {
             value={viewMode}
             onChange={(val) => setViewMode(val as 'grid' | 'table')}
             options={[
-              { value: 'grid', icon: <Grid className="w-3.5 h-3.5" />, title: 'Vista en Cuadrícula' },
-              { value: 'table', icon: <List className="w-3.5 h-3.5" />, title: 'Vista en Tabla Técnica' }
+              { value: 'grid', icon: <Grid className="w-3.5 h-3.5" />, title: 'Grid View' },
+              { value: 'table', icon: <List className="w-3.5 h-3.5" />, title: 'Technical Table View' }
             ]}
           />
 
-          {/* + Nueva Pieza */}
+          {/* + New Model */}
           <Button
             variant="primary"
             size="sm"
             icon={<Plus className="w-3.5 h-3.5" />}
             onClick={() => setIsNewModalOpen(true)}
           >
-            Nueva Pieza
+            New Model
           </Button>
         </div>
       </div>
@@ -162,13 +162,13 @@ export const LibraryView: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-6 min-h-0">
         {isLoading ? (
           <div className="h-64 flex flex-col items-center justify-center text-ink-secondary gap-2">
-            <Spinner size="lg" label="Leyendo catálogo técnico en disco..." />
+            <Spinner size="lg" label="Reading asset catalog from disk..." />
           </div>
         ) : entries.length === 0 ? (
           <EmptyState
             icon={<Box className="w-8 h-8 stroke-[1.25] text-action" />}
-            title="Biblioteca Vacía"
-            description="Aún no has registrado ninguna pieza en la biblioteca técnica de Sera. Las piezas guardadas se organizan en carpetas individuales con sus modelos, texturas y configuración técnica."
+            title="Empty Library"
+            description="No 3D models have been saved to your Mirage library yet. Saved models are organized into individual folders containing geometry, PBR textures, and technical settings."
             action={
               <Button
                 variant="primary"
@@ -176,7 +176,7 @@ export const LibraryView: React.FC = () => {
                 icon={<Plus className="w-4 h-4" />}
                 onClick={() => setIsNewModalOpen(true)}
               >
-                Crear Primera Pieza
+                Create First Model
               </Button>
             }
           />
@@ -207,7 +207,7 @@ export const LibraryView: React.FC = () => {
                         icon={<FolderOpen className="w-3.5 h-3.5 text-action" />}
                         variant="outline"
                         size="xs"
-                        title="Abrir carpeta de esta pieza en el sistema"
+                        title="Open model folder in file explorer"
                         onClick={(e) => {
                           e.stopPropagation();
                           if (libraryPath) {
@@ -219,7 +219,7 @@ export const LibraryView: React.FC = () => {
                         icon={<Trash2 className="w-3.5 h-3.5" />}
                         variant="destructive"
                         size="xs"
-                        title="Eliminar pieza"
+                        title="Delete model"
                         onClick={(e) => {
                           e.stopPropagation();
                           setDeleteCandidate(entry);
@@ -236,13 +236,13 @@ export const LibraryView: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow clickable={false}>
-                <TableHead className="w-16">Vista</TableHead>
-                <TableHead>Pieza &amp; Slug</TableHead>
-                <TableHead>Perfiles</TableHead>
-                <TableHead>Dimensiones</TableHead>
-                <TableHead>Mapas</TableHead>
-                <TableHead>Polígonos</TableHead>
-                <TableHead className="text-right">Acción</TableHead>
+                <TableHead className="w-16">Preview</TableHead>
+                <TableHead>Model &amp; Slug</TableHead>
+                <TableHead>Variants</TableHead>
+                <TableHead>Dimensions</TableHead>
+                <TableHead>Maps</TableHead>
+                <TableHead>Polygons</TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -285,7 +285,7 @@ export const LibraryView: React.FC = () => {
                     {/* Variants */}
                     <TableCell mono>
                       <Badge variant="neutral" size="xs">
-                        {variantsCount} {variantsCount === 1 ? 'perfil' : 'perfiles'}
+                        {variantsCount} {variantsCount === 1 ? 'variant' : 'variants'}
                       </Badge>
                     </TableCell>
 
@@ -297,7 +297,7 @@ export const LibraryView: React.FC = () => {
                     </TableCell>
 
                     {/* Maps */}
-                    <TableCell mono>{mapsCount} mapas</TableCell>
+                    <TableCell mono>{mapsCount} maps</TableCell>
 
                     {/* Polygons */}
                     <TableCell mono>
@@ -311,7 +311,7 @@ export const LibraryView: React.FC = () => {
                           icon={<FolderOpen className="w-3.5 h-3.5 text-action" />}
                           variant="outline"
                           size="xs"
-                          title="Abrir carpeta física en el sistema"
+                          title="Open physical folder in system explorer"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (libraryPath) {
@@ -328,13 +328,13 @@ export const LibraryView: React.FC = () => {
                           isLoading={loadingSlug === entry.slug}
                           iconRight={<ArrowUpRight className="w-3 h-3" />}
                         >
-                          Abrir
+                          Open
                         </Button>
                         <IconButton
                           icon={<Trash2 className="w-3.5 h-3.5" />}
                           variant="destructive"
                           size="xs"
-                          title="Eliminar pieza"
+                          title="Delete model"
                           onClick={(e) => {
                             e.stopPropagation();
                             setDeleteCandidate(entry);
@@ -350,7 +350,7 @@ export const LibraryView: React.FC = () => {
         )}
       </div>
 
-      {/* New Piece Modal */}
+      {/* New Model Modal */}
       <NewPieceModal
         isOpen={isNewModalOpen}
         onClose={() => setIsNewModalOpen(false)}
@@ -362,17 +362,17 @@ export const LibraryView: React.FC = () => {
         isOpen={Boolean(deleteCandidate)}
         onClose={() => setDeleteCandidate(null)}
         onConfirm={handleConfirmDelete}
-        title="¿Eliminar pieza de la biblioteca?"
+        title="Delete model from library?"
         isLoading={isDeleting}
-        confirmText="Confirmar Eliminación"
+        confirmText="Confirm Delete"
         message={
           deleteCandidate ? (
             <p>
-              Esta acción eliminará el directorio{' '}
+              This action will permanently delete the directory{' '}
               <span className="font-mono text-ink-primary font-semibold">
                 library/{deleteCandidate.slug}
               </span>{' '}
-              y todos sus archivos asociados (modelo, mapas y settings).
+              and all associated files (model, textures, and settings).
             </p>
           ) : null
         }

@@ -36,37 +36,37 @@ interface ViewportContextMenuProps {
 }
 
 const CAMERA_PRESETS: { id: CameraPreset; label: string; action: KeybindAction }[] = [
-  { id: 'iso', label: 'Isométrica (3/4)', action: 'camera.iso' },
-  { id: 'front', label: 'Frontal', action: 'camera.front' },
-  { id: 'right', label: 'Lateral Derecha', action: 'camera.right' },
-  { id: 'left', label: 'Lateral Izquierda', action: 'camera.left' },
-  { id: 'top', label: 'Superior (Planta)', action: 'camera.top' },
-  { id: 'bottom', label: 'Inferior', action: 'camera.bottom' },
-  { id: 'back', label: 'Posterior', action: 'camera.back' }
+  { id: 'iso', label: 'Isometric (3/4)', action: 'camera.iso' },
+  { id: 'front', label: 'Front', action: 'camera.front' },
+  { id: 'right', label: 'Right Side', action: 'camera.right' },
+  { id: 'left', label: 'Left Side', action: 'camera.left' },
+  { id: 'top', label: 'Top (Plan)', action: 'camera.top' },
+  { id: 'bottom', label: 'Bottom', action: 'camera.bottom' },
+  { id: 'back', label: 'Back', action: 'camera.back' }
 ];
 
 const FOV_PRESETS = [
-  { fov: 35, label: '35° (Teleobjetivo Ortogonal)' },
-  { fov: 50, label: '50° (Perspectiva Natural)' },
-  { fov: 75, label: '75° (Gran Angular)' }
+  { fov: 35, label: '35° (Telephoto CAD)' },
+  { fov: 50, label: '50° (Natural Perspective)' },
+  { fov: 75, label: '75° (Wide Angle)' }
 ];
 
 const LIGHTING_PRESETS: { id: LightingPreset; label: string; action: KeybindAction }[] = [
-  { id: 'studio', label: 'Estudio Atelier (3 Puntos)', action: 'lighting.presetStudio' },
-  { id: 'natural', label: 'Luz Solar Natural', action: 'lighting.presetNatural' },
-  { id: 'dramatic', label: 'Dramático / Showroom', action: 'lighting.presetDramatic' },
-  { id: 'technical', label: 'Inspección Técnica Plana', action: 'lighting.presetTechnical' }
+  { id: 'studio', label: 'Studio (3-Point)', action: 'lighting.presetStudio' },
+  { id: 'natural', label: 'Natural Daylight', action: 'lighting.presetNatural' },
+  { id: 'dramatic', label: 'Dramatic / Showroom', action: 'lighting.presetDramatic' },
+  { id: 'technical', label: 'Flat Technical Inspection', action: 'lighting.presetTechnical' }
 ];
 
 const DEBUG_CHANNELS: { id: DebugChannel; label: string }[] = [
-  { id: 'lit', label: 'PBR Completo' },
-  { id: 'albedo', label: 'Albedo (Color Base)' },
-  { id: 'normal', label: 'Normales' },
-  { id: 'roughness', label: 'Rugosidad' },
-  { id: 'metalness', label: 'Metálico' },
-  { id: 'ao', label: 'Oclusión Ambiental' },
-  { id: 'emissive', label: 'Emisivo' },
-  { id: 'wireframe', label: 'Malla Poligonal' }
+  { id: 'lit', label: 'Full PBR (Lit)' },
+  { id: 'albedo', label: 'Albedo (Base Color)' },
+  { id: 'normal', label: 'Normals' },
+  { id: 'roughness', label: 'Roughness' },
+  { id: 'metalness', label: 'Metalness' },
+  { id: 'ao', label: 'Ambient Occlusion' },
+  { id: 'emissive', label: 'Emissive' },
+  { id: 'wireframe', label: 'Wireframe' }
 ];
 
 export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
@@ -132,11 +132,11 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
 
   return (
     <ContextMenu isOpen={isOpen} position={{ x, y }} onClose={onClose}>
-      <ContextMenuHeader>Taller 3D Mirage</ContextMenuHeader>
+      <ContextMenuHeader>Mirage 3D Viewport</ContextMenuHeader>
 
       {/* Submenu 1: Camera Views */}
-      <ContextMenuSub label="Vistas de Cámara" icon={<Camera className="w-3.5 h-3.5 text-action" />}>
-        <ContextMenuHeader>Orientación de Cámara</ContextMenuHeader>
+      <ContextMenuSub label="Camera Views" icon={<Camera className="w-3.5 h-3.5 text-action" />}>
+        <ContextMenuHeader>Camera Orientation</ContextMenuHeader>
         {CAMERA_PRESETS.map((item) => (
           <ContextMenuItem
             key={item.id}
@@ -155,20 +155,20 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
           shortcut={getShortcutLabel('camera.reset')}
           onClick={triggerFitToModel}
         >
-          Reencuadrar Pieza
+          Frame Model
         </ContextMenuItem>
 
         <ContextMenuSeparator />
 
         <ContextMenuCheckbox
-          label="Modo Ortográfico"
+          label="Orthographic Mode"
           checked={isOrthographic}
           shortcut={getShortcutLabel('camera.toggleOrthographic')}
           onChange={toggleOrthographic}
         />
 
         <ContextMenuSeparator />
-        <ContextMenuHeader>Campo de Visión (FOV)</ContextMenuHeader>
+        <ContextMenuHeader>Field of View (FOV)</ContextMenuHeader>
 
         {FOV_PRESETS.map((f) => (
           <ContextMenuItem
@@ -183,8 +183,8 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
       </ContextMenuSub>
 
       {/* Submenu 2: Lighting & Studio */}
-      <ContextMenuSub label="Iluminación y Estudio" icon={<Sun className="w-3.5 h-3.5 text-action" />} width={240}>
-        <ContextMenuHeader>Presets de Iluminación</ContextMenuHeader>
+      <ContextMenuSub label="Lighting &amp; Studio" icon={<Sun className="w-3.5 h-3.5 text-action" />} width={240}>
+        <ContextMenuHeader>Lighting Presets</ContextMenuHeader>
         {LIGHTING_PRESETS.map((item) => (
           <ContextMenuItem
             key={item.id}
@@ -197,7 +197,7 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
         ))}
 
         <ContextMenuSeparator />
-        <ContextMenuHeader>Rotación de Luz Solar</ContextMenuHeader>
+        <ContextMenuHeader>Sun Rotation</ContextMenuHeader>
 
         <ContextMenuCustom>
           <div className="flex items-center justify-between gap-1 text-[11px] py-0.5">
@@ -205,18 +205,18 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
               type="button"
               onClick={() => setSunAzimuth(sunAzimuth - 45)}
               className="px-2 py-1 bg-surface-container hover:bg-surface-high rounded-xs border border-hairline cursor-pointer"
-              title="Girar 45° a la izquierda"
+              title="Rotate 45° left"
             >
               -45°
             </button>
             <span className="font-mono text-[10px] text-action font-semibold">
-              {Math.round(sunAzimuth)}° Azimut
+              {Math.round(sunAzimuth)}° Azimuth
             </span>
             <button
               type="button"
               onClick={() => setSunAzimuth(sunAzimuth + 45)}
               className="px-2 py-1 bg-surface-container hover:bg-surface-high rounded-xs border border-hairline cursor-pointer"
-              title="Girar 45° a la derecha"
+              title="Rotate 45° right"
             >
               +45°
             </button>
@@ -226,13 +226,13 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
         <ContextMenuSeparator />
 
         <ContextMenuCheckbox
-          label="Sombras Arrojadas"
+          label="Cast Shadows"
           checked={directionalShadows}
           onChange={toggleDirectionalShadows}
         />
 
         <ContextMenuCheckbox
-          label="Sombras de Contacto Piso"
+          label="Floor Contact Shadows"
           checked={showContactShadows}
           shortcut={getShortcutLabel('view.toggleContactShadows')}
           onChange={toggleContactShadows}
@@ -241,7 +241,7 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
         <ContextMenuSeparator />
 
         <ContextMenuCheckbox
-          label="Fondo 360° HDR"
+          label="360° HDR Background"
           checked={showEnvironmentBackground}
           shortcut={getShortcutLabel('view.toggleBackground')}
           onChange={toggleEnvironmentBackground}
@@ -249,8 +249,8 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
       </ContextMenuSub>
 
       {/* Submenu 3: PBR Debug Channels */}
-      <ContextMenuSub label="Pases PBR (Canales)" icon={<Layers className="w-3.5 h-3.5 text-action" />}>
-        <ContextMenuHeader>Inspección de Material</ContextMenuHeader>
+      <ContextMenuSub label="PBR Passes (Channels)" icon={<Layers className="w-3.5 h-3.5 text-action" />}>
+        <ContextMenuHeader>Material Inspection</ContextMenuHeader>
         {DEBUG_CHANNELS.map((ch) => (
           <ContextMenuItem
             key={ch.id}
@@ -263,39 +263,39 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
       </ContextMenuSub>
 
       {/* Submenu 4: Viewport Helpers */}
-      <ContextMenuSub label="Guías y Taller" icon={<Compass className="w-3.5 h-3.5 text-action" />}>
-        <ContextMenuHeader>Ayudas Visuales</ContextMenuHeader>
+      <ContextMenuSub label="Guides &amp; Viewport" icon={<Compass className="w-3.5 h-3.5 text-action" />}>
+        <ContextMenuHeader>Visual Aids</ContextMenuHeader>
 
         <ContextMenuCheckbox
-          label="Cotas y Dimensiones"
+          label="Bounds &amp; Dimensions"
           checked={showDimensions}
           shortcut={getShortcutLabel('view.toggleDimensions')}
           onChange={toggleDimensions}
         />
 
         <ContextMenuCheckbox
-          label="Grilla de Taller"
+          label="Reference Grid"
           checked={showGrid}
           shortcut={getShortcutLabel('view.toggleGrid')}
           onChange={toggleGrid}
         />
 
         <ContextMenuCheckbox
-          label="Modo Wireframe"
+          label="Wireframe Mode"
           checked={showWireframe}
           shortcut={getShortcutLabel('view.toggleWireframe')}
           onChange={toggleWireframe}
         />
 
         <ContextMenuCheckbox
-          label="Giro Automático"
+          label="Auto-Rotate"
           checked={autoRotate}
           shortcut={getShortcutLabel('view.toggleAutoRotate')}
           onChange={toggleAutoRotate}
         />
 
         <ContextMenuCheckbox
-          label="Panel de Taller"
+          label="Workbench Panel"
           checked={!isWorkbenchSidebarCollapsed}
           shortcut={getShortcutLabel('view.toggleSidebar')}
           onChange={toggleWorkbenchSidebar}
@@ -307,7 +307,7 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
           icon={viewportTheme === 'dark' ? <SunMedium className="w-3.5 h-3.5 text-ink-secondary" /> : <Moon className="w-3.5 h-3.5 text-ink-secondary" />}
           onClick={toggleViewportTheme}
         >
-          Fondo {viewportTheme === 'dark' ? 'Claro' : 'Oscuro'}
+          {viewportTheme === 'dark' ? 'Light Background' : 'Dark Background'}
         </ContextMenuItem>
       </ContextMenuSub>
 
@@ -319,14 +319,14 @@ export const ViewportContextMenu: React.FC<ViewportContextMenuProps> = ({
         shortcut={getShortcutLabel('camera.reset')}
         onClick={triggerFitToModel}
       >
-        Reencuadrar Pieza
+        Frame Model
       </ContextMenuItem>
 
       <ContextMenuItem
         icon={<ImageIcon className="w-3.5 h-3.5 text-ink-secondary" />}
         onClick={handleTakeSnapshot}
       >
-        Captura Rápida HD
+        Quick HD Snapshot
       </ContextMenuItem>
     </ContextMenu>
   );

@@ -77,7 +77,7 @@ export const KeybindsSection: React.FC = () => {
   const handleSaveKeybind = async (actionId: KeybindAction) => {
     if (recordedKeys.trim()) {
       await updateKeybind(actionId, recordedKeys.trim());
-      setFeedbackMsg('Atajo guardado correctamente');
+      setFeedbackMsg('Shortcut saved');
       setTimeout(() => setFeedbackMsg(null), 2500);
     }
     setEditingActionId(null);
@@ -85,7 +85,7 @@ export const KeybindsSection: React.FC = () => {
 
   const handleResetDefaults = async () => {
     await resetToDefaults();
-    setFeedbackMsg('Atajos restaurados a valores por defecto');
+    setFeedbackMsg('Shortcuts restored to defaults');
     setTimeout(() => setFeedbackMsg(null), 2500);
   };
 
@@ -105,10 +105,10 @@ export const KeybindsSection: React.FC = () => {
         <div>
           <h2 className="font-primary font-semibold text-xs uppercase tracking-wider text-ink-secondary flex items-center gap-2">
             <Keyboard className="w-4 h-4 text-action" />
-            <span>Atajos de Teclado del Visor</span>
+            <span>Viewport Keyboard Shortcuts</span>
           </h2>
           <p className="text-xs text-ink-tertiary mt-0.5">
-            Configuración y mapeo de teclas rápidas para orientación de cámara, control lumínico y metrología.
+            Configure and remap hotkeys for camera orientation, lighting control, and metrology.
           </p>
         </div>
 
@@ -117,9 +117,9 @@ export const KeybindsSection: React.FC = () => {
           size="xs"
           onClick={handleResetDefaults}
           icon={<RotateCcw className="w-3.5 h-3.5" />}
-          title="Restaurar configuración original"
+          title="Restore default shortcuts"
         >
-          Restaurar Predeterminados
+          Restore Defaults
         </Button>
       </div>
 
@@ -128,9 +128,9 @@ export const KeybindsSection: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="text-[11px] font-primary font-semibold uppercase tracking-wider text-ink-secondary mb-1 flex items-center gap-1.5">
-              <span>Archivo de Configuración JSON</span>
+              <span>JSON Configuration File</span>
               <InfoTooltip
-                content="Los atajos se guardan en tiempo real en este archivo y pueden editarse externamente con cualquier editor de texto."
+                content="Shortcuts are saved to this file in real time and can also be edited externally with any text editor."
                 position="top"
                 align="start"
               />
@@ -146,7 +146,7 @@ export const KeybindsSection: React.FC = () => {
             onClick={handleOpenFolder}
             icon={<FolderOpen className="w-4 h-4 text-action" />}
           >
-            Revelar Archivo
+            Reveal File
           </Button>
         </div>
       </div>
@@ -156,10 +156,10 @@ export const KeybindsSection: React.FC = () => {
         {/* Category Tabs */}
         <SegmentedControl
           options={[
-            { value: 'all', label: 'Todos' },
-            { value: 'camera', label: 'Cámara', icon: <Camera className="w-3 h-3" /> },
-            { value: 'view', label: 'Visor y Taller', icon: <Compass className="w-3 h-3" /> },
-            { value: 'lighting', label: 'Iluminación', icon: <Sun className="w-3 h-3" /> }
+            { value: 'all', label: 'All' },
+            { value: 'camera', label: 'Camera', icon: <Camera className="w-3 h-3" /> },
+            { value: 'view', label: 'Viewport', icon: <Compass className="w-3 h-3" /> },
+            { value: 'lighting', label: 'Lighting', icon: <Sun className="w-3 h-3" /> }
           ]}
           value={selectedCategory}
           onChange={(val) => setSelectedCategory(val as any)}
@@ -168,7 +168,7 @@ export const KeybindsSection: React.FC = () => {
 
         {/* Search Input */}
         <SearchInput
-          placeholder="Buscar atajo o acción..."
+          placeholder="Search shortcut or action..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onClear={() => setSearchQuery('')}
@@ -187,7 +187,7 @@ export const KeybindsSection: React.FC = () => {
       <div className="bg-surface-lowest border border-hairline rounded-xs shadow-xs divide-y divide-hairline overflow-hidden">
         {filteredDefinitions.length === 0 ? (
           <div className="p-8 text-center text-ink-tertiary text-xs">
-            No se encontraron atajos que coincidan con la búsqueda.
+            No shortcuts matched your search.
           </div>
         ) : (
           filteredDefinitions.map((meta) => {
@@ -221,9 +221,9 @@ export const KeybindsSection: React.FC = () => {
                         tabIndex={0}
                         onKeyDown={handleKeyDownRecord}
                         className="px-3 py-1 bg-surface-container border border-action ring-1 ring-action/50 rounded-xs font-mono text-xs font-bold text-action animate-pulse outline-none min-w-[100px] text-center cursor-pointer"
-                        title="Presiona la nueva combinación de teclas"
+                        title="Press new key combination"
                       >
-                        {recordedKeys || 'Presiona tecla...'}
+                        {recordedKeys || 'Press key...'}
                       </div>
 
                       <IconButton
@@ -231,7 +231,7 @@ export const KeybindsSection: React.FC = () => {
                         variant="primary"
                         onClick={() => handleSaveKeybind(meta.id)}
                         icon={<Check className="w-3.5 h-3.5" />}
-                        title="Guardar atajo"
+                        title="Save shortcut"
                       />
 
                       <IconButton
@@ -239,17 +239,17 @@ export const KeybindsSection: React.FC = () => {
                         variant="secondary"
                         onClick={() => setEditingActionId(null)}
                         icon={<X className="w-3.5 h-3.5" />}
-                        title="Cancelar"
+                        title="Cancel"
                       />
                     </div>
                   ) : (
                     <button
                       onClick={() => handleStartEditing(meta)}
                       className="group px-3 py-1 bg-surface-low hover:bg-surface-container border border-hairline hover:border-hairline-strong rounded-xs flex items-center gap-2 transition-colors cursor-pointer"
-                      title="Clic para reasignar este atajo"
+                      title="Click to remap shortcut"
                     >
                       <span className="font-mono text-xs font-bold tabular-nums text-ink-primary tracking-wide">
-                        {currentShortcut || 'Sin asignar'}
+                        {currentShortcut || 'Unassigned'}
                       </span>
                       <Edit2 className="w-3 h-3 text-ink-tertiary group-hover:text-action transition-colors" />
                     </button>

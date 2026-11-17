@@ -68,7 +68,7 @@ export const Modal: React.FC<ModalProps> = ({
           <button
             onClick={onClose}
             className="p-1 rounded-xs text-ink-tertiary hover:text-ink-primary hover:bg-surface-container transition-colors cursor-pointer"
-            title="Cerrar modal (Esc)"
+            title="Close modal (Esc)"
           >
             <X className="w-4 h-4" />
           </button>

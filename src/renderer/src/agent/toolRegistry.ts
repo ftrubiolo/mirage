@@ -27,7 +27,7 @@ export interface AgentToolDeclaration {
 export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
   {
     name: 'set_pbr_parameter',
-    description: 'Modifica un parámetro numérico o de color del material PBR activo en el visor 3D en tiempo real.',
+    description: 'Modifies a numeric, boolean, or color parameter of the active PBR material in the 3D viewport in real time.',
     parameters: {
       type: 'object',
       properties: {
@@ -49,11 +49,11 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
             'ior',
             'displacementScale'
           ],
-          description: 'Nombre de la propiedad PBR a modificar'
+          description: 'Name of the PBR property to modify'
         },
         value: {
           type: ['number', 'string', 'boolean'],
-          description: 'Nuevo valor para la propiedad (número entre 0 y 1 para factores, hex para colores como #ffffff, o booleano)'
+          description: 'New property value (0–1 for scalar factors, hex string like #ffffff for colors, or boolean)'
         }
       },
       required: ['property', 'value']
@@ -62,35 +62,35 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
       // The schema above is advisory: the model's output is untrusted, so the
       // property name is re-checked here against the real parameter set.
       if (!isMaterialParameter(property)) {
-        throw new Error(`Propiedad PBR desconocida: ${String(property)}`);
+        throw new Error(`Unknown PBR property: ${String(property)}`);
       }
       if (typeof value !== 'number' && typeof value !== 'string' && typeof value !== 'boolean') {
-        throw new Error('Valor inválido para el parámetro PBR');
+        throw new Error('Invalid value for PBR parameter');
       }
       const pbr = usePbrMaterialStore.getState();
       const before = pbr[property as keyof PbrMaterialParameters];
       const cmd = new SetPbrPropertyCommand(property, value as number | string);
       await commandManager.execute(cmd);
       return {
-        summary: `Ajustado ${property} de ${before} a ${value}`,
+        summary: `Adjusted ${property} from ${before} to ${value}`,
         diff: [{ property, before, after: value }]
       };
     }
   },
   {
     name: 'toggle_pbr_slot',
-    description: 'Activa o desactiva una ranura de textura PBR específica (ej: forzar apagado de mapa normal o de rugosidad).',
+    description: 'Enables or disables a specific PBR texture map slot (e.g., force-disabling the normal or roughness map).',
     parameters: {
       type: 'object',
       properties: {
         slot: {
           type: 'string',
           enum: ALL_SLOT_NAMES,
-          description: 'Ranura de textura a activar o desactivar'
+          description: 'Texture slot to enable or disable'
         },
         enabled: {
           type: 'boolean',
-          description: 'true para activar la ranura, false para apagarla'
+          description: 'true to enable the slot, false to disable it'
         }
       },
       required: ['slot', 'enabled']
@@ -101,21 +101,21 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
       const cmd = new ToggleSlotEnabledCommand(slot as SlotName, enabled);
       await commandManager.execute(cmd);
       return {
-        summary: `Ranura ${slot} ${enabled ? 'activada' : 'desactivada'}`,
+        summary: `Slot ${slot} ${enabled ? 'enabled' : 'disabled'}`,
         diff: [{ property: `slotEnabled.${slot}`, before, after: enabled }]
       };
     }
   },
   {
     name: 'set_environment_preset',
-    description: 'Cambia el entorno HDR y la iluminación del taller 3D.',
+    description: 'Changes the 3D studio HDR environment and lighting preset.',
     parameters: {
       type: 'object',
       properties: {
         preset: {
           type: 'string',
           enum: ['city', 'studio', 'warehouse', 'apartment', 'sunset', 'night', 'park', 'lobby'],
-          description: 'Preset de iluminación de estudio'
+          description: 'Studio lighting preset'
         }
       },
       required: ['preset']
@@ -126,21 +126,21 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
       const cmd = new SetEnvironmentPresetCommand(preset as EnvironmentPreset);
       await commandManager.execute(cmd);
       return {
-        summary: `Iluminación de entorno cambiada a "${preset}"`,
+        summary: `Environment lighting changed to "${preset}"`,
         diff: [{ property: 'environmentPreset', before, after: preset }]
       };
     }
   },
   {
     name: 'set_debug_channel',
-    description: 'Alterna el canal de inspección PBR en el visor 3D (lit, albedo, normal, roughness, metalness, ao, wireframe).',
+    description: 'Switches the PBR inspection channel in the 3D viewport (lit, albedo, normal, roughness, metalness, ao, emissive, wireframe).',
     parameters: {
       type: 'object',
       properties: {
         channel: {
           type: 'string',
           enum: ['lit', 'albedo', 'normal', 'roughness', 'metalness', 'ao', 'emissive', 'wireframe'],
-          description: 'Canal de pase de render a visualizar'
+          description: 'Render pass channel to display'
         }
       },
       required: ['channel']
@@ -150,14 +150,14 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
       const before = pbr.debugChannel;
       pbr.setDebugChannel(channel);
       return {
-        summary: `Pase de depuración cambiado a "${channel}"`,
+        summary: `Debug render pass switched to "${channel}"`,
         diff: [{ property: 'debugChannel', before, after: channel }]
       };
     }
   },
   {
     name: 'audit_geometry',
-    description: 'Audita la geometría del modelo activo: polígonos, vértices, llamadas de dibujo (draw calls) y recomendaciones técnicas.',
+    description: 'Audits the active model geometry: polygon count, vertices, draw calls, and technical recommendations.',
     parameters: {
       type: 'object',
       properties: {}
@@ -166,14 +166,14 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
       const stats = useModelStore.getState().modelStats;
       if (!stats) {
         return {
-          summary: 'No hay modelo cargado para auditar.',
+          summary: 'No model loaded to audit.',
           diff: []
         };
       }
-      const polyStatus = stats.triangleCount < 100000 ? 'Óptimo (<100k)' : stats.triangleCount <= 250000 ? 'Aceptable' : 'Pesado (>250k)';
-      const drawCallStatus = stats.meshCount <= 10 ? 'Excelente (≤10 mallas)' : 'Múltiples llamadas';
+      const polyStatus = stats.triangleCount < 100000 ? 'Optimal (<100k)' : stats.triangleCount <= 250000 ? 'Acceptable' : 'Heavy (>250k)';
+      const drawCallStatus = stats.meshCount <= 10 ? 'Excellent (≤10 meshes)' : 'Multiple draw calls';
       return {
-        summary: `Auditoría: ${stats.triangleCount.toLocaleString()} triángulos (${polyStatus}), ${stats.meshCount} mallas (${drawCallStatus}).`,
+        summary: `Audit: ${stats.triangleCount.toLocaleString()} triangles (${polyStatus}), ${stats.meshCount} meshes (${drawCallStatus}).`,
         diff: [],
         resultData: {
           triangles: stats.triangleCount,
@@ -187,27 +187,28 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
   },
   {
     name: 'apply_material_preset',
-    description: 'Aplica un preset de material del catálogo de Sera Atelier (ej: lino, cuero, madera, metal).',
+    description: 'Applies a PBR material preset from the Mirage catalog (e.g., fabric, leather, wood, metal, plastic, glass, ceramic).',
     parameters: {
       type: 'object',
       properties: {
         presetId: {
           type: 'string',
-          enum: ['lino', 'cuero', 'madera', 'metal'],
-          description: 'Identificador del preset'
+          enum: ['fabric', 'leather', 'wood', 'metal', 'plastic', 'glass', 'ceramic'],
+          description: 'Preset identifier'
         }
       },
       required: ['presetId']
     },
     execute: async ({ presetId }) => {
-      const preset = GLOBAL_MATERIAL_PRESETS.find((p) => p.id === presetId);
+      const normalizedId = LEGACY_PRESET_ALIASES[String(presetId)] || String(presetId);
+      const preset = GLOBAL_MATERIAL_PRESETS.find((p) => p.id === normalizedId);
       if (!preset) {
-        return { summary: `Preset "${presetId}" no encontrado.`, diff: [] };
+        return { summary: `Preset "${presetId}" not found.`, diff: [] };
       }
 
-      const values = MATERIAL_PRESET_VALUES[String(presetId)];
+      const values = MATERIAL_PRESET_VALUES[normalizedId];
       if (!values) {
-        return { summary: `Preset "${presetId}" sin valores definidos.`, diff: [] };
+        return { summary: `Preset "${presetId}" has no defined parameters.`, diff: [] };
       }
 
       const pbr = usePbrMaterialStore.getState();
@@ -225,29 +226,29 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
         ([property, after]) => new SetPbrPropertyCommand(property, after)
       );
       await commandManager.execute(
-        new TransactionCommand(`Aplicar Preset: ${preset.name}`, commands)
+        new TransactionCommand(`Apply Preset: ${preset.name}`, commands)
       );
 
       return {
-        summary: `Preset "${preset.name}" aplicado correctamente.`,
+        summary: `Applied "${preset.name}" preset.`,
         diff
       };
     }
   },
   {
     name: 'rotate_model',
-    description: 'Rota el modelo 3D en el visor sobre uno o más ejes (X, Y, Z) en grados para corregir su orientación o encarar el frente. Ejemplo: 90° en X para modelos Z-Up invertidos.',
+    description: 'Rotates the 3D model in the viewport around an axis (X, Y, Z) in degrees to fix orientation or face front (e.g., 90° on X for inverted Z-Up models).',
     parameters: {
       type: 'object',
       properties: {
         axis: {
           type: 'string',
           enum: ['x', 'y', 'z'],
-          description: 'Eje sobre el cual rotar el modelo'
+          description: 'Axis to rotate the model around'
         },
         degrees: {
           type: 'number',
-          description: 'Ángulo en grados a incrementar (ej: 90, -90, 180)'
+          description: 'Angle increment in degrees (e.g., 90, -90, 180)'
         }
       },
       required: ['axis', 'degrees']
@@ -265,7 +266,7 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
       await commandManager.execute(cmd);
 
       return {
-        summary: `Rotado el modelo ${delta}° en el eje ${normalizedAxis.toUpperCase()} (Orientación: [${nextRotation.x}°, ${nextRotation.y}°, ${nextRotation.z}°]).`,
+        summary: `Rotated model by ${delta}° on ${normalizedAxis.toUpperCase()} axis (Orientation: [${nextRotation.x}°, ${nextRotation.y}°, ${nextRotation.z}°]).`,
         diff: [
           {
             property: `rotation.${normalizedAxis}`,
@@ -278,15 +279,24 @@ export const MIRAGE_INTERNAL_TOOLS: AgentToolDeclaration[] = [
   }
 ];
 
+const LEGACY_PRESET_ALIASES: Record<string, string> = {
+  lino: 'fabric',
+  cuero: 'leather',
+  madera: 'wood'
+};
+
 /**
  * Preset id -> the material parameters it sets. Held as data so the diff shown
  * to the user and the commands actually executed cannot drift apart.
  */
 const MATERIAL_PRESET_VALUES: Record<string, Record<string, number | string>> = {
-  cuero: { roughnessFactor: 0.35, metalnessFactor: 0.0, clearcoatFactor: 0.2 },
-  lino: { roughnessFactor: 0.85, metalnessFactor: 0.0, sheenRoughness: 0.6 },
+  leather: { roughnessFactor: 0.35, metalnessFactor: 0.0, clearcoatFactor: 0.2 },
+  fabric: { roughnessFactor: 0.85, metalnessFactor: 0.0, sheenRoughness: 0.6 },
   metal: { roughnessFactor: 0.2, metalnessFactor: 0.9 },
-  madera: { roughnessFactor: 0.5, metalnessFactor: 0.0 }
+  wood: { roughnessFactor: 0.5, metalnessFactor: 0.0 },
+  plastic: { roughnessFactor: 0.45, metalnessFactor: 0.0 },
+  glass: { roughnessFactor: 0.05, metalnessFactor: 0.0, transmissionFactor: 0.95, ior: 1.5 },
+  ceramic: { roughnessFactor: 0.15, metalnessFactor: 0.0, clearcoatFactor: 0.6 }
 };
 
 export function getOpenAIToolsDeclarations(mcpTools: any[] = []): any[] {

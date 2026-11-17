@@ -34,8 +34,8 @@ export const STANDARD_PROVIDERS: ProviderDefinition[] = [
     docUrl: 'https://platform.openai.com/docs/api-reference',
     apiKeyHelpUrl: 'https://platform.openai.com/api-keys',
     keyPrefix: 'sk-',
-    placeholderKey: 'sk-proj-... o sk-...',
-    helpText: 'Modelos GPT-4o y serie o1/o3 con soporte nativo de function calling y herramientas.'
+    placeholderKey: 'sk-proj-... or sk-...',
+    helpText: 'GPT-4o and o1/o3 series models with native function calling and tool support.'
   },
   {
     id: 'anthropic',
@@ -52,7 +52,7 @@ export const STANDARD_PROVIDERS: ProviderDefinition[] = [
     apiKeyHelpUrl: 'https://console.anthropic.com/settings/keys',
     keyPrefix: 'sk-ant-',
     placeholderKey: 'sk-ant-api03-...',
-    helpText: 'Para conectar Claude directamente se recomienda usar un proxy compatible con OpenAI o OpenRouter.'
+    helpText: 'To connect Claude directly, an OpenAI-compatible proxy or OpenRouter is recommended.'
   },
   {
     id: 'openrouter',
@@ -74,7 +74,7 @@ export const STANDARD_PROVIDERS: ProviderDefinition[] = [
     apiKeyHelpUrl: 'https://openrouter.ai/keys',
     keyPrefix: 'sk-or-v1-',
     placeholderKey: 'sk-or-v1-...',
-    helpText: 'Acceso unificado a más de 200 modelos (Claude, GPT, Gemini, Llama, DeepSeek) con una sola clave.'
+    helpText: 'Unified access to 200+ models (Claude, GPT, Gemini, Llama, DeepSeek) with a single key.'
   },
   {
     id: 'gemini',
@@ -93,7 +93,7 @@ export const STANDARD_PROVIDERS: ProviderDefinition[] = [
     apiKeyHelpUrl: 'https://aistudio.google.com/app/apikey',
     keyPrefix: 'AIzaSy',
     placeholderKey: 'AIzaSy...',
-    helpText: 'Endpoint oficial de Google en modo de compatibilidad OpenAI. Rápido y con gran ventana de contexto.'
+    helpText: 'Official Google endpoint in OpenAI-compatibility mode. Fast with a large context window.'
   },
   {
     id: 'deepseek',
@@ -108,7 +108,7 @@ export const STANDARD_PROVIDERS: ProviderDefinition[] = [
     apiKeyHelpUrl: 'https://platform.deepseek.com/api_keys',
     keyPrefix: 'sk-',
     placeholderKey: 'sk-...',
-    helpText: 'deepseek-chat (V3) para alta velocidad o deepseek-reasoner (R1) para razonamiento profundo.'
+    helpText: 'deepseek-chat (V3) for high speed or deepseek-reasoner (R1) for deep reasoning.'
   },
   {
     id: 'groq',
@@ -125,7 +125,7 @@ export const STANDARD_PROVIDERS: ProviderDefinition[] = [
     apiKeyHelpUrl: 'https://console.groq.com/keys',
     keyPrefix: 'gsk_',
     placeholderKey: 'gsk_...',
-    helpText: 'Inferencia de ultra-alta velocidad (300-800 tok/s) sobre chips LPU de última generación.'
+    helpText: 'Ultra-high-speed inference (300–800 tok/s) powered by next-generation LPU chips.'
   },
   {
     id: 'mistral',
@@ -140,8 +140,8 @@ export const STANDARD_PROVIDERS: ProviderDefinition[] = [
     ],
     docUrl: 'https://docs.mistral.ai/api/',
     apiKeyHelpUrl: 'https://console.mistral.ai/api-keys/',
-    placeholderKey: 'Clave API de Mistral...',
-    helpText: 'Modelos europeos de alta precisión técnica y soporte excelente para generación de código con Codestral.'
+    placeholderKey: 'Mistral API key...',
+    helpText: 'High-precision European models with strong code generation support via Codestral.'
   },
   {
     id: 'xai',
@@ -156,7 +156,7 @@ export const STANDARD_PROVIDERS: ProviderDefinition[] = [
     apiKeyHelpUrl: 'https://console.x.ai',
     keyPrefix: 'xai-',
     placeholderKey: 'xai-...',
-    helpText: 'Modelos Grok de xAI con interfaz compatible con OpenAI y gran capacidad de razonamiento.'
+    helpText: 'xAI Grok models with OpenAI-compatible interface and strong reasoning capabilities.'
   },
   {
     id: 'together',
@@ -171,8 +171,8 @@ export const STANDARD_PROVIDERS: ProviderDefinition[] = [
     ],
     docUrl: 'https://docs.together.ai',
     apiKeyHelpUrl: 'https://api.together.ai/settings/api-keys',
-    placeholderKey: 'Clave API de Together...',
-    helpText: 'Alojamiento en la nube para modelos de código abierto a gran escala y baja latencia.'
+    placeholderKey: 'Together API key...',
+    helpText: 'Low-latency cloud hosting for large-scale open-source models.'
   },
   {
     id: 'nvidia',
@@ -188,7 +188,7 @@ export const STANDARD_PROVIDERS: ProviderDefinition[] = [
     apiKeyHelpUrl: 'https://build.nvidia.com/',
     keyPrefix: 'nvapi-',
     placeholderKey: 'nvapi-...',
-    helpText: 'Microservicios acelerados por GPU NVIDIA con microsegundos de latencia.'
+    helpText: 'NVIDIA GPU-accelerated inference microservices with ultra-low latency.'
   }
 ];
 

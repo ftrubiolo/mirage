@@ -17,17 +17,17 @@ export const EmissiveSection: React.FC = React.memo(() => {
   return (
     <MapSlotPicker
       slot="emissive"
-      title="Mapa Emisivo"
+      title="Emissive Map"
       icon={<Lightbulb className="w-4 h-4 text-action shrink-0" />}
-      placeholderText="Sin mapa emisivo (Arrastra imagen aquí)"
-      subText="Auto-iluminación & Brillo (RGB) • WebP / PNG / JPG"
-      addVariantLabel="Añadir Variante Emisiva (Arrastra imagen aquí)"
-      pickTitle="Seleccionar Mapa Emisivo"
+      placeholderText="No emissive map (Drop image here)"
+      subText="Self-Illumination & Glow (RGB) • WebP / PNG / JPG"
+      addVariantLabel="Add Emissive Variant (Drop image here)"
+      pickTitle="Select Emissive Map"
     >
       <div className="space-y-3 pt-1 min-w-0">
         <div className="grid grid-cols-2 gap-3 items-center min-w-0">
           <SliderControl
-            label="Intensidad Emisiva:"
+            label="Emissive Intensity:"
             value={emissiveIntensity}
             onChange={setEmissiveIntensity}
             min={0.0}
@@ -37,29 +37,29 @@ export const EmissiveSection: React.FC = React.memo(() => {
             formatDecimals={1}
           />
           <ColorPickerControl
-            label="Color Emisivo:"
+            label="Emissive Color:"
             value={emissiveColor}
             onChange={setEmissiveColor}
             placeholder="#ffffff"
           />
         </div>
 
-        {/* Switch: Brillo uniforme sin mapa */}
+        {/* Switch: Uniform glow without map */}
         <div className="p-2.5 rounded-xs bg-surface-lowest border border-hairline flex items-center justify-between gap-3 shadow-xs">
           <div className="min-w-0">
             <span className="text-xs font-semibold text-ink-primary block truncate">
-              Brillo uniforme sin mapa
+              Uniform glow without map
             </span>
             <span className="text-[10px] text-ink-secondary block truncate">
               {emissiveFullGlow
-                ? 'Activo: Aplica emisión a toda la superficie aunque no haya mapa'
-                : 'Inactivo: Solo emite luz con mapa de emisión asignado o embebido'}
+                ? 'Active: Emits across the entire surface even without a map'
+                : 'Inactive: Only emits light with an assigned or embedded emissive map'}
             </span>
           </div>
           <Switch
             checked={emissiveFullGlow}
             onChange={setEmissiveFullGlow}
-            title={emissiveFullGlow ? 'Desactivar brillo uniforme' : 'Activar brillo uniforme'}
+            title={emissiveFullGlow ? 'Disable uniform glow' : 'Enable uniform glow'}
           />
         </div>
       </div>

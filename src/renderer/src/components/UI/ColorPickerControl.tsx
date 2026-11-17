@@ -291,7 +291,7 @@ export const ColorPickerControl: React.FC<ColorPickerControlProps> = ({
           disabled={disabled}
           onClick={handleOpen}
           className="w-7 h-7 rounded-xs border border-hairline-strong hover:border-action transition-colors cursor-pointer p-0.5 shrink-0 flex items-center justify-center shadow-xs focus:outline-none focus:ring-1 focus:ring-action disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Abrir selector de color 3D"
+          title="Open 3D color picker"
         >
           <div
             className="w-full h-full rounded-xs border border-hairline"
@@ -351,13 +351,13 @@ export const ColorPickerControl: React.FC<ColorPickerControlProps> = ({
                   style={{ backgroundColor: hsvToHex(hsv.h, hsv.s, hsv.v) }}
                 />
                 <span className="font-primary font-bold text-[11px] uppercase tracking-wider text-ink-primary">
-                  Selector de Color
+                  Color Picker
                 </span>
               </div>
               <button
                 onClick={handleClose}
                 className="text-ink-tertiary hover:text-ink-primary p-0.5 rounded-xs transition-colors cursor-pointer"
-                title="Cerrar"
+                title="Close"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -396,7 +396,7 @@ export const ColorPickerControl: React.FC<ColorPickerControlProps> = ({
                   backgroundRepeat: 'no-repeat',
                   backgroundSize: '100% 100%'
                 }}
-                title="Luminosidad / Valor (V)"
+                title="Brightness / Value (V)"
               >
                 {/* Value Handle Indicator Line */}
                 <div
@@ -566,7 +566,7 @@ export const ColorPickerControl: React.FC<ColorPickerControlProps> = ({
                   type="button"
                   onClick={handleEyedropper}
                   className="w-6.5 h-6.5 rounded-xs border border-hairline bg-surface-low hover:bg-surface-high hover:text-action text-ink-secondary transition-colors shrink-0 flex items-center justify-center cursor-pointer shadow-xs"
-                  title="Cuentagotas / Pipeta (Muestrear píxel de pantalla)"
+                  title="Eyedropper (Sample screen pixel)"
                 >
                   <Pipette className="w-3.5 h-3.5" />
                 </button>

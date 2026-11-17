@@ -11,8 +11,8 @@ export const PerformanceAudit: React.FC = () => {
     return (
       <EmptyState
         icon={<Cpu className="w-6 h-6" />}
-        title="Auditoría de Rendimiento"
-        description="Carga un modelo .glb para auditar el rendimiento y carga poligonal."
+        title="Performance Audit"
+        description="Load a .glb model to inspect draw calls and polygon budget."
       />
     );
   }
@@ -31,7 +31,7 @@ export const PerformanceAudit: React.FC = () => {
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-semibold uppercase tracking-wider font-primary text-ink-primary flex items-center gap-1.5">
           <Cpu className="w-4 h-4 text-action" />
-          Auditoría de Rendimiento & Geometría
+          Performance &amp; Geometry Audit
         </h4>
         <ShieldCheck className="w-4 h-4 text-ink-tertiary" />
       </div>
@@ -40,7 +40,7 @@ export const PerformanceAudit: React.FC = () => {
       <div className="grid grid-cols-2 gap-2 text-xs">
         <div className="p-2.5 rounded-xs bg-surface-low border border-hairline space-y-1">
           <span className="text-[10px] font-semibold uppercase tracking-wider font-primary text-ink-secondary block">
-            Polígonos (Triángulos)
+            Polygons (Triangles)
           </span>
           <div className="flex items-center justify-between">
             <span className="font-mono tabular-nums font-semibold text-ink-primary">
@@ -55,13 +55,13 @@ export const PerformanceAudit: React.FC = () => {
             )}
           </div>
           <span className="text-[9px] text-ink-tertiary block font-mono tabular-nums">
-            {isPolyOptimal ? 'Excelente (<100k)' : isPolyAcceptable ? 'Aceptable (<250k)' : 'Pesado (>250k)'}
+            {isPolyOptimal ? 'Optimal (<100k)' : isPolyAcceptable ? 'Acceptable (<250k)' : 'Heavy (>250k)'}
           </span>
         </div>
 
         <div className="p-2.5 rounded-xs bg-surface-low border border-hairline space-y-1">
           <span className="text-[10px] font-semibold uppercase tracking-wider font-primary text-ink-secondary block">
-            Mallas (Draw Calls)
+            Meshes (Draw Calls)
           </span>
           <div className="flex items-center justify-between">
             <span className="font-mono tabular-nums font-semibold text-ink-primary">{meshCount}</span>
@@ -72,23 +72,23 @@ export const PerformanceAudit: React.FC = () => {
             )}
           </div>
           <span className="text-[9px] text-ink-tertiary block font-mono tabular-nums">
-            {isDrawCallOptimal ? 'Óptimo (≤10 mallas)' : 'Múltiples llamadas'}
+            {isDrawCallOptimal ? 'Optimal (≤10 meshes)' : 'Multiple draw calls'}
           </span>
         </div>
 
         <div className="p-2.5 rounded-xs bg-surface-low border border-hairline space-y-1">
           <span className="text-[10px] font-semibold uppercase tracking-wider font-primary text-ink-secondary block">
-            Vértices Totales
+            Total Vertices
           </span>
           <span className="font-mono tabular-nums font-semibold text-ink-primary block">
             {vertexCount.toLocaleString()}
           </span>
-          <span className="text-[9px] text-ink-tertiary block font-mono tabular-nums">Topología de malla</span>
+          <span className="text-[9px] text-ink-tertiary block font-mono tabular-nums">Mesh topology</span>
         </div>
 
         <div className="p-2.5 rounded-xs bg-surface-low border border-hairline space-y-1">
           <span className="text-[10px] font-semibold uppercase tracking-wider font-primary text-ink-secondary block">
-            Peso del Archivo .glb
+            .GLB File Size
           </span>
           <div className="flex items-center justify-between">
             <span className="font-mono tabular-nums font-semibold text-ink-primary">{fileSizeMb.toFixed(2)} MB</span>
@@ -99,7 +99,7 @@ export const PerformanceAudit: React.FC = () => {
             )}
           </div>
           <span className="text-[9px] text-ink-tertiary block font-mono tabular-nums">
-            {isFileSizeOptimal ? 'Ligero (<15 MB)' : 'Considerar optimización'}
+            {isFileSizeOptimal ? 'Lightweight (<15 MB)' : 'Consider optimization'}
           </span>
         </div>
       </div>
@@ -107,7 +107,7 @@ export const PerformanceAudit: React.FC = () => {
       {/* Materials List */}
       <div className="space-y-1">
         <span className="text-[10px] font-primary font-semibold text-ink-secondary block uppercase tracking-wider">
-          Materiales Detectados en el GLTF ({materials.length})
+          Detected GLTF Materials ({materials.length})
         </span>
         <div className="flex flex-wrap gap-1">
           {materials.map((m, idx) => (

@@ -68,9 +68,9 @@ export interface ModelState {
 }
 
 export const initialModelState = {
-  productId: 'producto-1',
-  productSlug: 'producto-1',
-  productName: 'Nuevo Modelo',
+  productId: 'model-1',
+  productSlug: 'model-1',
+  productName: 'New Model',
   modelFilePath: null as string | null,
   modelUrl: null as string | null,
   modelFileSize: 0,
@@ -228,9 +228,9 @@ export const useModelStore = create<ModelState>((set, get) => ({
     usePbrMaterialStore.getState().resetPbrMaterials();
     set({
       ...initialModelState,
-      productId: 'producto-' + Date.now(),
-      productSlug: 'nuevo-modelo',
-      productName: 'Nuevo Modelo',
+      productId: 'model-' + Date.now(),
+      productSlug: 'new-model',
+      productName: 'New Model',
       modelPosition: { x: 0, y: 0, z: 0 },
       modelRotation: { x: 0, y: 0, z: 0 },
       autoGround: true

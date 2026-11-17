@@ -55,10 +55,10 @@ export const TopNav: React.FC<TopNavProps> = React.memo(({ onOpenSaveModal }) =>
         <button
           onClick={() => setView('hub')}
           className="flex items-center gap-2 group cursor-pointer focus:outline-none"
-          title="Ir al Hub / Inicio del Atelier"
+          title="Go to Mirage Hub / Home"
         >
           <div className="h-6 px-2 rounded-xs bg-action text-white font-primary font-bold text-xs tracking-wider flex items-center justify-center uppercase shadow-xs group-hover:bg-action-hover transition-colors">
-            SERA
+            3D
           </div>
           <span className="font-primary font-semibold text-xs tracking-wider uppercase text-ink-primary group-hover:text-action transition-colors hidden sm:inline">
             MIRAGE
@@ -76,8 +76,8 @@ export const TopNav: React.FC<TopNavProps> = React.memo(({ onOpenSaveModal }) =>
                   type="text"
                   value={productName}
                   onChange={(e) => setProductMeta(activeEntrySlug, e.target.value)}
-                  placeholder="Nombre de la pieza"
-                  title="Haz clic para renombrar la pieza (autoguardado activo)"
+                  placeholder="Model name"
+                  title="Click to rename model (auto-save active)"
                   className="bg-transparent hover:bg-surface-container/50 focus:bg-surface-lowest px-2 py-0.5 rounded-xs border border-transparent hover:border-hairline focus:border-action font-primary font-bold text-xs text-ink-primary truncate focus:outline-none transition-colors"
                 />
                 {/* Always Visible Floppy Disk Button (Interactive & Animated) */}
@@ -86,10 +86,10 @@ export const TopNav: React.FC<TopNavProps> = React.memo(({ onOpenSaveModal }) =>
                   disabled={isAutoSaving}
                   title={
                     isAutoSaving
-                      ? 'Guardando cambios en disco...'
+                      ? 'Saving changes to disk...'
                       : justSaved
-                      ? `Guardado en disco${lastAutoSavedAt ? ` a las ${lastAutoSavedAt}` : ''}`
-                      : 'Guardar cambios en disco (Clic para forzar guardado)'
+                      ? `Saved to disk${lastAutoSavedAt ? ` at ${lastAutoSavedAt}` : ''}`
+                      : 'Save changes to disk (Click to force save)'
                   }
                   className={`p-1.5 rounded-xs transition-all border flex items-center justify-center cursor-pointer ${
                     isAutoSaving
@@ -109,7 +109,7 @@ export const TopNav: React.FC<TopNavProps> = React.memo(({ onOpenSaveModal }) =>
                 size="sm"
                 onClick={handleSaveModal}
                 icon={<BookmarkPlus className="w-4 h-4" />}
-                title="Guardar en Biblioteca"
+                title="Save to Library"
               />
             )}
           </>

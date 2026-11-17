@@ -24,19 +24,19 @@ export const AdvancedPbrSection: React.FC = React.memo(() => {
 
   return (
     <>
-      {/* 5. Clearcoat (Laca / Barniz) */}
+      {/* 5. Clearcoat (Lacquer / Varnish) */}
       <MapSlotPicker
         slot="clearcoat"
         title="Clearcoat"
         icon={<Shield className="w-4 h-4 text-action shrink-0" />}
-        placeholderText="Sin mapa de clearcoat (Arrastra imagen aquí)"
-        subText="Barniz / Laca Reflectante • WebP / PNG / JPG"
-        addVariantLabel="Añadir Variante Clearcoat (Arrastra imagen aquí)"
-        pickTitle="Seleccionar Mapa Clearcoat"
+        placeholderText="No clearcoat map (Drop image here)"
+        subText="Reflective Clearcoat / Lacquer • WebP / PNG / JPG"
+        addVariantLabel="Add Clearcoat Variant (Drop image here)"
+        pickTitle="Select Clearcoat Map"
       >
         <div className="grid grid-cols-2 gap-3 pt-1">
           <SliderControl
-            label="Factor Clearcoat:"
+            label="Clearcoat Factor:"
             value={clearcoatFactor}
             onChange={setClearcoatFactor}
             min={0.0}
@@ -45,7 +45,7 @@ export const AdvancedPbrSection: React.FC = React.memo(() => {
             formatDecimals={2}
           />
           <SliderControl
-            label="Rugosidad Capa:"
+            label="Coat Roughness:"
             value={clearcoatRoughness}
             onChange={setClearcoatRoughness}
             min={0.0}
@@ -56,19 +56,19 @@ export const AdvancedPbrSection: React.FC = React.memo(() => {
         </div>
       </MapSlotPicker>
 
-      {/* 6. Sheen (Microfibras / Terciopelo) */}
+      {/* 6. Sheen (Microfiber / Velvet) */}
       <MapSlotPicker
         slot="sheen"
         title="Sheen"
         icon={<Feather className="w-4 h-4 text-action shrink-0" />}
-        placeholderText="Sin mapa de sheen (Arrastra imagen aquí)"
-        subText="Microfibras / Terciopelo • WebP / PNG / JPG"
-        addVariantLabel="Añadir Variante Sheen (Arrastra imagen aquí)"
-        pickTitle="Seleccionar Mapa Sheen"
+        placeholderText="No sheen map (Drop image here)"
+        subText="Microfiber / Fabric Sheen • WebP / PNG / JPG"
+        addVariantLabel="Add Sheen Variant (Drop image here)"
+        pickTitle="Select Sheen Map"
       >
         <div className="grid grid-cols-2 gap-3 items-center pt-1 min-w-0">
           <SliderControl
-            label="Rugosidad Sheen:"
+            label="Sheen Roughness:"
             value={sheenRoughness}
             onChange={setSheenRoughness}
             min={0.0}
@@ -77,7 +77,7 @@ export const AdvancedPbrSection: React.FC = React.memo(() => {
             formatDecimals={2}
           />
           <ColorPickerControl
-            label="Color Sheen:"
+            label="Sheen Color:"
             value={sheenColor}
             onChange={setSheenColor}
             placeholder="#000000"
@@ -85,19 +85,19 @@ export const AdvancedPbrSection: React.FC = React.memo(() => {
         </div>
       </MapSlotPicker>
 
-      {/* 7. Transmission & IOR (Vidrio / Acrílico) */}
+      {/* 7. Transmission & IOR (Glass / Acrylic) */}
       <MapSlotPicker
         slot="transmission"
-        title="Transmisión & Refracción"
+        title="Transmission & Refraction"
         icon={<Droplets className="w-4 h-4 text-action shrink-0" />}
-        placeholderText="Sin mapa de transmisión (Arrastra imagen aquí)"
-        subText="Transmisión / Vidrio & Cristal • WebP / PNG / JPG"
-        addVariantLabel="Añadir Variante Transmisión (Arrastra imagen aquí)"
-        pickTitle="Seleccionar Mapa de Transmisión"
+        placeholderText="No transmission map (Drop image here)"
+        subText="Transmission / Glass & Crystal • WebP / PNG / JPG"
+        addVariantLabel="Add Transmission Variant (Drop image here)"
+        pickTitle="Select Transmission Map"
       >
         <div className="grid grid-cols-2 gap-3 pt-1">
           <SliderControl
-            label="Transmisión:"
+            label="Transmission:"
             value={transmissionFactor}
             onChange={setTransmissionFactor}
             min={0.0}
@@ -106,7 +106,7 @@ export const AdvancedPbrSection: React.FC = React.memo(() => {
             formatDecimals={2}
           />
           <SliderControl
-            label="Refracción (IOR):"
+            label="Refraction (IOR):"
             value={ior}
             onChange={setIor}
             min={1.0}
@@ -117,30 +117,30 @@ export const AdvancedPbrSection: React.FC = React.memo(() => {
         </div>
       </MapSlotPicker>
 
-      {/* 8. Alpha Map (Transparencia / Recorte) */}
+      {/* 8. Alpha Map (Transparency / Cutout) */}
       <MapSlotPicker
         slot="alpha"
-        title="Máscara Alpha"
+        title="Alpha Mask"
         icon={<Eye className="w-4 h-4 text-action shrink-0" />}
-        placeholderText="Sin máscara alpha (Arrastra imagen aquí)"
-        subText="Máscara Alpha / Recorte • WebP / PNG / JPG"
-        addVariantLabel="Añadir Variante Alpha (Arrastra imagen aquí)"
-        pickTitle="Seleccionar Máscara Alpha"
+        placeholderText="No alpha mask (Drop image here)"
+        subText="Alpha Mask / Cutout • WebP / PNG / JPG"
+        addVariantLabel="Add Alpha Variant (Drop image here)"
+        pickTitle="Select Alpha Mask"
       />
 
-      {/* 9. Displacement Map (Altura real de vértices) */}
+      {/* 9. Displacement Map (Vertex height) */}
       <MapSlotPicker
         slot="displacement"
-        title="Desplazamiento"
+        title="Displacement"
         icon={<Mountain className="w-4 h-4 text-action shrink-0" />}
-        placeholderText="Sin mapa de desplazamiento (Arrastra imagen aquí)"
-        subText="Altura Real de Vértices • WebP / PNG / JPG"
-        addVariantLabel="Añadir Variante Desplazamiento (Arrastra imagen aquí)"
-        pickTitle="Seleccionar Mapa de Desplazamiento"
+        placeholderText="No displacement map (Drop image here)"
+        subText="Vertex Height Displacement • WebP / PNG / JPG"
+        addVariantLabel="Add Displacement Variant (Drop image here)"
+        pickTitle="Select Displacement Map"
       >
         <div className="pt-1">
           <SliderControl
-            label="Escala de Desplazamiento:"
+            label="Displacement Scale:"
             value={displacementScale}
             onChange={setDisplacementScale}
             min={0.0}

@@ -12,7 +12,7 @@ export const ModelDropZone: React.FC = () => {
 
   const handleFile = async (filePath: string) => {
     if (!filePath.toLowerCase().endsWith('.glb') && !filePath.toLowerCase().endsWith('.gltf')) {
-      alert('Por favor selecciona un archivo .glb o .gltf');
+      alert('Please select a .glb or .gltf file');
       return;
     }
 
@@ -66,8 +66,8 @@ export const ModelDropZone: React.FC = () => {
 
   const handleOpenFileDialog = async () => {
     const selected = await window.electronAPI.openFileDialog({
-      title: 'Seleccionar modelo 3D (.glb / .gltf)',
-      filters: [{ name: 'Modelos 3D', extensions: ['glb', 'gltf'] }]
+      title: 'Select 3D Model (.glb / .gltf)',
+      filters: [{ name: '3D Models', extensions: ['glb', 'gltf'] }]
     });
 
     if (selected) {
@@ -98,9 +98,9 @@ export const ModelDropZone: React.FC = () => {
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider font-primary text-ink-primary">
-            {modelFilePath ? 'Reemplazar archivo .glb' : 'Arrastra un modelo .glb aquí'}
+            {modelFilePath ? 'Replace .glb file' : 'Drop a .glb model here'}
           </p>
-          <p className="text-[11px] text-ink-tertiary mt-0.5">o haz clic para explorar en el explorador del taller</p>
+          <p className="text-[11px] text-ink-tertiary mt-0.5">or click to browse files on your computer</p>
         </div>
       </div>
     </div>

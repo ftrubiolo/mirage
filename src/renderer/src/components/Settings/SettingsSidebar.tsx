@@ -23,12 +23,12 @@ export interface SettingsSidebarProps {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'appearance', label: 'Apariencia & Tema', icon: Palette },
-  { id: 'viewport', label: 'Visor 3D & Parámetros', icon: Compass },
-  { id: 'keybinds', label: 'Atajos de Teclado', icon: Keyboard },
-  { id: 'storage', label: 'Almacenamiento Local', icon: HardDrive },
-  { id: 'ai', label: 'Modelos IA & Agentes', icon: Cpu },
-  { id: 'system', label: 'Información del Sistema', icon: Info }
+  { id: 'appearance', label: 'Appearance & Theme', icon: Palette },
+  { id: 'viewport', label: '3D Viewport & Defaults', icon: Compass },
+  { id: 'keybinds', label: 'Keyboard Shortcuts', icon: Keyboard },
+  { id: 'storage', label: 'Local Storage', icon: HardDrive },
+  { id: 'ai', label: 'AI Models & Agents', icon: Cpu },
+  { id: 'system', label: 'System Information', icon: Info }
 ];
 
 export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
@@ -39,14 +39,14 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     <aside className="w-64 border-r border-hairline bg-surface-low/50 flex flex-col p-4 shrink-0 overflow-y-auto space-y-1">
       <div className="px-3 py-2 mb-2">
         <h2 className="font-primary font-bold text-xs uppercase tracking-wider text-ink-primary">
-          Configuración
+          Settings
         </h2>
         <p className="text-[11px] text-ink-tertiary">
-          Mirage Atelier 3D Workbench
+          Mirage 3D Workbench
         </p>
       </div>
 
-      <nav className="space-y-0.5 flex-1" aria-label="Secciones de configuración">
+      <nav className="space-y-0.5 flex-1" aria-label="Settings sections">
         {NAV_ITEMS.map((item) => {
           const isSelected = activeTab === item.id;
           const Icon = item.icon;
@@ -71,7 +71,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
       <div className="pt-4 border-t border-hairline px-3 flex items-center justify-between">
         <span className="text-[11px] text-ink-tertiary font-mono">Mirage</span>
         <Badge variant="neutral" size="xs" mono>
-          v1.0.0
+          v1.0.1
         </Badge>
       </div>
     </aside>

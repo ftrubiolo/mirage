@@ -4,7 +4,7 @@ import { EntryVariant } from '../types/library';
 import { useModelStore } from '../store/modelStore';
 import { useVariantStore } from '../store/variantStore';
 import { usePbrMaterialStore } from '../store/pbrMaterialStore';
-import { exportCleanGeometryGLB, exportModelToUSDZ, viewportBridge } from './viewportBridge';
+import { exportCleanGeometryGLB, viewportBridge } from './viewportBridge';
 import { bakeVariantArtifacts } from './arBakePipeline';
 
 export interface Model3dJsonVariant {
@@ -52,7 +52,7 @@ export interface Model3dJson {
   variants: Model3dJsonVariant[];
 }
 
-export interface SeraPackageExportOptions {
+export interface WebPackageExportOptions {
   productName?: string;
   productId?: string;
   variants?: EntryVariant[];
@@ -65,10 +65,10 @@ export interface SeraPackageExportOptions {
 
 /**
  * Converts a variant name or string into a clean URL-friendly kebab-case code.
- * E.g. "Lino Arena" -> "lino-arena"
+ * E.g. "Warm Sand" -> "warm-sand"
  */
 export function slugifyCode(text: string): string {
-  if (!text) return 'variante';
+  if (!text) return 'variant';
   const clean = text
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -76,11 +76,11 @@ export function slugifyCode(text: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
-  return clean || 'variante';
+  return clean || 'variant';
 }
 
 /**
- * Derives a clean filename for texture maps following the template convention:
+ * Derives a clean filename for texture maps following the web package convention:
  * *_base.<ext>, *_norm.<ext>, *_orm.<ext>
  */
 export function formatMapFileName(
@@ -100,7 +100,7 @@ export function formatMapFileName(
     return `${variantCode}_base.${ext}`;
   }
 
-  // If original file already has a descriptive stem (e.g. lino_norm or lino_normal or cuero_orm)
+  // If original file already has a descriptive stem (e.g. linen_norm or linen_normal or leather_orm)
   if (originalFileName) {
     const stem = originalFileName
       .replace(/\.[^/.]+$/, '')
@@ -130,7 +130,7 @@ export async function getRawBinaryBytes(
     try {
       return await window.electronAPI.readBinaryFile(filePath);
     } catch (err) {
-      console.warn(`[seraPackageExporter] fs.readBinaryFile failed for ${filePath}, falling back to fetch:`, err);
+      console.warn(`[webPackageExporter] fs.readBinaryFile failed for ${filePath}, falling back to fetch:`, err);
     }
   }
 
@@ -142,7 +142,7 @@ export async function getRawBinaryBytes(
       const buf = await res.arrayBuffer();
       return new Uint8Array(buf);
     } catch (err) {
-      console.error(`[seraPackageExporter] Failed to fetch texture from ${fetchUrl}:`, err);
+      console.error(`[webPackageExporter] Failed to fetch texture from ${fetchUrl}:`, err);
     }
   }
 
@@ -197,7 +197,7 @@ export async function extractTextureBytesFromScene(
     const arrayBuffer = await blob.arrayBuffer();
     return { bytes: new Uint8Array(arrayBuffer), ext: 'png' };
   } catch (err) {
-    console.warn(`[seraPackageExporter] Could not extract ${type} texture from active scene:`, err);
+    console.warn(`[webPackageExporter] Could not extract ${type} texture from active scene:`, err);
     return null;
   }
 }
@@ -228,7 +228,7 @@ export async function resolveSlotBinaryBytes(
 
     const bytes = await getRawBinaryBytes(candidate.filePath, candidate.url);
     if (bytes && bytes.length > 0) {
-      console.log(`[seraPackageExporter] Resolved ${type} from variant pool fallback: ${candidate.fileName}`);
+      console.log(`[webPackageExporter] Resolved ${type} from variant pool fallback: ${candidate.fileName}`);
       return { bytes, fileName: candidate.fileName };
     }
   }
@@ -236,7 +236,7 @@ export async function resolveSlotBinaryBytes(
   // 3. Try in-memory Three.js texture extraction from active scene
   const extracted = await extractTextureBytesFromScene(type);
   if (extracted && extracted.bytes.length > 0) {
-    console.log(`[seraPackageExporter] Resolved ${type} by extracting from active Three.js viewport texture`);
+    console.log(`[webPackageExporter] Resolved ${type} by extracting from active Three.js viewport texture`);
     return { bytes: extracted.bytes, fileName: `extracted_${type}.${extracted.ext}` };
   }
 
@@ -244,7 +244,7 @@ export async function resolveSlotBinaryBytes(
 }
 
 /**
- * Builds the model-3d.json structure adhering to the plantilla-modelo-3d-seramuebles specification.
+ * Builds the model-3d.json structure for the web & AR 3D package bundle.
  */
 export function buildModel3dJson(
   productName: string,
@@ -253,7 +253,7 @@ export function buildModel3dJson(
   materials?: string[]
 ): Model3dJson {
   const json: Model3dJson = {
-    name: productName || 'Modelo 3D',
+    name: productName || '3D Model',
     files: {
       glb: 'geometry.glb'
     },
@@ -280,15 +280,16 @@ export function buildModel3dJson(
 }
 
 /**
- * Orchestrates the full creation of a Sera Muebles compliant ZIP package.
+ * Orchestrates creation of a standard Web & AR 3D ZIP package
+ * containing geometry.glb, model-3d.json, maps/, and optional ar/ assets.
  */
-export async function createSeraPackageZip(options: SeraPackageExportOptions = {}): Promise<Blob> {
+export async function createWebPackageZip(options: WebPackageExportOptions = {}): Promise<Blob> {
   const { onProgress } = options;
   const model = useModelStore.getState();
   const vs = useVariantStore.getState();
   const pbr = usePbrMaterialStore.getState();
 
-  const productName = options.productName || model.productName || 'Modelo 3D';
+  const productName = options.productName || model.productName || '3D Model';
   const rawVariants = options.variants || (vs.variants && vs.variants.length > 0 ? vs.variants : []);
   const includeArVariants = options.includeArVariants ?? false;
   const arTextureSize = options.arTextureSize ?? 1024;
@@ -303,12 +304,12 @@ export async function createSeraPackageZip(options: SeraPackageExportOptions = {
   const arUsdzFolder = arFolder && includeArUsdz ? arFolder.folder('usdz') : null;
 
   // 1. Export clean 1:1 geometry.glb without embedded textures
-  onProgress?.('Generando geometría 3D limpia (geometry.glb)...');
+  onProgress?.('Generating clean 3D geometry (geometry.glb)...');
   const glbBuffer = await exportCleanGeometryGLB();
   zip.file('geometry.glb', glbBuffer);
 
   // 2. Process variants and texture maps
-  onProgress?.('Procesando variantes y texturas PBR...');
+  onProgress?.('Processing variants and PBR textures...');
 
   // Map to deduplicate identical textures across variants (key: filePath or url -> relative zip path)
   const savedTextureMap = new Map<string, string>();
@@ -327,8 +328,8 @@ export async function createSeraPackageZip(options: SeraPackageExportOptions = {
 
   for (let i = 0; i < variantsToProcess.length; i++) {
     const v = variantsToProcess[i];
-    const code = slugifyCode(v.name || v.id || `variante-${i + 1}`);
-    const label = v.name || `Variante ${i + 1}`;
+    const code = slugifyCode(v.name || v.id || `variant-${i + 1}`);
+    const label = v.name || `Variant ${i + 1}`;
 
     const isCurrentActive = v.id === vs.activeVariantId;
     const vMaps = v.maps || {};
@@ -396,7 +397,7 @@ export async function createSeraPackageZip(options: SeraPackageExportOptions = {
         variantEntry.normalMap = relativePath;
       }
     } else if (normSlot) {
-      console.warn(`[seraPackageExporter] No se pudo resolver archivo de mapa normal para variante "${label}" (${code}).`);
+      console.warn(`[webPackageExporter] Could not resolve normal map file for variant "${label}" (${code}).`);
     }
 
     // Process ORM Map
@@ -508,7 +509,7 @@ export async function createSeraPackageZip(options: SeraPackageExportOptions = {
 
     // Process AR Baked Assets per Variant (GLB & USDZ)
     if (includeArVariants && (includeArGlb || includeArUsdz)) {
-      onProgress?.(`Horneando activos AR (${code}) ${i + 1}/${variantsToProcess.length}...`);
+      onProgress?.(`Baking AR assets (${code}) ${i + 1}/${variantsToProcess.length}...`);
       const targetObject = viewportBridge.modelGroup || viewportBridge.scene;
       if (targetObject) {
         try {
@@ -533,7 +534,7 @@ export async function createSeraPackageZip(options: SeraPackageExportOptions = {
             variantEntry.ar = arItem;
           }
         } catch (err) {
-          console.warn(`[seraPackageExporter] No se pudieron hornear modelos AR para variante ${code}:`, err);
+          console.warn(`[webPackageExporter] Could not bake AR models for variant ${code}:`, err);
         }
       }
     }
@@ -549,7 +550,7 @@ export async function createSeraPackageZip(options: SeraPackageExportOptions = {
   zip.file('model-3d.json', JSON.stringify(model3dJson, null, 2));
 
   // 4. Compress into ZIP Blob
-  onProgress?.('Comprimiendo archivo ZIP final...');
+  onProgress?.('Compressing final ZIP archive...');
   return await zip.generateAsync({
     type: 'blob',
     compression: 'DEFLATE',

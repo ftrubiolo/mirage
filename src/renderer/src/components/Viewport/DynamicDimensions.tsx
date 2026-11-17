@@ -47,7 +47,7 @@ export const DynamicDimensions: React.FC<DynamicDimensionsProps> = ({ dimensions
   const maxDim = Math.max(width, height, depth);
   const offset = Math.max(maxDim * 0.04, 0.05);
 
-  // Sera Carmín Ladrillo / Terracotta
+  // Brick Carmine / Terracotta accent
   const lineColor = viewportTheme === 'dark' ? '#b53420' : '#9a2716';
   const { signX, signZ } = quadrant;
 
@@ -91,7 +91,7 @@ export const DynamicDimensions: React.FC<DynamicDimensionsProps> = ({ dimensions
           style={{ pointerEvents: 'none' }}
         >
           <div className="bg-surface-lowest border border-action/40 text-action font-mono tabular-nums text-[11px] font-semibold px-2 py-0.5 rounded-xs shadow-md whitespace-nowrap">
-            ↔ Ancho: {fmt(width)}
+            ↔ Width: {fmt(width)}
           </div>
         </Html>
       </group>
@@ -117,7 +117,7 @@ export const DynamicDimensions: React.FC<DynamicDimensionsProps> = ({ dimensions
           style={{ pointerEvents: 'none' }}
         >
           <div className="bg-surface-lowest border border-action/40 text-action font-mono tabular-nums text-[11px] font-semibold px-2 py-0.5 rounded-xs shadow-md whitespace-nowrap">
-            ⤢ Fondo: {fmt(depth)}
+            ⤢ Depth: {fmt(depth)}
           </div>
         </Html>
       </group>
@@ -143,7 +143,7 @@ export const DynamicDimensions: React.FC<DynamicDimensionsProps> = ({ dimensions
           style={{ pointerEvents: 'none' }}
         >
           <div className="bg-surface-lowest border border-action/40 text-action font-mono tabular-nums text-[11px] font-semibold px-2 py-0.5 rounded-xs shadow-md whitespace-nowrap">
-            ↕ Alto: {fmt(height)}
+            ↕ Height: {fmt(height)}
           </div>
         </Html>
       </group>

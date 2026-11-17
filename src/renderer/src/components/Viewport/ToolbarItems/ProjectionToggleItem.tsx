@@ -15,8 +15,8 @@ export const ProjectionToggleItem: React.FC<ProjectionToggleItemProps> = ({ icon
       onClick={toggleOrthographic}
       title={
         isOrthographic
-          ? 'Modo Ortográfico activo (Clic para Perspectiva)'
-          : 'Modo Perspectiva activo (Clic para Ortográfico)'
+          ? 'Orthographic mode active (Click for Perspective)'
+          : 'Perspective mode active (Click for Orthographic)'
       }
       className={`h-6 px-1.5 rounded-xs text-[10px] font-mono font-bold tracking-wider transition-colors border cursor-pointer flex items-center justify-center ${
         isOrthographic
@@ -31,7 +31,7 @@ export const ProjectionToggleItem: React.FC<ProjectionToggleItemProps> = ({ icon
           <Eye className="w-3.5 h-3.5" />
         )
       ) : (
-        <span>{isOrthographic ? 'ORTO' : 'PERSP'}</span>
+        <span>{isOrthographic ? 'ORTHO' : 'PERSP'}</span>
       )}
     </button>
   );

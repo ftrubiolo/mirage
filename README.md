@@ -68,15 +68,15 @@
 - **Canvas Fallback**: In-memory HTML5 Canvas packing fallback ensures reliability across all operating system environments.
 
 ### 📚 Technical Library (Catalogue)
-- **Piece Catalogue**: Every piece is a `LibraryEntry` with slug, furniture category, lifecycle status, description, dimensions, polygon count, and poster thumbnail — browsable as a card grid or a dense table.
-- **Variants & Colorways**: Each piece holds multiple profiles/variants, each with its own map set, material settings, and poster. Variants can be created (blank or cloned from an existing profile), renamed, and deleted; colourways are the base-colour texture variants managed in the **Mapas PBR** studio.
+- **Model Catalogue**: Every asset is a `LibraryEntry` with slug, model category, lifecycle status, description, dimensions, polygon count, and poster thumbnail — browsable as a card grid or a dense table.
+- **Variants & Colorways**: Each entry holds multiple profiles/variants, each with its own map set, material settings, and poster. Variants can be created (blank or cloned from an existing profile), renamed, and deleted; colourways are the base-colour texture variants managed in the **PBR Maps** studio.
 - **Technical Sheet**: The detail view pairs a resizable read-only technical sheet — poster, status/category chips, description, dimensions — with the profiles and variants catalogue beside it.
-- **Auto-Save Bridge**: Edits in the workbench are debounced and written back to the active entry, with explicit "Save to Library" for new pieces.
+- **Auto-Save Bridge**: Edits in the workbench are debounced and written back to the active entry, with explicit "Save to Library" for new models.
 - **Local Storage**: Entries live in the app data directory and can be revealed in the system file explorer.
 
 ### 🤖 AI Agent Studio
-- **Chat That Drives the App**: The agent calls real application tools — set PBR parameters, toggle texture slots, change environment presets, switch debug channels, audit geometry, and apply atelier material presets (lino, cuero, madera, metal) — each as an undoable command.
-- **Approval Mode (HITL)**: Choose **Auto-aplicar** (changes land immediately, reversible with `Ctrl+Z`) or **Pedir confirmación** (a diff card must be approved before anything changes). MCP tools go through the same gate.
+- **Chat That Drives the App**: The agent calls real application tools — set PBR parameters, toggle texture slots, change environment presets, switch debug channels, audit geometry, and apply material presets (`fabric`, `leather`, `wood`, `metal`, `plastic`, `glass`, `ceramic`) — each as an undoable command.
+- **Approval Mode (HITL)**: Choose **Auto-apply** (changes land immediately, reversible with `Ctrl+Z`) or **Ask confirmation** (a diff card must be approved before anything changes). MCP tools go through the same gate.
 - **Provider-Agnostic**: Any OpenAI-compatible endpoint works — OpenAI, OpenRouter, Google Gemini, DeepSeek, Groq, Mistral, xAI, Together, NVIDIA NIM, Anthropic via a compatible proxy, or a custom local server (Ollama, LM Studio). Connection testing and live model listing are built in.
 - **Encrypted API-Key Vault**: Keys never live in the renderer; they are encrypted by Electron `safeStorage` and stored in the main process vault.
 - **Sessions & Streaming**: Multiple named sessions with history, streamed responses with cancel, and per-session token/duration statistics.
@@ -164,9 +164,9 @@ Current state, verified on this checkout:
 | Gate | Command | Result |
 | :--- | :--- | :--- |
 | Type check | `npx tsc --noEmit` | Clean (exit 0) |
-| Tests | `npx vitest run` | **27 files, 472 tests, all passing** |
+| Tests | `npx vitest run` | **33 files, 611 tests, all passing** |
 
-The suite covers the PBR controller, multi-material staging, model and variant stores, GLB validation, AR bake pipeline, thumbnail service and pipeline, path-safety utilities, colour conversion, settings persistence, the Sera package exporter, sidebar resize math, platform explorer integration, and the command manager — plus adversarial suites for graphics state and shortcut handling, and a design-system compliance suite that enforces [`DESIGN.md`](DESIGN.md).
+The suite covers the PBR controller, multi-material staging, model and variant stores, GLB validation, AR bake pipeline, thumbnail service and pipeline, path-safety utilities, colour conversion, settings persistence, the Web & AR package exporter, sidebar resize math, platform explorer integration, and the command manager — plus adversarial suites for graphics state and shortcut handling, and a design-system compliance suite that enforces [`DESIGN.md`](DESIGN.md).
 
 ### Production Builds
 
@@ -199,7 +199,7 @@ npm run build:all
 ```
 mirage/
 ├── ARCHITECTURE.md           # Deep system map: processes, IPC, data flow
-├── DESIGN.md                 # Sera Operations design system (tokens, palette, components)
+├── DESIGN.md                 # Mirage Operations design system (tokens, palette, components)
 ├── resources/
 │   ├── draco/                # DRACO decoder/encoder for compressed glTF
 │   ├── environments/         # Bundled HDR environment maps (city.hdr)
@@ -237,7 +237,7 @@ mirage/
 │           ├── hooks/        # useResizableSidebar (pure resize math + hook)
 │           ├── store/        # Zustand: app, model, pbrMaterial, variant, viewport, agent
 │           ├── styles/       # globals.css — the design token layer
-│           ├── tests/        # Vitest suite (27 files, 472 tests)
+│           ├── tests/        # Vitest suite (33 files, 611 tests)
 │           ├── types/        # Config, library, and agent contracts
 │           └── utils/        # PBR controller, viewport bridge, glbValidator, arBakePipeline, mapSlotNaming, command manager
 ├── package.json

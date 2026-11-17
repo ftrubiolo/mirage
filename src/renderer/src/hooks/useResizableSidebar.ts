@@ -19,7 +19,7 @@ export interface ResizeCalculationResult {
 }
 
 /**
- * Pure resize drag math helper implementing the Sera Atelier layout physics specification:
+ * Pure resize drag math helper implementing the Mirage Workbench layout physics specification:
  * - Left side vs Right side delta calculation
  * - Clamping between minWidth and maxWidth
  * - Auto-collapse detection below (minWidth - collapseThreshold)

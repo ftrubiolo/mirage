@@ -2,7 +2,10 @@ import React from 'react';
 
 export type StatusVariant =
   | 'active'
+  | 'wip'
   | 'pending'
+  | 'approved'
+  | 'published'
   | 'workshop'
   | 'dispatched'
   | 'delivered'
@@ -19,20 +22,26 @@ interface StatusBadgeProps {
 }
 
 const defaultLabels: Record<StatusVariant, string> = {
-  active: 'En Stock',
-  pending: 'En Revisión',
-  workshop: 'En Taller',
-  dispatched: 'En Camino',
-  delivered: 'Entregado',
-  madeToOrder: 'Bajo Pedido',
-  preorder: 'Preventa',
-  critical: 'Crítico',
-  neutral: 'Archivo'
+  active: 'Active',
+  wip: 'In Progress',
+  pending: 'In Review',
+  approved: 'Approved',
+  published: 'Published',
+  workshop: 'In Progress',
+  dispatched: 'Published',
+  delivered: 'Ready',
+  madeToOrder: 'Approved',
+  preorder: 'Staged',
+  critical: 'Critical',
+  neutral: 'Archived'
 };
 
 const variantClasses: Record<StatusVariant, string> = {
   active: 'bg-emerald-50 text-emerald-800 border-emerald-300/60 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-500/30',
+  wip: 'bg-blue-50 text-blue-800 border-blue-300/60 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-500/30',
   pending: 'bg-amber-50 text-amber-800 border-amber-300/60 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-500/30',
+  approved: 'bg-orange-50 text-orange-800 border-orange-300/60 dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-500/30',
+  published: 'bg-indigo-50 text-indigo-800 border-indigo-300/60 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-500/30',
   workshop: 'bg-blue-50 text-blue-800 border-blue-300/60 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-500/30',
   dispatched: 'bg-indigo-50 text-indigo-800 border-indigo-300/60 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-500/30',
   delivered: 'bg-teal-50 text-teal-800 border-teal-300/60 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-500/30',

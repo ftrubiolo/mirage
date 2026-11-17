@@ -74,7 +74,7 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
         <button
           type="button"
           onClick={onClose}
-          title="Cerrar notificación"
+          title="Dismiss notification"
           className="p-0.5 hover:opacity-75 rounded-xs transition-opacity cursor-pointer shrink-0"
         >
           <X className="w-3.5 h-3.5" />

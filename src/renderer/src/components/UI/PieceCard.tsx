@@ -33,7 +33,7 @@ export const PieceCard: React.FC<PieceCardProps> = ({
   onClick,
   onLoadPiece,
   isPieceLoading = false,
-  loadButtonLabel = 'Abrir en Mesa 3D',
+  loadButtonLabel = 'Open in 3D Workbench',
   topActions,
   className = ''
 }) => {
@@ -50,7 +50,7 @@ export const PieceCard: React.FC<PieceCardProps> = ({
       <div className="relative aspect-4/3 bg-canvas-stone flex items-center justify-center overflow-hidden border-b border-hairline">
         {isLoading ? (
           <div className="absolute inset-0 bg-surface-lowest/90 flex flex-col items-center justify-center gap-2 z-10">
-            <Spinner size="md" label="Cargando..." />
+            <Spinner size="md" label="Loading..." />
           </div>
         ) : posterUrl ? (
           <img
@@ -75,7 +75,7 @@ export const PieceCard: React.FC<PieceCardProps> = ({
         <div>
           {isActive && (
             <div className="text-[10px] font-primary font-semibold text-action uppercase tracking-wider mb-1">
-              En Mesa de Trabajo
+              In Workbench
             </div>
           )}
           <span className="text-[10px] font-mono text-ink-tertiary block truncate">
@@ -113,14 +113,14 @@ export const PieceCard: React.FC<PieceCardProps> = ({
 
               {mapsCount !== undefined && (
                 <div className="flex items-center justify-between">
-                  <span>Mapas PBR:</span>
-                  <span className="text-ink-primary font-medium">{mapsCount} cargados</span>
+                  <span>PBR Maps:</span>
+                  <span className="text-ink-primary font-medium">{mapsCount} loaded</span>
                 </div>
               )}
 
               {stats && (
                 <div className="flex items-center justify-between">
-                  <span>Polígonos:</span>
+                  <span>Polygons:</span>
                   <span className="text-ink-primary font-medium">
                     {stats.triangleCount.toLocaleString()}
                   </span>
@@ -138,7 +138,7 @@ export const PieceCard: React.FC<PieceCardProps> = ({
                 {isPieceLoading ? (
                   <>
                     <Spinner size="xs" />
-                    <span>Cargando...</span>
+                    <span>Loading...</span>
                   </>
                 ) : (
                   <>

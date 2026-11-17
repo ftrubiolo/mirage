@@ -213,10 +213,10 @@ describe('3D Transform Gizmo & Viewport Staging', () => {
       });
 
       // Verify Position labels
-      expect(container.textContent).toContain('Posición en Escenario');
-      expect(container.textContent).toContain('Eje X');
-      expect(container.textContent).toContain('Eje Y');
-      expect(container.textContent).toContain('Eje Z');
+      expect(container.textContent).toContain('Scene Position');
+      expect(container.textContent).toContain('X Axis');
+      expect(container.textContent).toContain('Y Axis');
+      expect(container.textContent).toContain('Z Axis');
     });
 
     it('renders 3D Transform Gizmo mode selector in ViewportToolbar', () => {
@@ -224,13 +224,13 @@ describe('3D Transform Gizmo & Viewport Staging', () => {
         root.render(<ViewportToolbar />);
       });
 
-      const gizmoGroup = container.querySelector('[aria-label="Herramientas de manipulación 3D"]');
+      const gizmoGroup = container.querySelector('[aria-label="3D transform tools"]');
       expect(gizmoGroup).toBeTruthy();
 
       const gizmoButtons = gizmoGroup?.querySelectorAll('button');
       expect(gizmoButtons?.length).toBe(3);
 
-      // Click "Mover" button
+      // Click "Move" button
       act(() => {
         gizmoButtons?.[1]?.click();
       });

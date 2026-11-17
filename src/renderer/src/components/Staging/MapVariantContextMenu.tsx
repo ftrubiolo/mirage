@@ -45,7 +45,7 @@ export const MapVariantContextMenu: React.FC<MapVariantContextMenuProps> = ({
   return (
     <ContextMenu isOpen={isOpen} position={{ x, y }} onClose={onClose}>
       <ContextMenuHeader>
-        {variant.name || variant.fileName || 'Variante de textura'}
+        {variant.name || variant.fileName || 'Texture variant'}
       </ContextMenuHeader>
 
       <ContextMenuItem
@@ -53,14 +53,14 @@ export const MapVariantContextMenu: React.FC<MapVariantContextMenuProps> = ({
         shortcut="Zoom"
         onClick={onOpenLightbox}
       >
-        Inspeccionar textura
+        Inspect texture
       </ContextMenuItem>
 
       <ContextMenuItem
         icon={<FolderOpen className="w-3.5 h-3.5 text-ink-secondary" />}
         onClick={onPickReplace}
       >
-        Reemplazar archivo...
+        Replace file...
       </ContextMenuItem>
 
       {!isWebp && onConvertToWebp && (
@@ -68,7 +68,7 @@ export const MapVariantContextMenu: React.FC<MapVariantContextMenuProps> = ({
           icon={<ImageIcon className="w-3.5 h-3.5 text-action" />}
           onClick={onConvertToWebp}
         >
-          Optimizar a WebP...
+          Optimize to WebP...
         </ContextMenuItem>
       )}
 
@@ -76,7 +76,7 @@ export const MapVariantContextMenu: React.FC<MapVariantContextMenuProps> = ({
         icon={<Edit2 className="w-3.5 h-3.5 text-ink-secondary" />}
         onClick={onStartRename}
       >
-        Renombrar
+        Rename
       </ContextMenuItem>
 
       <ContextMenuSeparator />
@@ -86,7 +86,7 @@ export const MapVariantContextMenu: React.FC<MapVariantContextMenuProps> = ({
         danger
         onClick={onDelete}
       >
-        Eliminar variante
+        Delete variant
       </ContextMenuItem>
     </ContextMenu>
   );

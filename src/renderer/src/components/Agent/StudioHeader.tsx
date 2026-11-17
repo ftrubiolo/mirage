@@ -62,7 +62,7 @@ export const StudioHeader: React.FC = () => {
           >
             {providers.map((p) => (
               <option key={p.id} value={p.id} disabled={!p.hasKey}>
-                {p.name} {!p.hasKey ? '(Sin clave)' : ''}
+                {p.name} {!p.hasKey ? '(No key)' : ''}
               </option>
             ))}
           </select>
@@ -80,7 +80,7 @@ export const StudioHeader: React.FC = () => {
                     setCustomModelText(val);
                     setActiveModel(val);
                   }}
-                  placeholder="Nombre del modelo..."
+                  placeholder="Model name..."
                   className="bg-transparent text-xs text-ink-primary font-mono w-[180px] focus:outline-none"
                   autoFocus
                 />
@@ -101,14 +101,14 @@ export const StudioHeader: React.FC = () => {
                     setIsCustomModelInput(false);
                   }}
                   icon={<Check className="w-3.5 h-3.5" />}
-                  title="Guardar modelo personalizado"
+                  title="Save custom model"
                 />
                 <IconButton
                   size="xs"
                   variant="ghost"
                   onClick={() => setIsCustomModelInput(false)}
                   icon={<X className="w-3.5 h-3.5" />}
-                  title="Cancelar"
+                  title="Cancel"
                 />
               </div>
             ) : (
@@ -130,7 +130,7 @@ export const StudioHeader: React.FC = () => {
                       {m}
                     </option>
                   ))}
-                  <option value="__custom__">+ Escribir otro modelo...</option>
+                  <option value="__custom__">+ Enter custom model...</option>
                 </select>
 
                 <IconButton
@@ -139,7 +139,7 @@ export const StudioHeader: React.FC = () => {
                   onClick={handleRefreshModels}
                   isLoading={isRefreshingModels}
                   icon={<RefreshCw className="w-3.5 h-3.5" />}
-                  title="Auto-cargar modelos actualizados del endpoint"
+                  title="Refresh available models from endpoint"
                 />
               </div>
             )}
@@ -149,20 +149,20 @@ export const StudioHeader: React.FC = () => {
 
       {/* Permission Mode Switcher: Auto-Apply vs Ask to Confirm */}
       <div className="flex items-center gap-2">
-        <span className="text-[11px] text-ink-tertiary hidden md:inline">Modo de Ejecución:</span>
+        <span className="text-[11px] text-ink-tertiary hidden md:inline">Execution Mode:</span>
         <SegmentedControl
           options={[
             {
               value: 'auto-apply',
-              label: 'Auto-aplicar',
+              label: 'Auto-apply',
               icon: <Zap className="w-3 h-3" />,
-              title: 'Aplica cambios al visor 3D en tiempo real con opción a deshacer con Ctrl+Z'
+              title: 'Applies changes to the 3D viewport in real time with Ctrl+Z undo support'
             },
             {
               value: 'ask-to-confirm',
-              label: 'Pedir confirmación',
+              label: 'Ask to confirm',
               icon: <ShieldAlert className="w-3 h-3" />,
-              title: 'Muestra una tarjeta de aprobación antes de modificar la escena 3D'
+              title: 'Shows an approval card before modifying the 3D scene'
             }
           ]}
           value={permissionMode}

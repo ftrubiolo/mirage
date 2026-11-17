@@ -42,8 +42,8 @@ export const CanvasFitModelWidget: React.FC<CanvasFitModelWidgetProps> = ({
           type="button"
           onClick={triggerFitToModel}
           className={`${isVertical ? 'w-full' : 'w-11'} h-11 flex items-center justify-center border transition-colors cursor-pointer relative group bg-surface-container/30 border-hairline text-ink-secondary hover:text-action hover:bg-surface-high hover:border-hairline-strong active:bg-action/20 active:border-action active:text-action`}
-          title="Reencuadrar pieza a escala 1:1 (Ctrl+0)"
-          aria-label="Reencuadrar 1:1"
+          title="Reframe model to 1:1 scale (Ctrl+0)"
+          aria-label="Reframe 1:1"
         >
           <Maximize2 size={20} className="text-ink-secondary group-hover:text-action" />
         </button>
@@ -52,8 +52,8 @@ export const CanvasFitModelWidget: React.FC<CanvasFitModelWidgetProps> = ({
           type="button"
           onClick={handleCenterOrigin}
           className={`${isVertical ? 'w-full' : 'w-11'} h-11 flex items-center justify-center border transition-colors cursor-pointer relative group bg-surface-container/30 border-hairline text-ink-secondary hover:text-action hover:bg-surface-high hover:border-hairline-strong active:bg-action/20 active:border-action active:text-action`}
-          title="Centrar punto de mira al origen (0, 0, 0)"
-          aria-label="Centrar al origen"
+          title="Center focal target to origin (0, 0, 0)"
+          aria-label="Center to origin"
         >
           <Crosshair size={20} className="text-ink-secondary group-hover:text-action" />
         </button>
@@ -62,8 +62,8 @@ export const CanvasFitModelWidget: React.FC<CanvasFitModelWidgetProps> = ({
           type="button"
           onClick={triggerResetCamera}
           className={`${isVertical ? 'w-full' : 'w-11'} h-11 flex items-center justify-center border transition-colors cursor-pointer relative group bg-surface-container/30 border-hairline text-ink-secondary hover:text-action hover:bg-surface-high hover:border-hairline-strong active:bg-action/20 active:border-action active:text-action`}
-          title="Restablecer posición inicial de la cámara"
-          aria-label="Restablecer cámara"
+          title="Reset camera to initial position"
+          aria-label="Reset camera"
         >
           <RotateCcw size={20} className="text-ink-secondary group-hover:text-action" />
         </button>
@@ -82,8 +82,8 @@ export const CanvasFitModelWidget: React.FC<CanvasFitModelWidgetProps> = ({
         >
           <Maximize2 size={16} className="text-action shrink-0" />
           <div className="min-w-0">
-            <div className="font-medium text-[11px] leading-tight text-ink-primary">Reencuadrar Pieza (1:1)</div>
-            <div className="text-[9px] text-ink-tertiary">Ajusta encuadre al volumen del modelo (Ctrl+0)</div>
+            <div className="font-medium text-[11px] leading-tight text-ink-primary">Reframe Model (1:1)</div>
+            <div className="text-[9px] text-ink-tertiary">Fits framing to model bounds (Ctrl+0)</div>
           </div>
         </button>
 
@@ -94,8 +94,8 @@ export const CanvasFitModelWidget: React.FC<CanvasFitModelWidgetProps> = ({
         >
           <Crosshair size={16} className="text-action shrink-0" />
           <div className="min-w-0">
-            <div className="font-medium text-[11px] leading-tight text-ink-primary">Centrar al Origen</div>
-            <div className="text-[9px] text-ink-tertiary">Enfoca punto focal en coordenadas (0, 0, 0)</div>
+            <div className="font-medium text-[11px] leading-tight text-ink-primary">Center to Origin</div>
+            <div className="text-[9px] text-ink-tertiary">Focuses camera target on coordinates (0, 0, 0)</div>
           </div>
         </button>
 
@@ -106,22 +106,22 @@ export const CanvasFitModelWidget: React.FC<CanvasFitModelWidgetProps> = ({
         >
           <RotateCcw size={16} className="text-action shrink-0" />
           <div className="min-w-0">
-            <div className="font-medium text-[11px] leading-tight text-ink-primary">Restablecer Cámara</div>
-            <div className="text-[9px] text-ink-tertiary">Ángulo isométrico y distancia original</div>
+            <div className="font-medium text-[11px] leading-tight text-ink-primary">Reset Camera</div>
+            <div className="text-[9px] text-ink-tertiary">Original isometric angle and distance</div>
           </div>
         </button>
       </div>
 
       {/* Optical Zoom Controls */}
       <div className="pt-1 border-t border-hairline flex items-center justify-between">
-        <span className="text-[10px] text-ink-tertiary font-mono uppercase">Acercamiento Rápido</span>
+        <span className="text-[10px] text-ink-tertiary font-mono uppercase">Quick Zoom</span>
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={zoomIn3D}
             className="p-1 rounded-xs border border-hairline bg-surface-container/50 text-ink-secondary hover:text-ink-primary hover:bg-surface-high transition-colors cursor-pointer"
-            title="Acercar cámara (+)"
-            aria-label="Acercar"
+            title="Zoom in (+)"
+            aria-label="Zoom in"
           >
             <ZoomIn size={13} />
           </button>
@@ -129,8 +129,8 @@ export const CanvasFitModelWidget: React.FC<CanvasFitModelWidgetProps> = ({
             type="button"
             onClick={zoomOut3D}
             className="p-1 rounded-xs border border-hairline bg-surface-container/50 text-ink-secondary hover:text-ink-primary hover:bg-surface-high transition-colors cursor-pointer"
-            title="Alejar cámara (-)"
-            aria-label="Alejar"
+            title="Zoom out (-)"
+            aria-label="Zoom out"
           >
             <ZoomOut size={13} />
           </button>

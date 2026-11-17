@@ -9,14 +9,14 @@ interface ChannelDropdownItemProps {
 }
 
 const DEBUG_CHANNELS: { id: DebugChannel; label: string; desc: string }[] = [
-  { id: 'lit', label: 'PBR Completo', desc: 'Renderizado realista final con iluminación' },
-  { id: 'albedo', label: 'Albedo (Color)', desc: 'Inspección de mapa difuso / BaseColor' },
-  { id: 'normal', label: 'Normales', desc: 'Relieve superficial y dirección de normales' },
-  { id: 'roughness', label: 'Rugosidad', desc: 'Canal de aspereza en escala de grises' },
-  { id: 'metalness', label: 'Metálico', desc: 'Canal metálico / dieléctrico' },
-  { id: 'ao', label: 'Oclusión Ambiental', desc: 'Sombras de contacto y rincones (AO)' },
-  { id: 'emissive', label: 'Emisivo', desc: 'Canal de auto-iluminación y brillo' },
-  { id: 'wireframe', label: 'Modo Wireframe', desc: 'Topología y malla poligonal' }
+  { id: 'lit', label: 'Full PBR (Lit)', desc: 'Final photorealistic render with scene lighting' },
+  { id: 'albedo', label: 'Albedo (Color)', desc: 'Inspect diffuse / BaseColor map' },
+  { id: 'normal', label: 'Normals', desc: 'Surface detail and normal direction' },
+  { id: 'roughness', label: 'Roughness', desc: 'Grayscale surface roughness channel' },
+  { id: 'metalness', label: 'Metalness', desc: 'Metallic / dielectric mask channel' },
+  { id: 'ao', label: 'Ambient Occlusion', desc: 'Contact and crevice shadows (AO)' },
+  { id: 'emissive', label: 'Emissive', desc: 'Self-illumination and glow channel' },
+  { id: 'wireframe', label: 'Wireframe', desc: 'Mesh topology and polygon wireframe' }
 ];
 
 export const ChannelDropdownItem: React.FC<ChannelDropdownItemProps> = ({ compact, iconOnly }) => {
@@ -43,7 +43,7 @@ export const ChannelDropdownItem: React.FC<ChannelDropdownItemProps> = ({ compac
     <div className="relative inline-flex items-center" ref={containerRef}>
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        title={`Inspección de Canales PBR: ${currentChannelLabel}`}
+        title={`PBR Channel Inspection: ${currentChannelLabel}`}
         className={`h-6 px-1.5 rounded-xs transition-colors flex items-center gap-1 text-xs font-medium border cursor-pointer select-none ${
           debugChannel !== 'lit'
             ? 'bg-action/15 text-action border-action/40'
@@ -66,7 +66,7 @@ export const ChannelDropdownItem: React.FC<ChannelDropdownItemProps> = ({ compac
       {isOpen && (
         <div className={`absolute ${getDropdownPlacementClass(placement)} w-56 rounded-xs bg-surface-lowest border border-hairline shadow-xl p-1 z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-100`}>
           <div className="px-2.5 py-1 text-[10px] font-primary font-bold text-ink-tertiary uppercase tracking-wider border-b border-hairline mb-1">
-            Canales de Material PBR
+            PBR Material Channels
           </div>
 
           {DEBUG_CHANNELS.map((ch) => {

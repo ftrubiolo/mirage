@@ -148,7 +148,7 @@ export const AgentMessageView: React.FC<AgentMessageViewProps> = ({ message }) =
       {message.isStreaming && !thoughtContent && stepsToRender.length === 0 && !mainProse && (
         <div className="flex items-center gap-1.5 text-action text-xs font-mono py-1 animate-pulse">
           <span className="w-1.5 h-3 bg-action rounded-xs" />
-          <span className="text-[11px] text-ink-tertiary">Mirage IA está procesando...</span>
+          <span className="text-[11px] text-ink-tertiary">Mirage AI is processing...</span>
         </div>
       )}
 
@@ -169,19 +169,19 @@ export const AgentMessageView: React.FC<AgentMessageViewProps> = ({ message }) =
             size="xs"
             variant="ghost"
             onClick={handleCopyMessage}
-            title="Copiar respuesta"
+            title="Copy response"
           />
           <IconButton
             icon={<ThumbsUp className="w-3.5 h-3.5" />}
             size="xs"
             variant="ghost"
-            title="Útil"
+            title="Helpful"
           />
           <IconButton
             icon={<ThumbsDown className="w-3.5 h-3.5" />}
             size="xs"
             variant="ghost"
-            title="No útil"
+            title="Not helpful"
           />
 
           {/* Token Usage Badge */}
@@ -356,10 +356,10 @@ const CodeBlock: React.FC<{ code: string; language?: string }> = ({ code, langua
         <button
           onClick={handleCopy}
           className="flex items-center gap-1 hover:text-ink-primary transition-colors text-[10px] cursor-pointer"
-          title="Copiar código"
+          title="Copy code"
         >
           {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-          <span>{copied ? 'Copiado' : 'Copiar'}</span>
+          <span>{copied ? 'Copied' : 'Copy'}</span>
         </button>
       </div>
       <pre className="p-3 overflow-x-auto text-ink-primary leading-relaxed whitespace-pre font-mono">

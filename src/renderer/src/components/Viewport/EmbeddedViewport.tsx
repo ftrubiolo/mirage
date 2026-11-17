@@ -161,7 +161,7 @@ export const EmbeddedViewport: React.FC = () => {
           {!isReady && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-ink-tertiary p-4 text-center pointer-events-none bg-canvas/80">
               <Box className="w-7 h-7 text-ink-tertiary/40 mb-2 animate-pulse" />
-              <span className="text-xs font-medium">Sincronizando vista 3D...</span>
+              <span className="text-xs font-medium">Syncing 3D view...</span>
             </div>
           )}
         </div>
@@ -169,11 +169,11 @@ export const EmbeddedViewport: React.FC = () => {
         <div className="w-full h-full flex items-center justify-center p-4">
           <EmptyState
             icon={<Box className="w-7 h-7" />}
-            title="Sin modelo en la mesa de trabajo"
-            description="Carga un modelo 3D desde la pestaña de Geometría."
+            title="No model in workbench"
+            description="Load a 3D model from the Geometry tab."
             action={
               <Button variant="secondary" size="sm" onClick={() => setView('workbench')}>
-                Ir a cargar modelo
+                Load Model
               </Button>
             }
           />
@@ -188,7 +188,7 @@ export const EmbeddedViewport: React.FC = () => {
             size="xs"
             variant={autoRotate ? 'primary' : 'ghost'}
             onClick={() => setAutoRotate(!autoRotate)}
-            title="Alternar rotación automática"
+            title="Toggle auto-rotation"
           />
 
           <IconButton
@@ -196,7 +196,7 @@ export const EmbeddedViewport: React.FC = () => {
             size="xs"
             variant="ghost"
             onClick={handleResetCamera}
-            title="Resetear encuadre de cámara"
+            title="Reset camera framing"
           />
 
           <IconButton
@@ -206,7 +206,7 @@ export const EmbeddedViewport: React.FC = () => {
             onClick={() =>
               setDebugChannel(debugChannel === 'wireframe' ? 'lit' : 'wireframe')
             }
-            title="Alternar modo alambre / iluminado"
+            title="Toggle wireframe / lit mode"
           />
 
           <IconButton
@@ -214,7 +214,7 @@ export const EmbeddedViewport: React.FC = () => {
             size="xs"
             variant="ghost"
             onClick={() => setView('workbench')}
-            title="Abrir mesa de trabajo completa"
+            title="Open full workbench"
           />
         </div>
       )}

@@ -89,7 +89,7 @@ describe('ModelManifestCard Component', () => {
 
     expect(container.textContent).toContain('my_chair.glb');
     expect(container.textContent).toContain('2.50 MB');
-    expect(container.textContent).toContain('Analizando estructura del archivo...');
+    expect(container.textContent).toContain('Analyzing file structure...');
   });
 
   it('renders manifest details including metadata, materials, textures, and counts', () => {
@@ -107,28 +107,28 @@ describe('ModelManifestCard Component', () => {
     expect(container.textContent).toContain('2.50 MB');
 
     // glTF metadata
-    expect(container.textContent).toContain('Metadatos & Extensiones glTF');
+    expect(container.textContent).toContain('glTF Metadata & Extensions');
     expect(container.textContent).toContain('Khronos glTF Blender I/O v3.6.0');
     expect(container.textContent).toContain('KHR_materials_transmission, KHR_materials_ior');
 
     // Materials
-    expect(container.textContent).toContain('Materiales');
+    expect(container.textContent).toContain('Materials');
     expect(container.textContent).toContain('1 material');
     expect(container.textContent).toContain('Vidrio_Templado');
     expect(container.textContent).toContain('BLEND');
-    expect(container.textContent).toContain('Doble cara: Sí');
-    expect(container.textContent).toContain('Transmisión: 0.95x (IOR 1.52)');
+    expect(container.textContent).toContain('Double-sided: Yes');
+    expect(container.textContent).toContain('Transmission: 0.95x (IOR 1.52)');
 
     // Textures
-    expect(container.textContent).toContain('Texturas Embebidas');
+    expect(container.textContent).toContain('Embedded Textures');
     expect(container.textContent).toContain('glass_roughness');
     expect(container.textContent).toContain('PNG');
     expect(container.textContent).toContain('0.50 MB');
 
     // Other elements
-    expect(container.textContent).toContain('Animaciones');
-    expect(container.textContent).toContain('Cámaras');
-    expect(container.textContent).toContain('Luces');
+    expect(container.textContent).toContain('Animations');
+    expect(container.textContent).toContain('Cameras');
+    expect(container.textContent).toContain('Lights');
   });
 
   it('supports LoadedModelManifest re-export seamlessly', () => {
